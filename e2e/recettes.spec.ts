@@ -33,7 +33,7 @@ async function newHousehold(page: Page) {
 
   await expect(page).toHaveURL(/\/bienvenue\/repas$/);
   await page.getByRole("button", { name: "Enregistrer" }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Famille Recettes");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("La semaine");
 }
 
 test("chercher, filtrer, ouvrir une recette du catalogue puis la copier", async ({ page }) => {

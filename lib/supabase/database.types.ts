@@ -79,6 +79,38 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"planned_meals": {
+                  Row: {
+                    "created_at": string,"day": number,"household_id": string,"id": string,"locked": boolean,"meal_type": Database["public"]['Enums']["meal_type"],"member_ids": (string)[],"position": number,"recipe_id": string,"week_plan_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"day": number,"household_id": string,"id"?: string,"locked"?: boolean,"meal_type": Database["public"]['Enums']["meal_type"],"member_ids": (string)[],"position"?: number,"recipe_id": string,"week_plan_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"day"?: number,"household_id"?: string,"id"?: string,"locked"?: boolean,"meal_type"?: Database["public"]['Enums']["meal_type"],"member_ids"?: (string)[],"position"?: number,"recipe_id"?: string,"week_plan_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "planned_meals_household_id_fkey"
+      columns: ["household_id"]
+isOneToOne: false
+      referencedRelation: "households"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "planned_meals_recipe_id_fkey"
+      columns: ["recipe_id"]
+isOneToOne: false
+      referencedRelation: "recipes"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "planned_meals_week_plan_id_fkey"
+      columns: ["week_plan_id"]
+isOneToOne: false
+      referencedRelation: "week_plans"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"recipe_favorites": {
                   Row: {
                     "created_at": string,"household_id": string,"recipe_id": string
@@ -189,6 +221,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"week_plans": {
+                  Row: {
+                    "created_at": string,"household_id": string,"id": string,"seed": number,"week_start": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"household_id": string,"id"?: string,"seed"?: number,"week_start": string
+                  }
+                  Update: {
+                    "created_at"?: string,"household_id"?: string,"id"?: string,"seed"?: number,"week_start"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "week_plans_household_id_fkey"
+      columns: ["household_id"]
+isOneToOne: false
+      referencedRelation: "households"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -211,6 +263,12 @@ isOneToOne: false
                            },
 "save_recipe":
 { Args: { "excluded_member_ids": (string)[],"ingredients": Json,"recipe": Json,"target_household_id": string,"target_recipe_id"?: string }; Returns: string
+                           },
+"save_week_proposal":
+{ Args: { "cards": Json,"new_seed": number,"target_household_id": string,"target_week_start": string }; Returns: string
+                           },
+"swap_planned_meals":
+{ Args: { "first_id": string,"second_id": string }; Returns: undefined
                            }
           }
           Enums: {

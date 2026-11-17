@@ -1,6 +1,7 @@
 import type { AvatarMember } from "@/components/member-avatar";
 import type { CardMember } from "@/components/member-card";
 import { avatarInitials } from "@/lib/members";
+import type { ListRecipe } from "@/lib/recipes-data";
 
 // Le foyer de test de CLAUDE.md, pour illustrer les composants. Aucune donnée réelle.
 const PEOPLE = [
@@ -39,3 +40,34 @@ export const PALETTE: AvatarMember[] = [
   "Menthe",
   "Abricot",
 ].map((name, color) => ({ id: name, first_name: name, color, initials: name[0] }));
+
+// Quelques recettes du catalogue, pour la Bibliothèque et les cartes du planning.
+export const DEMO_RECIPES: ListRecipe[] = [
+  {
+    id: "saumon",
+    title: "Saumon au four, beurre citronné et brocolis",
+    meal_types: ["soir"],
+    minutes: 30,
+    diets: ["keto", "gluten_free"],
+    favorite: false,
+  },
+  {
+    id: "poulet",
+    title: "Poulet à la crème et aux champignons",
+    meal_types: ["soir"],
+    minutes: 40,
+    diets: ["keto", "gluten_free"],
+    favorite: true,
+  },
+  { id: "lasagnes", title: "Lasagnes à la bolognaise", meal_types: ["soir"], minutes: 75, diets: [], favorite: false },
+  { id: "croque", title: "Croque-monsieur et salade verte", meal_types: ["soir"], minutes: 20, diets: [], favorite: false },
+  { id: "pizza", title: "Pizza à la pâte de mozzarella", meal_types: ["soir"], minutes: 45, diets: ["keto", "gluten_free"], favorite: false },
+].map((recipe) => ({
+  ...recipe,
+  meal_types: recipe.meal_types as ListRecipe["meal_types"],
+  diets: recipe.diets as ListRecipe["diets"],
+  photo_url: null,
+  batch_friendly: false,
+  ingredientNames: [],
+  excludedIds: [],
+}));

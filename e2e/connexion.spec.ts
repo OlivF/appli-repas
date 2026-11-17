@@ -24,6 +24,10 @@ test("le compte de test retrouve le foyer de CLAUDE.md", async ({ page }) => {
   await page.getByLabel("Mot de passe").fill("motdepasse");
   await page.getByRole("button", { name: "Se connecter" }).click();
 
+  // L'accueil, c'est la semaine ; le foyer a son onglet.
+  await expect(page).toHaveURL(/\/semaine$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("La semaine");
+  await page.getByRole("link", { name: "Foyer" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Foyer de test");
 
   const household = page.getByRole("region", { name: "Le foyer" });
