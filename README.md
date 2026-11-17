@@ -9,6 +9,8 @@ Le planning des repas de la semaine pour toute la famille. Next.js et Supabase.
 
 Node.js n'est pas nécessaire sur le poste : il tourne dans le conteneur.
 
+Facultatif : le [CLI GitHub](https://cli.github.com/) (`gh`), pour ouvrir les Pull Requests depuis le terminal (voir [Branches et Pull Requests](#branches-et-pull-requests)). L'appli n'en a pas besoin pour tourner.
+
 ## Lancer en local
 
 ```bash
@@ -29,6 +31,8 @@ Le schéma vit dans `supabase/migrations/`.
 supabase db reset   # repart de zéro : rejoue les migrations, puis supabase/seed.sql
 ```
 
+Le catalogue commun de recettes vit dans la migration `0003_recipe_catalog.sql` : il part en production avec `supabase db push`. `supabase/seed.sql` ne contient que le compte et le foyer de test, à ne jamais pousser en production.
+
 Après un changement de schéma, régénère les types TypeScript :
 
 ```bash
@@ -42,3 +46,38 @@ supabase test db                   # règles d'accès entre foyers (RLS), en SQL
 docker compose exec web npm test   # logique et composants (Vitest)
 docker compose run --rm e2e        # parcours complets sur téléphone (Playwright), avec docker compose up lancé
 ```
+
+## Branches et Pull Requests
+
+Le code vit sur GitHub : `git@github.com:OlivF/appli-repas.git`. Chaque étape de la feuille de route se fait sur sa branche (`etape-2-recettes`…), poussée sur GitHub, puis fusionnée dans `main` par une Pull Request.
+
+```bash
+git switch -c etape-3-courses     # une branche par étape
+# … commits …
+git push -u origin etape-3-courses
+gh pr create --base main          # ouvre la Pull Request (titre et description demandés)
+```
+
+### Installer `gh` (une fois, dans WSL)
+
+Depuis le dépôt officiel de GitHub (la version des dépôts Ubuntu est trop ancienne) :
+
+```bash
+(type -p wget >/dev/null || (sudo apt update && sudo apt install wget -y)) \
+  && sudo mkdir -p -m 755 /etc/apt/keyrings \
+  && out=$(mktemp) && wget -nv -O"$out" https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+  && cat "$out" | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
+  && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+  && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+  && sudo apt update && sudo apt install gh -y
+```
+
+### Se connecter (une fois)
+
+```bash
+gh auth login
+```
+
+Réponds **GitHub.com**, **SSH**, puis **Login with a web browser**. Sous WSL, le navigateur ne s'ouvre pas tout seul : copie le code à 8 caractères affiché, ouvre https://github.com/login/device dans Windows et colle-le.
+
+`gh auth status` doit ensuite afficher ton compte GitHub.

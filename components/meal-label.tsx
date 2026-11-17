@@ -18,6 +18,20 @@ export function MealLabel({ type, className }: { type: MealType; className?: str
   );
 }
 
+// Le repas dans sa pastille blanche (en-tête de fiche, légende).
+export function MealPill({ type, className }: { type: MealType; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex h-10 items-center rounded-full border border-border bg-card px-4 font-semibold shadow-soft",
+        className,
+      )}
+    >
+      <MealLabel type={type} />
+    </span>
+  );
+}
+
 // Couleur douce associée à chaque repas (couvertures de recettes sans photo).
 export const MEAL_TINT: Record<MealType, string> = {
   petit_dej: "bg-mustard-soft",

@@ -1,3 +1,4 @@
+import { cn } from "cn";
 import { Avatar, AvatarFallback, AvatarGroup } from "@/components/ui/avatar";
 
 export type AvatarMember = {
@@ -32,28 +33,38 @@ export function MemberAvatar({
   member,
   size = "default",
   labelled = false,
+  crossed = false,
   className,
 }: {
   member: AvatarMember;
   size?: Size;
   // true : l'avatar est seul et doit dire de qui il s'agit.
   labelled?: boolean;
+  // Barré : ce membre ne mange pas la recette.
+  crossed?: boolean;
   className?: string;
 }) {
   return (
     <Avatar
       size={size}
+      data-crossed={crossed || undefined}
       className={className}
       {...(labelled
         ? { role: "img", "aria-label": member.first_name, title: member.first_name }
         : { "aria-hidden": true })}
     >
       <AvatarFallback
-        className={TEXT_SIZE[size][member.initials.length > 1 ? 1 : 0]}
+        className={cn(TEXT_SIZE[size][member.initials.length > 1 ? 1 : 0], crossed && "opacity-45")}
         style={memberColorStyle(member.color)}
       >
         {member.initials}
       </AvatarFallback>
+      {crossed && (
+        <span
+          aria-hidden="true"
+          className="absolute top-1/2 left-1/2 h-[3px] w-[130%] -translate-x-1/2 -translate-y-1/2 -rotate-45 rounded-full bg-foreground/75"
+        />
+      )}
     </Avatar>
   );
 }
@@ -63,11 +74,17 @@ export function MemberAvatars({
   members,
   size = "sm",
   max = 5,
+  crossedIds = [],
+  decorative = false,
   className,
 }: {
   members: AvatarMember[];
   size?: Size;
   max?: number;
+  // Les membres à barrer (ceux qui ne mangent pas la recette).
+  crossedIds?: readonly string[];
+  // true : un texte à côté dit déjà qui est là ; les avatars ne sont pas lus.
+  decorative?: boolean;
   className?: string;
 }) {
   const shown = members.length > max ? members.slice(0, max - 1) : members;
@@ -77,9 +94,12 @@ export function MemberAvatars({
   );
 
   return (
-    <AvatarGroup className={className} role="img" aria-label={names} title={names}>
+    <AvatarGroup
+      className={className}
+      {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": names, title: names })}
+    >
       {shown.map((member) => (
-        <MemberAvatar key={member.id} member={member} size={size} />
+        <MemberAvatar key={member.id} member={member} size={size} crossed={crossedIds.includes(member.id)} />
       ))}
       {hidden > 0 && (
         <Avatar size={size} aria-hidden="true">

@@ -61,14 +61,14 @@ isOneToOne: false
                   ]
                 },"members": {
                   Row: {
-                    "appetite": Database["public"]['Enums']["appetite"],"birth_year": number,"created_at": string,"diets": (Database["public"]['Enums']["diet"])[],"first_name": string,"household_id": string,"id": string
+                    "appetite": Database["public"]['Enums']["appetite"],"birth_year": number,"color": number,"created_at": string,"diets": (Database["public"]['Enums']["diet"])[],"first_name": string,"household_id": string,"id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "appetite"?: Database["public"]['Enums']["appetite"],"birth_year": number,"created_at"?: string,"diets"?: (Database["public"]['Enums']["diet"])[],"first_name": string,"household_id": string,"id"?: string
+                    "appetite"?: Database["public"]['Enums']["appetite"],"birth_year": number,"color"?: number,"created_at"?: string,"diets"?: (Database["public"]['Enums']["diet"])[],"first_name": string,"household_id": string,"id"?: string
                   }
                   Update: {
-                    "appetite"?: Database["public"]['Enums']["appetite"],"birth_year"?: number,"created_at"?: string,"diets"?: (Database["public"]['Enums']["diet"])[],"first_name"?: string,"household_id"?: string,"id"?: string
+                    "appetite"?: Database["public"]['Enums']["appetite"],"birth_year"?: number,"color"?: number,"created_at"?: string,"diets"?: (Database["public"]['Enums']["diet"])[],"first_name"?: string,"household_id"?: string,"id"?: string
                   }
                   Relationships: [
                     {
@@ -79,18 +79,142 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"recipe_favorites": {
+                  Row: {
+                    "created_at": string,"household_id": string,"recipe_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"household_id": string,"recipe_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"household_id"?: string,"recipe_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "recipe_favorites_household_id_fkey"
+      columns: ["household_id"]
+isOneToOne: false
+      referencedRelation: "households"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "recipe_favorites_recipe_id_fkey"
+      columns: ["recipe_id"]
+isOneToOne: false
+      referencedRelation: "recipes"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"recipe_ingredients": {
+                  Row: {
+                    "aisle": Database["public"]['Enums']["grocery_aisle"],"household_id": string | null,"id": string,"name": string,"position": number,"quantity": number | null,"recipe_id": string,"unit": Database["public"]['Enums']["ingredient_unit"] | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "aisle"?: Database["public"]['Enums']["grocery_aisle"],"household_id"?: string | null,"id"?: string,"name": string,"position"?: number,"quantity"?: number | null,"recipe_id": string,"unit"?: Database["public"]['Enums']["ingredient_unit"] | null
+                  }
+                  Update: {
+                    "aisle"?: Database["public"]['Enums']["grocery_aisle"],"household_id"?: string | null,"id"?: string,"name"?: string,"position"?: number,"quantity"?: number | null,"recipe_id"?: string,"unit"?: Database["public"]['Enums']["ingredient_unit"] | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "recipe_ingredients_household_id_fkey"
+      columns: ["household_id"]
+isOneToOne: false
+      referencedRelation: "households"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "recipe_ingredients_recipe_id_fkey"
+      columns: ["recipe_id"]
+isOneToOne: false
+      referencedRelation: "recipes"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"recipe_member_exclusions": {
+                  Row: {
+                    "created_at": string,"household_id": string,"member_id": string,"recipe_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"household_id": string,"member_id": string,"recipe_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"household_id"?: string,"member_id"?: string,"recipe_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "recipe_member_exclusions_household_id_fkey"
+      columns: ["household_id"]
+isOneToOne: false
+      referencedRelation: "households"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "recipe_member_exclusions_member_id_fkey"
+      columns: ["member_id"]
+isOneToOne: false
+      referencedRelation: "members"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "recipe_member_exclusions_recipe_id_fkey"
+      columns: ["recipe_id"]
+isOneToOne: false
+      referencedRelation: "recipes"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"recipes": {
+                  Row: {
+                    "batch_friendly": boolean,"batch_notes": string | null,"cook_minutes": number,"created_at": string,"description": string | null,"diets": (Database["public"]['Enums']["diet"])[],"household_id": string | null,"id": string,"kid_friendly": boolean,"meal_types": (Database["public"]['Enums']["meal_type"])[],"photo_url": string | null,"prep_minutes": number,"servings": number,"source_recipe_id": string | null,"steps": (string)[],"title": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "batch_friendly"?: boolean,"batch_notes"?: string | null,"cook_minutes"?: number,"created_at"?: string,"description"?: string | null,"diets"?: (Database["public"]['Enums']["diet"])[],"household_id"?: string | null,"id"?: string,"kid_friendly"?: boolean,"meal_types": (Database["public"]['Enums']["meal_type"])[],"photo_url"?: string | null,"prep_minutes"?: number,"servings": number,"source_recipe_id"?: string | null,"steps"?: (string)[],"title": string
+                  }
+                  Update: {
+                    "batch_friendly"?: boolean,"batch_notes"?: string | null,"cook_minutes"?: number,"created_at"?: string,"description"?: string | null,"diets"?: (Database["public"]['Enums']["diet"])[],"household_id"?: string | null,"id"?: string,"kid_friendly"?: boolean,"meal_types"?: (Database["public"]['Enums']["meal_type"])[],"photo_url"?: string | null,"prep_minutes"?: number,"servings"?: number,"source_recipe_id"?: string | null,"steps"?: (string)[],"title"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "recipes_household_id_fkey"
+      columns: ["household_id"]
+isOneToOne: false
+      referencedRelation: "households"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "recipes_source_recipe_id_fkey"
+      columns: ["source_recipe_id"]
+isOneToOne: false
+      referencedRelation: "recipes"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
-            [_ in never]: never
+            "known_ingredients": {
+                  Row: {
+                    "aisle": Database["public"]['Enums']["grocery_aisle"],"name": string,"unit": Database["public"]['Enums']["ingredient_unit"] | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                }
           }
           Functions: {
-            "create_household":
+            "copy_recipe":
+{ Args: { "catalog_recipe_id": string,"target_household_id": string }; Returns: string
+                           },
+"create_household":
 { Args: { "household_name": string }; Returns: string
+                           },
+"save_recipe":
+{ Args: { "excluded_member_ids": (string)[],"ingredients": Json,"recipe": Json,"target_household_id": string,"target_recipe_id"?: string }; Returns: string
                            }
           }
           Enums: {
-            "appetite": "normal"|"grand","diet": "keto"|"vegetarian"|"gluten_free"|"lactose_free","meal_type": "petit_dej"|"midi"|"soir"|"pique_nique"
+            "appetite": "normal"|"grand","diet": "keto"|"vegetarian"|"gluten_free"|"lactose_free","grocery_aisle": "fruits_legumes"|"boucherie"|"poissonnerie"|"cremerie"|"epicerie"|"surgeles"|"boulangerie"|"boissons"|"autre","ingredient_unit": "g"|"kg"|"ml"|"l"|"piece"|"cas"|"cac","meal_type": "petit_dej"|"midi"|"soir"|"pique_nique"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -206,7 +330,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "appetite": ["normal", "grand"],"diet": ["keto", "vegetarian", "gluten_free", "lactose_free"],"meal_type": ["petit_dej", "midi", "soir", "pique_nique"]
+            "appetite": ["normal", "grand"],"diet": ["keto", "vegetarian", "gluten_free", "lactose_free"],"grocery_aisle": ["fruits_legumes", "boucherie", "poissonnerie", "cremerie", "epicerie", "surgeles", "boulangerie", "boissons", "autre"],"ingredient_unit": ["g", "kg", "ml", "l", "piece", "cas", "cac"],"meal_type": ["petit_dej", "midi", "soir", "pique_nique"]
           }
         }
 } as const

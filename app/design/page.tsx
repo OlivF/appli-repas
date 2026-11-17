@@ -3,25 +3,37 @@ import type { ReactNode } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { ChoiceChip } from "@/components/choice-chip";
 import { DayCard } from "@/components/day-card";
-import { AppetiteBadge, DietBadge } from "@/components/diet-badge";
+import { AppetiteBadge, DietBadge, KidBadge } from "@/components/diet-badge";
 import { ChoiceGroup, Field } from "@/components/field";
 import { BasketIllustration, BookIllustration, PlateIllustration, PotIllustration } from "@/components/illustrations";
 import { EmptyState } from "@/components/empty-state";
 import { KitchenPattern } from "@/components/kitchen-pattern";
 import { Logo } from "@/components/logo";
-import { MealLabel } from "@/components/meal-label";
+import { MealPill } from "@/components/meal-label";
 import { MemberAvatar, MemberAvatars } from "@/components/member-avatar";
 import { MemberCard } from "@/components/member-card";
 import { PageHeader } from "@/components/page-header";
 import { BatchBadge, RecipeCard } from "@/components/recipe-card";
+import { RecipeSteps } from "@/components/recipe-steps";
+import { ServingsIngredients } from "@/components/servings-ingredients";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { DIETS } from "@/lib/members";
 import { MEAL_TYPES } from "@/lib/meal-slots";
-import { ANNA_LUCIA, FAMILY, MARIE_LAURE, OLIVIER, OTIS, PALETTE, TIMOTHE } from "./demo-data";
-import { NavDemo, SheetDemo, StepDemo } from "./interactive-demos";
+import { ANNA_LUCIA, FAMILY, MARIE_LAURE, OTIS, PALETTE } from "./demo-data";
+import {
+  FavoriteDemo,
+  IngredientRowDemo,
+  MemberToggleDemo,
+  NavDemo,
+  SearchDemo,
+  SheetDemo,
+  StepDemo,
+  SwitchDemo,
+} from "./interactive-demos";
 import { ThemeToggle } from "./theme-toggle";
 
 export const metadata: Metadata = { title: "Le style de Nos repas" };
@@ -159,6 +171,46 @@ export default function DesignPage() {
                 Grand appétit
               </ChoiceChip>
             </ChoiceGroup>
+            <SwitchDemo />
+            <Field id="demo-steps" label="Étapes" help="Une étape par ligne.">
+              {({ describedBy }) => (
+                <Textarea
+                  id="demo-steps"
+                  aria-describedby={describedBy}
+                  defaultValue={"Fais revenir l’oignon dans l’huile.\nAjoute la viande et laisse dorer."}
+                />
+              )}
+            </Field>
+          </Card>
+          <h3 className="mt-10 text-xl">Une ligne d’ingrédient</h3>
+          <p className="mt-1 text-muted-foreground">
+            Le nom se complète avec les ingrédients déjà connus, qui apportent leur rayon. Les listes de
+            choix ouvrent le sélecteur du téléphone.
+          </p>
+          <Card className="mt-5 p-6 sm:p-8">
+            <IngredientRowDemo />
+          </Card>
+          <h3 className="mt-10 text-xl">Recherche</h3>
+          <p className="mt-1 text-muted-foreground">Arrondie, la loupe à gauche, une croix pour tout effacer.</p>
+          <div className="mt-5">
+            <SearchDemo />
+          </div>
+        </Section>
+
+        <Section title="Curseur" lead="Pour régler un nombre au pouce. Ici, les quantités suivent le nombre de personnes.">
+          <Card className="max-w-md p-6">
+            <ServingsIngredients
+              servings={6}
+              initialPersons={5}
+              ingredients={[
+                { name: "Pâtes à lasagne", quantity: 300, unit: "g" },
+                { name: "Bœuf haché", quantity: 500, unit: "g" },
+                { name: "Lait", quantity: 750, unit: "ml" },
+                { name: "Œufs", quantity: 2, unit: "piece" },
+                { name: "Huile d’olive", quantity: 2, unit: "cas" },
+                { name: "Sel", quantity: null, unit: null },
+              ]}
+            />
           </Card>
         </Section>
 
@@ -171,6 +223,14 @@ export default function DesignPage() {
             </div>
             <MemberAvatars members={FAMILY} />
             <MemberAvatars members={[ANNA_LUCIA, OTIS]} />
+            <MemberAvatars members={FAMILY} crossedIds={[MARIE_LAURE.id]} />
+          </div>
+          <h3 className="mt-10 text-xl">Qui n’en mange pas ?</h3>
+          <p className="mt-1 max-w-[56ch] text-muted-foreground">
+            Touche un avatar pour le barrer. Un membre que son régime écarte est barré d’office, avec la raison.
+          </p>
+          <div className="mt-5">
+            <MemberToggleDemo members={FAMILY} />
           </div>
           <ul className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {FAMILY.map((member) => (
@@ -181,30 +241,52 @@ export default function DesignPage() {
           </ul>
         </Section>
 
-        <Section title="Recettes" lead="Une photo quand il y en a une, sinon l’emoji du repas sur sa couleur.">
+        <Section
+          title="Recettes"
+          lead="Une photo quand il y en a une, sinon l’emoji du repas sur sa couleur. Ceux qui n’en mangent pas sont barrés."
+        >
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             <RecipeCard
+              href="#recettes"
               title="Potiron et brocolis rôtis"
               image={{ src: "/images/potiron-brocolis.jpg", alt: "Potiron, brocolis et carottes dans un plat à four" }}
-              mealType="soir"
+              mealTypes={["soir"]}
               minutes={45}
               batch
+              favorite
               diets={["vegetarian", "gluten_free", "lactose_free"]}
-              members={[OLIVIER, TIMOTHE, ANNA_LUCIA, OTIS]}
+              members={FAMILY.map((member) => ({ ...member, out: member.id === MARIE_LAURE.id }))}
             />
             <RecipeCard
-              title="Salade de poulet, avocat et œuf"
-              mealType="midi"
-              minutes={15}
-              diets={["keto", "gluten_free"]}
-              members={[MARIE_LAURE]}
+              href="#recettes"
+              title="Quiche sans pâte aux épinards et feta"
+              mealTypes={["midi", "soir"]}
+              minutes={40}
+              batch
+              diets={["keto", "vegetarian", "gluten_free"]}
+              members={FAMILY.map((member) => ({ ...member, out: member.id === OTIS.id }))}
             />
             <RecipeCard
+              href="#recettes"
               title="Wraps houmous et crudités"
-              mealType="pique_nique"
+              mealTypes={["pique_nique"]}
               minutes={10}
-              diets={["vegetarian"]}
-              members={[ANNA_LUCIA, OTIS]}
+              diets={["vegetarian", "lactose_free"]}
+              members={FAMILY.map((member) => ({ ...member, out: member.id !== ANNA_LUCIA.id && member.id !== OTIS.id }))}
+            />
+          </div>
+          <div className="mt-6 flex items-center gap-3">
+            <FavoriteDemo />
+            <span className="text-muted-foreground">Le cœur des favoris : touche-le.</span>
+          </div>
+          <h3 className="mt-10 text-xl">Les étapes</h3>
+          <div className="mt-4 max-w-xl">
+            <RecipeSteps
+              steps={[
+                "Fais revenir l’oignon, la carotte et l’ail hachés dans l’huile.",
+                "Verse les tomates, sale, poivre et laisse mijoter 20 minutes.",
+                "Fais cuire 45 minutes au four à 180 °C.",
+              ]}
             />
           </div>
         </Section>
@@ -216,13 +298,14 @@ export default function DesignPage() {
             ))}
             <AppetiteBadge appetite="grand" />
             <BatchBadge />
+            <KidBadge />
             <Badge variant="tomato">Aujourd’hui</Badge>
           </div>
           <h3 className="mt-8 text-xl">Les repas</h3>
           <ul className="mt-3 flex flex-wrap gap-2">
             {MEAL_TYPES.map((meal) => (
-              <li key={meal.value} className="inline-flex h-10 items-center rounded-full border border-border bg-card px-4 font-semibold shadow-soft">
-                <MealLabel type={meal.value} />
+              <li key={meal.value}>
+                <MealPill type={meal.value} />
               </li>
             ))}
           </ul>

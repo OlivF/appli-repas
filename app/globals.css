@@ -264,10 +264,12 @@
 }
 
 /* Le « rebond » au toucher : on s'enfonce vite, on revient en dépassant un peu. */
+/* Seule la taille rebondit : sur les couleurs, la courbe à rebond ferait dépasser puis revenir
+   le fond au survol (l'élément clignote). Les couleurs glissent, plus vite, sans dépasser. */
 @utility press {
   transition-property: transform, background-color, border-color, color, box-shadow;
-  transition-duration: 380ms;
-  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition-duration: 380ms, 160ms, 160ms, 160ms, 160ms;
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1), ease-out, ease-out, ease-out, ease-out;
   &:active:not(:disabled) {
     transform: scale(0.95);
     transition-duration: 90ms;
