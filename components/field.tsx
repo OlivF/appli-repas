@@ -66,3 +66,17 @@ export function ChoiceGroup({ legend, children }: { legend: ReactNode; children:
     </fieldset>
   );
 }
+
+// Rangée de puces de filtre : sur téléphone elle défile au doigt sans prendre de hauteur,
+// sur ordinateur elle passe à la ligne. Le titre n'est lu que par les lecteurs d'écran.
+export function ChoiceRow({ legend, children, className }: { legend: ReactNode; children: ReactNode; className?: string }) {
+  return (
+    <fieldset className={cn("min-w-0", className)}>
+      <legend className="sr-only">{legend}</legend>
+      {/* pb-4 / -mb-3 : de la place pour l'ombre des puces, que le défilement couperait. */}
+      <div className="-mx-5 -mb-3 flex gap-2 overflow-x-auto px-5 pt-1 pb-4 [scrollbar-width:none] sm:mx-0 sm:mb-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-1 [&::-webkit-scrollbar]:hidden [&>*]:shrink-0">
+        {children}
+      </div>
+    </fieldset>
+  );
+}

@@ -33,11 +33,11 @@ insert into public.household_users (household_id, user_id)
 values ('7e57a000-1111-4000-8000-000000000001', '7e57a000-0000-4000-8000-000000000001');
 
 -- Années de naissance calculées sur l'année en cours : les âges restent ceux de CLAUDE.md.
--- created_at échelonné pour garder cet ordre à l'affichage.
-insert into public.members (id, household_id, first_name, birth_year, diets, appetite, created_at)
+-- created_at échelonné pour garder cet ordre à l'affichage ; couleurs 0 à 4 dans cet ordre.
+insert into public.members (id, household_id, first_name, birth_year, diets, appetite, created_at, color)
 select id::uuid, '7e57a000-1111-4000-8000-000000000001', first_name,
        extract(year from now())::int - age, diets::public.diet[], appetite::public.appetite,
-       now() - (5 - position) * interval '1 minute'
+       now() - (5 - position) * interval '1 minute', position - 1
 from (values
   (1, '7e57a000-2222-4000-8000-000000000001', 'Olivier',     40, '{}',     'normal'),
   (2, '7e57a000-2222-4000-8000-000000000002', 'Marie-Laure', 40, '{keto}', 'normal'),

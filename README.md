@@ -29,6 +29,8 @@ Le schéma vit dans `supabase/migrations/`.
 supabase db reset   # repart de zéro : rejoue les migrations, puis supabase/seed.sql
 ```
 
+Le catalogue commun de recettes vit dans la migration `0003_recipe_catalog.sql` : il part en production avec `supabase db push`. `supabase/seed.sql` ne contient que le compte et le foyer de test, à ne jamais pousser en production.
+
 Après un changement de schéma, régénère les types TypeScript :
 
 ```bash

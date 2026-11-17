@@ -36,7 +36,7 @@ export async function loadHousehold() {
   const [membersResult, slotsResult] = await Promise.all([
     supabase
       .from("members")
-      .select("id, first_name, birth_year, diets, appetite")
+      .select("id, first_name, birth_year, diets, appetite, color")
       .eq("household_id", household.id)
       .order("created_at"),
     supabase

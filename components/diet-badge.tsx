@@ -1,4 +1,4 @@
-import { Egg, Leaf, MilkOff, Utensils, WheatOff, type LucideIcon } from "lucide-react";
+import { Egg, Leaf, MilkOff, Smile, Utensils, WheatOff, type LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DIETS, type Appetite, type Diet } from "@/lib/members";
 
@@ -29,6 +29,16 @@ export function AppetiteBadge({ appetite }: { appetite: Appetite }) {
     <Badge variant="tomato">
       <Utensils aria-hidden="true" />
       Grand appétit
+    </Badge>
+  );
+}
+
+// Une recette que les enfants aiment.
+export function KidBadge() {
+  return (
+    <Badge variant="tomato">
+      <Smile aria-hidden="true" />
+      Plaît aux enfants
     </Badge>
   );
 }

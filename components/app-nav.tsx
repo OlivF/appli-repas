@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Suspense } from "react";
 import { motion } from "framer-motion";
 import { BookOpen, CalendarDays, House, ShoppingBasket, type LucideIcon } from "lucide-react";
 import { cn } from "cn";
@@ -11,26 +12,50 @@ export const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/", label: "Semaine", icon: CalendarDays },
   { href: "/recettes", label: "Recettes", icon: BookOpen },
   { href: "/courses", label: "Courses", icon: ShoppingBasket },
-  { href: "/foyer", label: "Foyer", icon: House },
+  // Pour l’instant, le foyer se règle dans les écrans de bienvenue.
+  { href: "/bienvenue/membres", label: "Foyer", icon: House },
 ];
 
 function isActive(href: string, pathname: string) {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 }
 
-// Barre du bas sur téléphone : quatre gros onglets, la pastille glisse vers l'onglet touché.
-// `demo` : affichée dans la page /design, dans le flux et non collée en bas de l'écran.
-export function BottomNav({
-  current,
-  demo = false,
-  onSelect,
-}: {
+type NavProps = {
+  // Adresse à surligner ; par défaut, celle de la page.
   current?: string;
   demo?: boolean;
   onSelect?: (href: string) => void;
-}) {
+};
+
+// La barre d'onglets de l'appli : en bas sur téléphone, sur le côté sur ordinateur.
+// Sous une adresse inconnue au prérendu (/recettes/[id]), lire l'adresse suspend le rendu :
+// la barre s'affiche d'abord sans onglet actif, puis s'allume.
+export function AppNav() {
+  return (
+    <>
+      <Suspense fallback={<SideNavBar active="" />}>
+        <SideNav />
+      </Suspense>
+      <Suspense fallback={<BottomNavBar active="" />}>
+        <BottomNav />
+      </Suspense>
+    </>
+  );
+}
+
+export function BottomNav({ current, ...props }: NavProps) {
   const pathname = usePathname();
-  const active = current ?? pathname;
+  return <BottomNavBar active={current ?? pathname} {...props} />;
+}
+
+export function SideNav({ current, ...props }: NavProps) {
+  const pathname = usePathname();
+  return <SideNavBar active={current ?? pathname} {...props} />;
+}
+
+// Barre du bas sur téléphone : quatre gros onglets, la pastille glisse vers l'onglet touché.
+// `demo` : affichée dans la page /design, dans le flux et non collée en bas de l'écran.
+function BottomNavBar({ active, demo = false, onSelect }: Omit<NavProps, "current"> & { active: string }) {
   return (
     <nav
       aria-label={demo ? "Exemple de navigation" : "Navigation principale"}
@@ -74,17 +99,7 @@ export function BottomNav({
 }
 
 // Barre latérale sur ordinateur (à partir de 1024 px).
-export function SideNav({
-  current,
-  demo = false,
-  onSelect,
-}: {
-  current?: string;
-  demo?: boolean;
-  onSelect?: (href: string) => void;
-}) {
-  const pathname = usePathname();
-  const active = current ?? pathname;
+function SideNavBar({ active, demo = false, onSelect }: Omit<NavProps, "current"> & { active: string }) {
   return (
     <nav
       aria-label={demo ? "Exemple de navigation latérale" : "Navigation principale"}

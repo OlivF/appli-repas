@@ -6,7 +6,7 @@ import { SubmitButton } from "@/components/submit-button";
 import { loadHousehold } from "@/lib/data";
 import { summarizeMeals } from "@/lib/meal-slots";
 import { describeMember } from "@/lib/members";
-import { signOut } from "./connexion/actions";
+import { signOut } from "@/app/connexion/actions";
 
 // Tableau de bord : récapitulatif du foyer.
 export default function HomePage() {
