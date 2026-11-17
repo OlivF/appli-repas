@@ -55,7 +55,11 @@ test("un nouveau compte crée son foyer en trois écrans, puis le modifie", asyn
   await page.getByRole("checkbox", { name: "Dîner samedi : Paul" }).uncheck();
   await page.getByRole("button", { name: "Enregistrer" }).click();
 
-  // Tableau de bord
+  // Fin du parcours : la semaine ; le récapitulatif est dans l'onglet Foyer
+  await expect(page).toHaveURL(/\/semaine$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("La semaine");
+  await page.getByRole("link", { name: "Foyer" }).click();
+  await expect(page).toHaveURL(/\/foyer$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Famille Durand");
   const meals = page.getByRole("region", { name: "Les repas de la semaine" });
   await expect(meals.getByRole("listitem")).toHaveText([
@@ -78,7 +82,7 @@ test("un nouveau compte crée son foyer en trois écrans, puis le modifie", asyn
   await expect(page.getByRole("listitem").filter({ hasText: "Léa" })).toContainText("9 ans");
 
   // Renommer le foyer
-  await page.goto("/");
+  await page.goto("/foyer");
   await page.getByRole("link", { name: "Renommer le foyer" }).click();
   await expect(page.getByLabel("Nom du foyer")).toHaveValue("Famille Durand");
   await page.getByLabel("Nom du foyer").fill("Famille Durand-Martin");

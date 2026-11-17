@@ -12,7 +12,7 @@ export async function saveMealSlots(
   formData: FormData,
 ): Promise<MealSlotsFormState> {
   const selected = formData.getAll("cells").map(String);
-  const { supabase, household, members, slots: existing } = await loadHousehold();
+  const { supabase, household, members, slots: existing, step } = await loadHousehold();
   if (!household) redirect("/bienvenue");
 
   const wanted = slotsFromSelection(
@@ -39,5 +39,6 @@ export async function saveMealSlots(
     if (error) return { error: SAVE_ERROR, selected };
   }
 
-  redirect("/");
+  // Fin du parcours : on découvre la semaine ; sinon, retour au foyer.
+  redirect(step === null ? "/foyer" : "/semaine");
 }

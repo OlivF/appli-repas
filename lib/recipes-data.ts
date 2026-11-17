@@ -3,6 +3,7 @@ import type { AvatarMember } from "@/components/member-avatar";
 import { loadHousehold } from "@/lib/data";
 import type { MealType } from "@/lib/meal-slots";
 import { avatarInitials, type Diet } from "@/lib/members";
+import { mainProtein, type Protein } from "@/lib/planner";
 import type { GroceryAisle, IngredientUnit } from "@/lib/recipes";
 
 export type RecipeMember = AvatarMember & { diets: Diet[] };
@@ -22,9 +23,10 @@ export type ListRecipe = {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// Foyer terminé (sinon retour au parcours de bienvenue) et ses membres, prêts pour les avatars.
-async function loadReadyHousehold() {
-  const { supabase, household, members, step } = await loadHousehold();
+// Foyer terminé (sinon retour au parcours de bienvenue), ses membres prêts pour les avatars,
+// et ses créneaux.
+export async function loadReadyHousehold() {
+  const { supabase, household, members, slots, step } = await loadHousehold();
   if (step !== null || !household) redirect(step ?? "/bienvenue");
   const initials = avatarInitials(members.map((member) => member.first_name));
   const avatars: RecipeMember[] = members.map((member, index) => ({
@@ -34,22 +36,23 @@ async function loadReadyHousehold() {
     initials: initials[index],
     diets: member.diets,
   }));
-  return { supabase, household, members: avatars };
+  return { supabase, household, members: avatars, slots };
 }
 
-// Les recettes du foyer et celles du catalogue qu'il n'a pas copiées, par ordre alphabétique.
-export async function loadRecipeList() {
-  const { supabase, household, members } = await loadReadyHousehold();
+type Client = Awaited<ReturnType<typeof loadReadyHousehold>>["supabase"];
 
+// Les recettes du foyer et celles du catalogue qu'il n'a pas copiées, par ordre alphabétique,
+// avec leur ingrédient principal (pour varier d'un jour à l'autre).
+export async function householdRecipes(supabase: Client, householdId: string): Promise<(ListRecipe & { protein: Protein | null })[]> {
   const [recipesResult, favoritesResult, exclusionsResult] = await Promise.all([
     supabase
       .from("recipes")
       .select(
-        "id, household_id, source_recipe_id, title, photo_url, meal_types, prep_minutes, cook_minutes, diets, batch_friendly, recipe_ingredients(name)",
+        "id, household_id, source_recipe_id, title, photo_url, meal_types, prep_minutes, cook_minutes, diets, batch_friendly, recipe_ingredients(name, aisle, position)",
       )
-      .or(`household_id.is.null,household_id.eq.${household.id}`),
-    supabase.from("recipe_favorites").select("recipe_id").eq("household_id", household.id),
-    supabase.from("recipe_member_exclusions").select("recipe_id, member_id").eq("household_id", household.id),
+      .or(`household_id.is.null,household_id.eq.${householdId}`),
+    supabase.from("recipe_favorites").select("recipe_id").eq("household_id", householdId),
+    supabase.from("recipe_member_exclusions").select("recipe_id, member_id").eq("household_id", householdId),
   ]);
   if (recipesResult.error) throw new Error(recipesResult.error.message);
   if (favoritesResult.error) throw new Error(favoritesResult.error.message);
@@ -58,25 +61,32 @@ export async function loadRecipeList() {
   const favorites = new Set(favoritesResult.data.map((row) => row.recipe_id));
   const copied = new Set(recipesResult.data.map((recipe) => recipe.source_recipe_id).filter(Boolean));
 
-  const recipes: ListRecipe[] = recipesResult.data
+  return recipesResult.data
     .filter((recipe) => !copied.has(recipe.id))
-    .map((recipe) => ({
-      id: recipe.id,
-      title: recipe.title,
-      photo_url: recipe.photo_url,
-      meal_types: recipe.meal_types,
-      minutes: recipe.prep_minutes + recipe.cook_minutes,
-      diets: recipe.diets,
-      batch_friendly: recipe.batch_friendly,
-      ingredientNames: recipe.recipe_ingredients.map((ingredient) => ingredient.name),
-      favorite: favorites.has(recipe.id),
-      excludedIds: exclusionsResult.data
-        .filter((row) => row.recipe_id === recipe.id)
-        .map((row) => row.member_id),
-    }))
+    .map((recipe) => {
+      const ingredients = [...recipe.recipe_ingredients].sort((a, b) => a.position - b.position);
+      return {
+        id: recipe.id,
+        title: recipe.title,
+        photo_url: recipe.photo_url,
+        meal_types: recipe.meal_types,
+        minutes: recipe.prep_minutes + recipe.cook_minutes,
+        diets: recipe.diets,
+        batch_friendly: recipe.batch_friendly,
+        ingredientNames: ingredients.map((ingredient) => ingredient.name),
+        favorite: favorites.has(recipe.id),
+        excludedIds: exclusionsResult.data
+          .filter((row) => row.recipe_id === recipe.id)
+          .map((row) => row.member_id),
+        protein: mainProtein(ingredients),
+      };
+    })
     .sort((a, b) => a.title.localeCompare(b.title, "fr"));
+}
 
-  return { household, members, recipes };
+export async function loadRecipeList() {
+  const { supabase, household, members } = await loadReadyHousehold();
+  return { household, members, recipes: await householdRecipes(supabase, household.id) };
 }
 
 export type RecipeIngredient = {
@@ -140,8 +150,6 @@ export async function loadRecipe(id: string) {
 }
 
 export type KnownIngredient = { name: string; aisle: GroceryAisle; unit: IngredientUnit | null };
-
-type Client = Awaited<ReturnType<typeof loadReadyHousehold>>["supabase"];
 
 // Les ingrédients déjà connus (catalogue et recettes du foyer), pour l'autocomplétion.
 async function knownIngredients(supabase: Client): Promise<KnownIngredient[]> {

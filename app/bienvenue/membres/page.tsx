@@ -93,8 +93,8 @@ async function MembersStep({
           </Link>
           {!onboarding && (
             <p className="text-center">
-              <Link href="/" className="text-link">
-                Retour à l’accueil
+              <Link href="/foyer" className="text-link">
+                Retour au foyer
               </Link>
             </p>
           )}

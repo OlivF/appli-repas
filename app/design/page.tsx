@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { ChoiceChip } from "@/components/choice-chip";
 import { DayCard } from "@/components/day-card";
+import { EmptySlot } from "@/components/empty-slot";
 import { AppetiteBadge, DietBadge, KidBadge } from "@/components/diet-badge";
 import { ChoiceGroup, Field } from "@/components/field";
 import { BasketIllustration, BookIllustration, PlateIllustration, PotIllustration } from "@/components/illustrations";
@@ -21,14 +22,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { WeekPicker } from "@/components/week-picker";
 import { DIETS } from "@/lib/members";
 import { MEAL_TYPES } from "@/lib/meal-slots";
-import { ANNA_LUCIA, FAMILY, MARIE_LAURE, OTIS, PALETTE } from "./demo-data";
+import { dayLabel } from "@/lib/week";
+import { ANNA_LUCIA, FAMILY, MARIE_LAURE, OLIVIER, OTIS, PALETTE } from "./demo-data";
 import {
+  DayStripDemo,
   FavoriteDemo,
+  GridCardsDemo,
   IngredientRowDemo,
+  LibraryDemo,
   MemberToggleDemo,
   NavDemo,
+  PlannedCardsDemo,
   SearchDemo,
   SheetDemo,
   StepDemo,
@@ -330,6 +337,41 @@ export default function DesignPage() {
                 { type: "soir", members: FAMILY },
               ]}
             />
+          </div>
+        </Section>
+
+        <Section
+          title="Le planning"
+          lead="Les plats de la semaine. On touche un plat pour le changer, on le glisse pour l’échanger, le cadenas le garde quand on relance."
+        >
+          <h3 className="text-xl">Choisir la semaine</h3>
+          <div className="mt-3 max-w-md">
+            <WeekPicker label="Semaine du 23 au 29 novembre" relation="next" prevHref="#le-planning" nextHref="#le-planning" />
+          </div>
+
+          <h3 className="mt-10 text-xl">Sur téléphone, un jour à la fois</h3>
+          <p className="mt-1 text-muted-foreground">On balaie d’un jour à l’autre, ou on touche un jour.</p>
+          <div className="mt-4 space-y-4">
+            <DayStripDemo days={[0, 1, 2, 3, 4, 5, 6].map((day) => dayLabel("2026-11-23", day))} />
+            <PlannedCardsDemo family={FAMILY} keto={MARIE_LAURE} />
+            <div className="max-w-md">
+              <EmptySlot label="Choisir le midi de mardi" />
+            </div>
+          </div>
+
+          <h3 className="mt-10 text-xl">Dans la grille, sur ordinateur</h3>
+          <p className="mt-1 text-muted-foreground">Une colonne par jour : la carte se fait étroite.</p>
+          <div className="mt-4 grid max-w-md grid-cols-3 gap-3">
+            <GridCardsDemo family={FAMILY} />
+            <EmptySlot compact label="Choisir le dîner de mercredi" />
+          </div>
+
+          <h3 className="mt-10 text-xl">La Bibliothèque</h3>
+          <p className="mt-1 text-muted-foreground">
+            Chercher, filtrer, et toucher la recette à poser. Ce qui ne convient pas à quelqu’un est signalé et rangé en dernier.
+          </p>
+          <div className="mt-4">
+            <LibraryDemo eaters={[OLIVIER, MARIE_LAURE]} />
           </div>
         </Section>
 

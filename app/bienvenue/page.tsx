@@ -31,7 +31,7 @@ async function HouseholdStep() {
       />
       {renaming && (
         <p className="mt-6 text-center">
-          <Link href="/" className="text-link">
+          <Link href="/foyer" className="text-link">
             Annuler
           </Link>
         </p>

@@ -6,10 +6,13 @@ import { BottomNav, SideNav } from "@/components/app-nav";
 import { Autocomplete } from "@/components/autocomplete";
 import { ChoiceChip } from "@/components/choice-chip";
 import { FavoriteButton } from "@/components/favorite-button";
+import { DayStrip } from "@/components/day-strip";
 import { ChoiceGroup, Field } from "@/components/field";
 import { MemberAvatar } from "@/components/member-avatar";
 import type { CardMember } from "@/components/member-card";
 import { MemberToggle } from "@/components/member-toggle";
+import { PlannedMealCard } from "@/components/planned-meal-card";
+import { RecipeLibrary } from "@/components/recipe-library";
 import { SearchField } from "@/components/search-field";
 import { SwitchField } from "@/components/switch-field";
 import { StepProgress } from "@/components/step-progress";
@@ -26,10 +29,11 @@ import {
 } from "@/components/ui/sheet";
 import { DIETS } from "@/lib/members";
 import { AISLES, UNITS, aisleLabel, incompatibleDiets, type GroceryAisle } from "@/lib/recipes";
+import { DEMO_RECIPES } from "./demo-data";
 
 // Les deux barres de navigation, qu'on peut toucher pour voir la pastille glisser.
 export function NavDemo() {
-  const [current, setCurrent] = useState("/");
+  const [current, setCurrent] = useState("/semaine");
   return (
     <div className="grid items-start gap-8 lg:grid-cols-[16rem_1fr]">
       <figure className="hidden space-y-3 lg:block">
@@ -229,5 +233,79 @@ export function SwitchDemo() {
       checked={batch}
       onCheckedChange={setBatch}
     />
+  );
+}
+
+// La barre des jours du téléphone : la pastille glisse vers le jour touché.
+export function DayStripDemo({ days }: { days: { short: string; long: string; date: string }[] }) {
+  const [active, setActive] = useState(0);
+  return <DayStrip days={days} active={active} onSelect={setActive} layoutId="day-strip-demo" className="max-w-md" />;
+}
+
+// Trois cartes du dîner : le plat de la famille, celui de Marie-Laure (verrouillé), et un plat
+// qui ne lui convient pas. Touche le cadenas, ou « Autre idée » pour passer à la recette suivante.
+export function PlannedCardsDemo({ family, keto }: { family: CardMember[]; keto: CardMember }) {
+  const [locked, setLocked] = useState([false, true, false]);
+  const [ideas, setIdeas] = useState([3, 1, 2]);
+  const eaters = [
+    family.filter((member) => member.id !== keto.id),
+    [keto],
+    family.map((member) => ({ ...member, out: member.id === keto.id })),
+  ];
+  return (
+    <ul className="max-w-md space-y-3">
+      {eaters.map((cardEaters, index) => {
+        const dish = DEMO_RECIPES[ideas[index] % DEMO_RECIPES.length];
+        return (
+          <li key={index}>
+            <PlannedMealCard
+              recipe={{ title: dish.title, minutes: dish.minutes, photo_url: null, mealType: "soir" }}
+              eaters={cardEaters}
+              household={family}
+              locked={locked[index]}
+              onToggleLock={() => setLocked((current) => current.map((on, i) => (i === index ? !on : on)))}
+              onAnotherIdea={() => setIdeas((current) => current.map((idea, i) => (i === index ? idea + 1 : idea)))}
+            />
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+// Les mêmes cartes, étroites, comme dans la grille de l'ordinateur ; la seconde est verrouillée.
+export function GridCardsDemo({ family }: { family: CardMember[] }) {
+  const [locked, setLocked] = useState([false, true]);
+  const dishes = [
+    { title: DEMO_RECIPES[0].title, minutes: 30, photo_url: null, mealType: "soir" as const },
+    { title: "Pancakes moelleux", minutes: 30, photo_url: null, mealType: "petit_dej" as const },
+  ];
+  return (
+    <>
+      {dishes.map((dish, index) => (
+        <PlannedMealCard
+          key={dish.title}
+          layout="column"
+          recipe={dish}
+          eaters={family}
+          locked={locked[index]}
+          onToggleLock={() => setLocked((current) => current.map((on, i) => (i === index ? !on : on)))}
+          onAnotherIdea={() => {}}
+        />
+      ))}
+    </>
+  );
+}
+
+// La Bibliothèque, filtrée sur le dîner, pour Marie-Laure et Olivier.
+export function LibraryDemo({ eaters }: { eaters: CardMember[] }) {
+  const [picked, setPicked] = useState<string | null>(null);
+  return (
+    <div className="max-w-md rounded-3xl border border-border/70 bg-card p-4 shadow-soft">
+      <RecipeLibrary recipes={DEMO_RECIPES} mealType="soir" eaters={eaters} onPick={(recipe) => setPicked(recipe.title)} />
+      <p role="status" className="mt-4 text-[0.9375rem] text-muted-foreground">
+        {picked ? `Choisie : ${picked}` : "Touche une recette pour la choisir."}
+      </p>
+    </div>
   );
 }

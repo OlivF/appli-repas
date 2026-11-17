@@ -9,15 +9,14 @@ import { cn } from "cn";
 import { Logo } from "@/components/logo";
 
 export const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
-  { href: "/", label: "Semaine", icon: CalendarDays },
+  { href: "/semaine", label: "Semaine", icon: CalendarDays },
   { href: "/recettes", label: "Recettes", icon: BookOpen },
   { href: "/courses", label: "Courses", icon: ShoppingBasket },
-  // Pour l’instant, le foyer se règle dans les écrans de bienvenue.
-  { href: "/bienvenue/membres", label: "Foyer", icon: House },
+  { href: "/foyer", label: "Foyer", icon: House },
 ];
 
 function isActive(href: string, pathname: string) {
-  return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 type NavProps = {

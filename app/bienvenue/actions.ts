@@ -23,7 +23,7 @@ export async function saveHousehold(
       .eq("id", household.id);
     if (error) return { error: SAVE_ERROR, name: submitted };
     // Foyer déjà complet : on revient au tableau de bord.
-    redirect(step === null ? "/" : "/bienvenue/membres");
+    redirect(step === null ? "/foyer" : "/bienvenue/membres");
   }
 
   const { error } = await supabase.rpc("create_household", { household_name: parsed.name });
