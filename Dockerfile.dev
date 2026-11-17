@@ -1,0 +1,17 @@
+# Image de développement : le code est monté en volume, rien n'est copié ici.
+FROM node:26
+
+# node_modules vit dans un volume nommé. On crée le dossier à l'avance pour que
+# le volume appartienne à l'utilisateur node (uid 1000) et pas à root.
+RUN mkdir -p /app/node_modules && chown -R node:node /app
+
+WORKDIR /app
+# Même uid que l'utilisateur du poste WSL : les fichiers créés ne sont pas à root.
+USER node
+
+ENV NEXT_TELEMETRY_DISABLED=1
+
+EXPOSE 3000
+
+# npm install à chaque démarrage garde le volume node_modules à jour.
+CMD ["sh", "-c", "npm install && npm run dev"]

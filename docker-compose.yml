@@ -1,0 +1,35 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    environment:
+      # Le serveur Next.js (dans ce conteneur) joint Supabase local via l'hôte Docker.
+      # Le navigateur, lui, utilise NEXT_PUBLIC_SUPABASE_URL (http://127.0.0.1:54321) de .env.local.
+      SUPABASE_INTERNAL_URL: http://host.docker.internal:54321
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # Tests Playwright : docker compose run --rm e2e (avec `docker compose up` lancé à côté).
+  # Ce service partage le réseau de `web`, donc l'appli y est sur http://localhost:3000.
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.65.1-noble
+    profiles: ["test"]
+    network_mode: "service:web"
+    ipc: host
+    working_dir: /app
+    user: "1000:1000"
+    environment:
+      HOME: /tmp
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    command: npx playwright test
+
+volumes:
+  node_modules:

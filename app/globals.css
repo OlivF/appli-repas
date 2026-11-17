@@ -1,0 +1,207 @@
+@import "tailwindcss";
+
+/* Émail de cuisine : blanc légèrement bleuté, bord cobalt. */
+@theme {
+  --color-enamel: #f6f8fb; /* fond de page */
+  --color-tray: #ffffff; /* plateaux, champs */
+  --color-ink: #1b2433; /* texte */
+  --color-ink-soft: #4b5567; /* texte secondaire (7:1 sur le fond) */
+  --color-rim: #2346a0; /* cobalt : actions, cases cochées */
+  --color-rim-deep: #1a3478; /* cobalt appuyé */
+  --color-rim-pale: #e3e9f6; /* cobalt très clair */
+  --color-control: #7d8aa3; /* contour des champs (3,5:1 sur blanc) */
+  --color-line: #d5dce8; /* séparateurs */
+  --color-danger: #a12c2c;
+}
+
+@theme inline {
+  --font-sans: var(--font-atkinson), ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    min-height: 100dvh;
+    background: var(--color-enamel);
+    color: var(--color-ink);
+    font-family: var(--font-atkinson), ui-sans-serif, system-ui, sans-serif;
+    font-size: 1.125rem;
+    line-height: 1.55;
+    /* Le bord cobalt d'une assiette émaillée. */
+    border-top: 6px solid var(--color-rim);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-rim);
+    outline-offset: 3px;
+  }
+
+  a,
+  button,
+  input,
+  label {
+    touch-action: manipulation;
+  }
+}
+
+@layer components {
+  .page-title {
+    font-size: 2rem;
+    line-height: 1.15;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  .section-title {
+    font-size: 1.375rem;
+    line-height: 1.25;
+    font-weight: 800;
+  }
+
+  .lead {
+    margin-top: 0.75rem;
+    color: var(--color-ink-soft);
+    max-width: 34ch;
+  }
+
+  /* Boutons */
+  .btn {
+    display: inline-flex;
+    width: 100%;
+    min-height: 3.5rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1.5rem;
+    border: 2px solid transparent;
+    border-radius: 999px;
+    font-size: 1.125rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .btn-primary {
+    background: var(--color-rim);
+    color: #fff;
+  }
+  .btn-primary:hover {
+    background: var(--color-rim-deep);
+  }
+  .btn-secondary {
+    background: var(--color-tray);
+    border-color: var(--color-rim);
+    color: var(--color-rim);
+  }
+  .btn-secondary:hover {
+    background: var(--color-rim-pale);
+  }
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: progress;
+  }
+
+  .text-link {
+    color: var(--color-rim);
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+    padding: 0.5rem 0;
+  }
+
+  /* Champs */
+  .field-label {
+    display: block;
+    margin-bottom: 0.375rem;
+    font-weight: 700;
+  }
+  .field-input {
+    width: 100%;
+    min-height: 3.25rem;
+    padding: 0 1rem;
+    border: 2px solid var(--color-control);
+    border-radius: 0.875rem;
+    background: var(--color-tray);
+    color: var(--color-ink);
+    font: inherit;
+  }
+  .field-input:focus {
+    border-color: var(--color-rim);
+  }
+  .field-input[aria-invalid="true"] {
+    border-color: var(--color-danger);
+  }
+  .field-help {
+    margin-top: 0.375rem;
+    font-size: 1rem;
+    color: var(--color-ink-soft);
+  }
+  .field-error {
+    margin-top: 0.375rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-danger);
+  }
+
+  /* Choix à cocher (régimes, appétit) : tout le cadre est cliquable. */
+  .choice {
+    display: inline-flex;
+    min-height: 3rem;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0 1rem;
+    border: 2px solid var(--color-line);
+    border-radius: 999px;
+    background: var(--color-tray);
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .choice:has(input:checked) {
+    border-color: var(--color-rim);
+    background: var(--color-rim-pale);
+    color: var(--color-rim-deep);
+  }
+  .choice input {
+    width: 1.25rem;
+    height: 1.25rem;
+    accent-color: var(--color-rim);
+  }
+
+  /* Grille des repas : une pastille émaillée par personne et par jour. */
+  .meal-check {
+    appearance: none;
+    display: block;
+    width: 2.75rem;
+    height: 2.75rem;
+    margin: 0 auto;
+    border: 2px solid var(--color-control);
+    border-radius: 999px;
+    background: var(--color-tray);
+    cursor: pointer;
+  }
+  .meal-check:checked {
+    border-color: var(--color-rim);
+    background-color: var(--color-rim);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 60%;
+  }
+  .meal-check:active {
+    transform: scale(0.94);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .meal-check {
+      transition:
+        background-color 120ms ease-out,
+        border-color 120ms ease-out,
+        transform 80ms ease-out;
+    }
+  }
+}
