@@ -1,42 +1,244 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-/* Émail de cuisine : blanc légèrement bleuté, bord cobalt. */
-@theme {
-  --color-enamel: #f6f8fb; /* fond de page */
-  --color-tray: #ffffff; /* plateaux, champs */
-  --color-ink: #1b2433; /* texte */
-  --color-ink-soft: #4b5567; /* texte secondaire (7:1 sur le fond) */
-  --color-rim: #2346a0; /* cobalt : actions, cases cochées */
-  --color-rim-deep: #1a3478; /* cobalt appuyé */
-  --color-rim-pale: #e3e9f6; /* cobalt très clair */
-  --color-control: #7d8aa3; /* contour des champs (3,5:1 sur blanc) */
-  --color-line: #d5dce8; /* séparateurs */
-  --color-danger: #a12c2c;
+/*
+ * « Cuisine de famille » : crème, brun, tomate, avec sauge, moutarde et prune en accents.
+ * Toutes les couleurs sont des variables : le mode sombre suit le réglage du téléphone.
+ * data-theme="dark" | "light" sur <html> force l'un ou l'autre (interrupteur de /design).
+ * Contrastes vérifiés (WCAG AA) : texte ≥ 4,5:1, contours et gros libellés ≥ 3:1.
+ */
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+}
+
+:root {
+  color-scheme: light;
+
+  --background: #fbf7f0; /* crème */
+  --foreground: #2b2118; /* brun très foncé */
+  --card: #fffdf9;
+  --card-foreground: #2b2118;
+  --popover: #fffdf9;
+  --popover-foreground: #2b2118;
+
+  /* Tomate : boutons principaux (libellé gros et gras : 3,7:1), grandes surfaces. */
+  --primary: #e4572e;
+  --primary-hover: #d44c24;
+  --primary-foreground: #ffffff;
+  /* Tomate foncée : liens et texte en tomate (5,2:1 sur crème). */
+  --link: #b6431f;
+
+  --secondary: #f3ece0;
+  --secondary-foreground: #2b2118;
+  --muted: #f3ece0;
+  --muted-foreground: #6e5d4e; /* 5,9:1 sur crème */
+  --accent: #f3ece0;
+  --accent-foreground: #2b2118;
+  --destructive: #b42318;
+  --border: #e9dfd0; /* séparateurs, bords de carte */
+  --input: #9a8572; /* contour des champs : 3,5:1 */
+  --ring: #e4572e;
+
+  /* Accents, chacun en trois tons : vif (décor), doux (fond), foncé (texte sur le doux). */
+  --tomato-soft: #fce5dc;
+  --tomato-deep: #a33c1b;
+  --sage: #7c9a6d;
+  --sage-soft: #e5eddd;
+  --sage-deep: #4e6b42;
+  --mustard: #e9b44c;
+  --mustard-soft: #faedcf;
+  --mustard-deep: #7a560c;
+  --plum: #6d3b47;
+  --plum-soft: #f2e3e6;
+  --plum-deep: #6d3b47;
+  --oat-soft: #f0e7da;
+  --oat-deep: #5c4a3b;
+
+  /* Ombres chaudes (brun, jamais gris). */
+  --shadow-color: 92 58 32;
+  --shadow-soft: 0 1px 2px rgb(var(--shadow-color) / 0.06), 0 8px 24px -10px rgb(var(--shadow-color) / 0.2);
+  --shadow-lift: 0 2px 4px rgb(var(--shadow-color) / 0.06), 0 18px 36px -14px rgb(var(--shadow-color) / 0.28);
+
+  /* Une couleur pastel par membre (fond, initiale). Attribuée à l'ajout, de 0 à 7. */
+  --member-0-bg: #fad8cb; /* tomate */
+  --member-0-fg: #8a2f14;
+  --member-1-bg: #dae7d1; /* sauge */
+  --member-1-fg: #3c5631;
+  --member-2-bg: #f7e4b2; /* moutarde */
+  --member-2-fg: #73510a;
+  --member-3-bg: #ebd4da; /* prune */
+  --member-3-fg: #5e2f3a;
+  --member-4-bg: #d3e4f0; /* ciel */
+  --member-4-fg: #2b4f6b;
+  --member-5-bg: #e1dbf2; /* lavande */
+  --member-5-fg: #483a78;
+  --member-6-bg: #cdeae1; /* menthe */
+  --member-6-fg: #1f5c4b;
+  --member-7-bg: #fadfc4; /* abricot */
+  --member-7-fg: #7e4c17;
+
+  --radius: 1rem;
+
+  @variant dark {
+    color-scheme: dark;
+
+    --background: #1e1611; /* chocolat */
+    --foreground: #f6eee3; /* crème */
+    --card: #2a201a;
+    --card-foreground: #f6eee3;
+    --popover: #2a201a;
+    --popover-foreground: #f6eee3;
+
+    /* Sur fond sombre, une tomate plus vive avec un libellé chocolat (5,8:1). */
+    --primary: #f06a43;
+    --primary-hover: #f47f5c;
+    --primary-foreground: #1e1611;
+    --link: #ff8a65;
+
+    --secondary: #33281f;
+    --secondary-foreground: #f6eee3;
+    --muted: #33281f;
+    --muted-foreground: #c4b3a1;
+    --accent: #3a2e25;
+    --accent-foreground: #f6eee3;
+    --destructive: #ff7b6b;
+    --border: #3d3027;
+    --input: #8a7663;
+    --ring: #f06a43;
+
+    --tomato-soft: #4a2618;
+    --tomato-deep: #ffb59c;
+    --sage-soft: #2c3a27;
+    --sage-deep: #b9d0ac;
+    --mustard-soft: #3d3118;
+    --mustard-deep: #f1cf85;
+    --plum-soft: #3e2830;
+    --plum-deep: #ebc3cd;
+    --oat-soft: #3a2e25;
+    --oat-deep: #e6d8c6;
+
+    --shadow-color: 0 0 0;
+    --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -10px rgb(0 0 0 / 0.55);
+    --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.3), 0 18px 36px -14px rgb(0 0 0 / 0.65);
+
+    --member-0-bg: #5b2617;
+    --member-0-fg: #fcd9cc;
+    --member-1-bg: #2f4229;
+    --member-1-fg: #d5e6cb;
+    --member-2-bg: #4c3a12;
+    --member-2-fg: #f6e2ae;
+    --member-3-bg: #4a2730;
+    --member-3-fg: #f0d5dc;
+    --member-4-bg: #1f3a4f;
+    --member-4-fg: #d3e6f3;
+    --member-5-bg: #352c55;
+    --member-5-fg: #e2dcf6;
+    --member-6-bg: #1a4238;
+    --member-6-fg: #c9ede1;
+    --member-7-bg: #553517;
+    --member-7-fg: #fbe0c4;
+  }
 }
 
 @theme inline {
-  --font-sans: var(--font-atkinson), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-fraunces), ui-serif, Georgia, serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-link: var(--link);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-tomato: #e4572e;
+  --color-tomato-soft: var(--tomato-soft);
+  --color-tomato-deep: var(--tomato-deep);
+  --color-sage: var(--sage);
+  --color-sage-soft: var(--sage-soft);
+  --color-sage-deep: var(--sage-deep);
+  --color-mustard: var(--mustard);
+  --color-mustard-soft: var(--mustard-soft);
+  --color-mustard-deep: var(--mustard-deep);
+  --color-plum: var(--plum);
+  --color-plum-soft: var(--plum-soft);
+  --color-plum-deep: var(--plum-deep);
+  --color-oat-soft: var(--oat-soft);
+  --color-oat-deep: var(--oat-deep);
+
+  --shadow-soft: var(--shadow-soft);
+  --shadow-lift: var(--shadow-lift);
+
+  /* Coins : 12 px (petits éléments), 16 px (champs), 20-24 px (cartes), rond (boutons, puces). */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: var(--radius);
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+  --radius-4xl: 2.5rem;
 }
 
 @layer base {
   html {
-    color-scheme: light;
     -webkit-tap-highlight-color: transparent;
+    font-family: var(--font-sans);
   }
 
   body {
     min-height: 100dvh;
-    background: var(--color-enamel);
-    color: var(--color-ink);
-    font-family: var(--font-atkinson), ui-sans-serif, system-ui, sans-serif;
-    font-size: 1.125rem;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-size: 1.0625rem;
     line-height: 1.55;
-    /* Le bord cobalt d'une assiette émaillée. */
-    border-top: 6px solid var(--color-rim);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  ::selection {
+    background-color: var(--tomato-soft);
+    color: var(--foreground);
+  }
+
+  /* Fraunces « adouci » : des empattements arrondis, plus gourmands que savants. */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-variation-settings: "SOFT" 100;
+    letter-spacing: -0.012em;
+    text-wrap: balance;
   }
 
   :focus-visible {
-    outline: 3px solid var(--color-rim);
+    outline: 3px solid var(--ring);
     outline-offset: 3px;
   }
 
@@ -46,30 +248,120 @@
   label {
     touch-action: manipulation;
   }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* Titres réutilisables. */
+@utility font-heading {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-variation-settings: "SOFT" 100;
+  letter-spacing: -0.012em;
+}
+
+/* Le « rebond » au toucher : on s'enfonce vite, on revient en dépassant un peu. */
+@utility press {
+  transition-property: transform, background-color, border-color, color, box-shadow;
+  transition-duration: 380ms;
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+  &:active:not(:disabled) {
+    transform: scale(0.95);
+    transition-duration: 90ms;
+    transition-timing-function: ease-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    transition-duration: 0ms;
+    &:active:not(:disabled) {
+      transform: none;
+    }
+  }
+}
+
+/* Carte qui se soulève au survol (seulement pour les cartes qu'on peut toucher). */
+@utility lift {
+  transition-property: transform, box-shadow;
+  transition-duration: 220ms;
+  transition-timing-function: ease-out;
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lift);
+    }
+  }
+}
+
+@layer components {
+  /* Grille des repas : une pastille par personne et par jour. */
+  .meal-check {
+    appearance: none;
+    display: block;
+    width: 2.75rem;
+    height: 2.75rem;
+    margin: 0 auto;
+    border: 2px solid var(--input);
+    border-radius: 999px;
+    background: var(--card);
+    cursor: pointer;
+  }
+  .meal-check:checked {
+    border-color: var(--primary);
+    background-color: var(--primary);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 60%;
+  }
+  .meal-check:active {
+    transform: scale(0.9);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .meal-check {
+      transition:
+        background-color 120ms ease-out,
+        border-color 120ms ease-out,
+        transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+  }
+}
+
+/* ------------------------------------------------------------------------------------------
+ * TRANSITION : anciennes classes des pages de l'étape 1, retirées quand chaque page est refaite.
+ * ------------------------------------------------------------------------------------------ */
+@theme {
+  --color-enamel: var(--background);
+  --color-tray: var(--card);
+  --color-ink: var(--foreground);
+  --color-ink-soft: var(--muted-foreground);
+  --color-rim: var(--link);
+  --color-rim-deep: var(--tomato-deep);
+  --color-rim-pale: var(--tomato-soft);
+  --color-control: var(--input);
+  --color-line: var(--border);
+  --color-danger: var(--destructive);
 }
 
 @layer components {
   .page-title {
+    font-family: var(--font-heading);
     font-size: 2rem;
     line-height: 1.15;
-    font-weight: 800;
-    letter-spacing: -0.01em;
-    text-wrap: balance;
+    font-weight: 600;
   }
-
   .section-title {
+    font-family: var(--font-heading);
     font-size: 1.375rem;
     line-height: 1.25;
-    font-weight: 800;
+    font-weight: 600;
   }
-
   .lead {
     margin-top: 0.75rem;
-    color: var(--color-ink-soft);
+    color: var(--muted-foreground);
     max-width: 34ch;
   }
-
-  /* Boutons */
   .btn {
     display: inline-flex;
     width: 100%;
@@ -81,41 +373,29 @@
     border-radius: 999px;
     font-size: 1.125rem;
     font-weight: 700;
-    line-height: 1.2;
-    text-align: center;
     text-decoration: none;
     cursor: pointer;
   }
   .btn-primary {
-    background: var(--color-rim);
-    color: #fff;
-  }
-  .btn-primary:hover {
-    background: var(--color-rim-deep);
+    background: var(--primary);
+    color: var(--primary-foreground);
   }
   .btn-secondary {
-    background: var(--color-tray);
-    border-color: var(--color-rim);
-    color: var(--color-rim);
-  }
-  .btn-secondary:hover {
-    background: var(--color-rim-pale);
+    background: var(--card);
+    border-color: var(--link);
+    color: var(--link);
   }
   .btn:disabled {
     opacity: 0.6;
-    cursor: progress;
   }
-
-  .text-link {
-    color: var(--color-rim);
+  .text-link:not([data-slot]) {
+    color: var(--link);
     font-weight: 700;
     text-decoration: underline;
     text-decoration-thickness: 2px;
     text-underline-offset: 4px;
     padding: 0.5rem 0;
   }
-
-  /* Champs */
   .field-label {
     display: block;
     margin-bottom: 0.375rem;
@@ -125,83 +405,43 @@
     width: 100%;
     min-height: 3.25rem;
     padding: 0 1rem;
-    border: 2px solid var(--color-control);
+    border: 2px solid var(--input);
     border-radius: 0.875rem;
-    background: var(--color-tray);
-    color: var(--color-ink);
+    background: var(--card);
+    color: var(--foreground);
     font: inherit;
-  }
-  .field-input:focus {
-    border-color: var(--color-rim);
-  }
-  .field-input[aria-invalid="true"] {
-    border-color: var(--color-danger);
   }
   .field-help {
     margin-top: 0.375rem;
     font-size: 1rem;
-    color: var(--color-ink-soft);
+    color: var(--muted-foreground);
   }
   .field-error {
     margin-top: 0.375rem;
     font-size: 1rem;
     font-weight: 700;
-    color: var(--color-danger);
+    color: var(--destructive);
   }
-
-  /* Choix à cocher (régimes, appétit) : tout le cadre est cliquable. */
   .choice {
     display: inline-flex;
     min-height: 3rem;
     align-items: center;
     gap: 0.625rem;
     padding: 0 1rem;
-    border: 2px solid var(--color-line);
+    border: 2px solid var(--border);
     border-radius: 999px;
-    background: var(--color-tray);
+    background: var(--card);
     font-weight: 700;
     cursor: pointer;
   }
   .choice:has(input:checked) {
-    border-color: var(--color-rim);
-    background: var(--color-rim-pale);
-    color: var(--color-rim-deep);
+    border-color: var(--primary);
+    background: var(--tomato-soft);
+    color: var(--tomato-deep);
   }
   .choice input {
     width: 1.25rem;
     height: 1.25rem;
-    accent-color: var(--color-rim);
-  }
-
-  /* Grille des repas : une pastille émaillée par personne et par jour. */
-  .meal-check {
-    appearance: none;
-    display: block;
-    width: 2.75rem;
-    height: 2.75rem;
-    margin: 0 auto;
-    border: 2px solid var(--color-control);
-    border-radius: 999px;
-    background: var(--color-tray);
-    cursor: pointer;
-  }
-  .meal-check:checked {
-    border-color: var(--color-rim);
-    background-color: var(--color-rim);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: 60%;
-  }
-  .meal-check:active {
-    transform: scale(0.94);
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    .meal-check {
-      transition:
-        background-color 120ms ease-out,
-        border-color 120ms ease-out,
-        transform 80ms ease-out;
-    }
+    accent-color: var(--primary);
   }
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { formData } from "@/test/helpers";
-import { describeMember, parseMemberForm, shortNames } from "./members";
+import { avatarInitials, describeMember, parseMemberForm, shortNames } from "./members";
 
 describe("parseMemberForm", () => {
   it("transforme l'âge saisi en année de naissance", () => {
@@ -86,5 +86,29 @@ describe("describeMember", () => {
     [{ birth_year: 2026, diets: [], appetite: "normal" }, "moins d'un an"],
   ] as const)("décrit %j comme « %s »", (member, expected) => {
     expect(describeMember({ ...member, diets: [...member.diets] }, 2026)).toBe(expected);
+  });
+});
+
+describe("avatarInitials", () => {
+  it("garde une seule lettre quand elle suffit à distinguer chacun", () => {
+    expect(avatarInitials(["Marie-Laure", "Timothé", "Anna-Lucia"])).toEqual(["M", "T", "A"]);
+  });
+
+  it("passe à deux lettres pour les prénoms qui commencent pareil", () => {
+    expect(avatarInitials(["Olivier", "Marie-Laure", "Timothé", "Anna-Lucia", "Otis"])).toEqual([
+      "Ol",
+      "M",
+      "T",
+      "A",
+      "Ot",
+    ]);
+  });
+
+  it("prend l'initiale de chaque partie d'un prénom composé", () => {
+    expect(avatarInitials(["Marie-Laure", "Marc"])).toEqual(["ML", "Ma"]);
+  });
+
+  it("met la première lettre en majuscule, accents compris", () => {
+    expect(avatarInitials(["élodie", "éric"])).toEqual(["Él", "Ér"]);
   });
 });

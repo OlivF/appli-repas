@@ -14,11 +14,11 @@ export const DAYS = [
 ] as const;
 
 // Dans l'ordre de la journée.
-export const MEAL_TYPES: { value: MealType; label: string }[] = [
-  { value: "petit_dej", label: "Petit-déj" },
-  { value: "midi", label: "Midi" },
-  { value: "pique_nique", label: "Pique-nique" },
-  { value: "soir", label: "Dîner" },
+export const MEAL_TYPES: { value: MealType; label: string; emoji: string }[] = [
+  { value: "petit_dej", label: "Petit-déj", emoji: "☕" },
+  { value: "midi", label: "Midi", emoji: "🥗" },
+  { value: "pique_nique", label: "Pique-nique", emoji: "🧺" },
+  { value: "soir", label: "Dîner", emoji: "🍲" },
 ];
 
 // Cochés d'office pour tout le monde.

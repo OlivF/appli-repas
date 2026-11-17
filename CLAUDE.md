@@ -28,6 +28,13 @@ Appli web multi-utilisateurs : chaque compte crée son foyer, ses membres, ses r
 - Textes de l'interface en français, au tutoiement ; code et noms de tables en anglais.
 - Simplicité avant tout : peu d'écrans, gros boutons, zéro jargon.
 
+## Design
+
+- Direction « cuisine de famille » : chaleureux, gourmand, mobile d'abord. Détail dans PROMPT-design.md ; la page `/design` fait référence.
+- shadcn/ui avec thème personnalisé, framer-motion pour les micro-animations, lucide-react pour les icônes.
+- Couleurs en variables CSS (fond crème, tomate, sauge, moutarde, prune), mode sombre prévu. Titres Fraunces, texte Inter.
+- Chaque nouvel écran réutilise les composants existants ; pas de style ad hoc.
+
 ## Modèle de données (cible)
 
 - `households` : un foyer. `household_users` : comptes liés à un foyer (pour partager entre conjoints).

@@ -1,14 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { Atkinson_Hyperlegible_Next } from "next/font/google";
+import { Fraunces, Inter } from "next/font/google";
+import { MotionProvider } from "@/components/motion-provider";
 import "./globals.css";
 
-// Police très lisible, y compris pour les enfants qui lisent leur prénom dans la grille.
-const atkinson = Atkinson_Hyperlegible_Next({
+// Titres : Fraunces, avec son axe SOFT pour des empattements arrondis, « livre de cuisine ».
+const fraunces = Fraunces({
   subsets: ["latin", "latin-ext"],
-  variable: "--font-atkinson",
-  // Next.js n'a pas les métriques de cette police pour ajuster la police de secours.
-  adjustFontFallback: false,
-  fallback: ["system-ui", "sans-serif"],
+  variable: "--font-fraunces",
+  axes: ["SOFT", "opsz"],
+});
+
+// Texte : Inter, très lisible à petite taille sur téléphone.
+const inter = Inter({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
@@ -17,13 +22,18 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#2346a0",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fbf7f0" },
+    { media: "(prefers-color-scheme: dark)", color: "#1e1611" },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="fr" className={atkinson.variable}>
-      <body>{children}</body>
+    <html lang="fr" className={`${fraunces.variable} ${inter.variable}`}>
+      <body>
+        <MotionProvider>{children}</MotionProvider>
+      </body>
     </html>
   );
 }

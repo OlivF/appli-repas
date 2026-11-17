@@ -2,8 +2,10 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { AUTH_COOKIE_NAME, SUPABASE_ANON_KEY, serverSupabaseUrl } from "./config";
 
-// Pages accessibles sans être connecté.
+// Pages accessibles sans être connecté (et dont on écarte un compte connecté).
 const PUBLIC_PATHS = ["/connexion"];
+// Pages ouvertes à tous, connecté ou non : la référence visuelle, sans aucune donnée.
+const OPEN_PATHS = ["/design"];
 
 // Rafraîchit la session Supabase à chaque requête et protège les pages privées.
 export async function updateSession(request: NextRequest) {
@@ -31,6 +33,7 @@ export async function updateSession(request: NextRequest) {
   const isLoggedIn = Boolean(data?.claims);
 
   const { pathname } = request.nextUrl;
+  if (OPEN_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))) return response;
   const isPublic = PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 
   if (!isLoggedIn && !isPublic) return redirectKeepingCookies(request, "/connexion", response);

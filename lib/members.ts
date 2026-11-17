@@ -4,11 +4,12 @@ export type Diet = Database["public"]["Enums"]["diet"];
 export type Appetite = Database["public"]["Enums"]["appetite"];
 
 // Liste fixe : elle servira à filtrer les recettes compatibles.
-export const DIETS: { value: Diet; label: string }[] = [
-  { value: "keto", label: "Cétogène" },
-  { value: "vegetarian", label: "Végétarien" },
-  { value: "gluten_free", label: "Sans gluten" },
-  { value: "lactose_free", label: "Sans lactose" },
+// `short` : libellé des pastilles, là où la place manque.
+export const DIETS: { value: Diet; label: string; short: string }[] = [
+  { value: "keto", label: "Cétogène", short: "Céto" },
+  { value: "vegetarian", label: "Végétarien", short: "Végétarien" },
+  { value: "gluten_free", label: "Sans gluten", short: "Sans gluten" },
+  { value: "lactose_free", label: "Sans lactose", short: "Sans lactose" },
 ];
 
 export type MemberInput = {
@@ -41,7 +42,7 @@ export function parseMemberForm(form: FormData, currentYear: number): MemberForm
 
   const age = /^\d+$/.test(ageText) ? Number(ageText) : NaN;
   if (Number.isNaN(age) || age > MAX_AGE) {
-    errors.age = "Indique un âge en années, par exemple 9.";
+    errors.age = "Indique un âge en années, par exemple 9.";
   }
 
   if (errors.first_name || errors.age) return { ok: false, errors };
@@ -96,4 +97,31 @@ export function describeMember(
   }
   if (member.appetite === "grand") parts.push("grand appétit");
   return parts.join(", ");
+}
+
+// Lettres des avatars : l'initiale, ou deux lettres quand deux prénoms commencent pareil
+// (Olivier « Ol », Otis « Ot » ; Marie-Laure « ML », Marc « Ma »).
+export function avatarInitials(names: string[]): string[] {
+  const initials = names.map((name) => capitalize(firstLetters(name, 1)));
+  return names.map((name, index) => {
+    const shared = initials.filter((initial) => initial === initials[index]).length > 1;
+    if (!shared) return initials[index];
+    const parts = splitName(name);
+    return parts.length > 1
+      ? parts.map((part) => capitalize(firstLetters(part, 1))).join("")
+      : capitalize(firstLetters(name, 2));
+  });
+}
+
+function splitName(name: string) {
+  return name.trim().split(/[\s-]+/).filter(Boolean);
+}
+
+function firstLetters(text: string, count: number) {
+  return [...text.trim()].slice(0, count).join("");
+}
+
+function capitalize(text: string) {
+  const [first = "", ...rest] = [...text];
+  return first.toLocaleUpperCase("fr") + rest.join("").toLocaleLowerCase("fr");
 }
