@@ -6,7 +6,6 @@ import { Suspense } from "react";
 import { motion } from "framer-motion";
 import { BookOpen, CalendarDays, House, ShoppingBasket, type LucideIcon } from "lucide-react";
 import { cn } from "cn";
-import { Logo } from "@/components/logo";
 
 export const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/semaine", label: "Semaine", icon: CalendarDays },
@@ -26,19 +25,14 @@ type NavProps = {
   onSelect?: (href: string) => void;
 };
 
-// La barre d'onglets de l'appli : en bas sur téléphone, sur le côté sur ordinateur.
-// Sous une adresse inconnue au prérendu (/recettes/[id]), lire l'adresse suspend le rendu :
-// la barre s'affiche d'abord sans onglet actif, puis s'allume.
+// La barre d'onglets de l'appli, en bas sur téléphone ; sur ordinateur, la navigation est dans
+// le header (TopNav). Sous une adresse inconnue au prérendu (/recettes/[id]), lire l'adresse
+// suspend le rendu : la barre s'affiche d'abord sans onglet actif, puis s'allume.
 export function AppNav() {
   return (
-    <>
-      <Suspense fallback={<SideNavBar active="" />}>
-        <SideNav />
-      </Suspense>
-      <Suspense fallback={<BottomNavBar active="" />}>
-        <BottomNav />
-      </Suspense>
-    </>
+    <Suspense fallback={<BottomNavBar active="" />}>
+      <BottomNav />
+    </Suspense>
   );
 }
 
@@ -47,9 +41,25 @@ export function BottomNav({ current, ...props }: NavProps) {
   return <BottomNavBar active={current ?? pathname} {...props} />;
 }
 
-export function SideNav({ current, ...props }: NavProps) {
+export function TopNav({ current, ...props }: NavProps) {
   const pathname = usePathname();
-  return <SideNavBar active={current ?? pathname} {...props} />;
+  return <TopNavBar active={current ?? pathname} {...props} />;
+}
+
+// Dans le header : même règle que la barre du bas, d'abord sans onglet actif si l'adresse
+// n'est pas encore connue. Rien pendant le parcours /bienvenue (le foyer n'est pas prêt).
+export function HeaderNav() {
+  return (
+    <Suspense fallback={<TopNavBar active="" />}>
+      <HeaderNavInner />
+    </Suspense>
+  );
+}
+
+function HeaderNavInner() {
+  const pathname = usePathname();
+  if (pathname === "/bienvenue" || pathname.startsWith("/bienvenue/")) return null;
+  return <TopNavBar active={pathname} />;
 }
 
 // Barre du bas sur téléphone : quatre gros onglets, la pastille glisse vers l'onglet touché.
@@ -101,20 +111,12 @@ function BottomNavBar({ active, demo = false, onSelect }: Omit<NavProps, "curren
   );
 }
 
-// Barre latérale sur ordinateur (à partir de 1024 px).
-function SideNavBar({ active, demo = false, onSelect }: Omit<NavProps, "current"> & { active: string }) {
+// Navigation du header sur ordinateur (à partir de 1024 px) : quatre onglets en ligne, la
+// pastille tomate glisse vers l'onglet choisi.
+function TopNavBar({ active, demo = false, onSelect }: Omit<NavProps, "current"> & { active: string }) {
   return (
-    <nav
-      aria-label={demo ? "Exemple de navigation latérale" : "Navigation principale"}
-      className={cn(
-        "flex w-64 flex-col gap-8 border-border/80 px-4 py-6",
-        demo ? "relative rounded-3xl border bg-card shadow-soft" : "fixed inset-y-0 left-0 hidden border-r bg-card lg:flex",
-      )}
-    >
-      <Link href="/" className="press self-start rounded-full px-3 py-1">
-        <Logo />
-      </Link>
-      <ul className="flex flex-col gap-1">
+    <nav aria-label={demo ? "Exemple de navigation du header" : "Navigation principale"}>
+      <ul className="flex items-center gap-1">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const on = isActive(href, active);
           return (
@@ -124,18 +126,18 @@ function SideNavBar({ active, demo = false, onSelect }: Omit<NavProps, "current"
                 aria-current={on ? "page" : undefined}
                 onClick={onSelect && ((event) => (event.preventDefault(), onSelect(href)))}
                 className={cn(
-                  "press relative flex min-h-12 items-center gap-3 rounded-full px-4 text-base font-semibold",
+                  "press relative flex min-h-11 items-center gap-2 rounded-full px-4 text-base font-semibold",
                   on ? "text-tomato-deep" : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
                 {on && (
                   <motion.span
-                    layoutId={demo ? "side-pill-demo" : "side-pill"}
+                    layoutId={demo ? "top-pill-demo" : "top-pill"}
                     className="absolute inset-0 rounded-full bg-tomato-soft"
                     transition={{ type: "spring", stiffness: 420, damping: 32 }}
                   />
                 )}
-                <Icon aria-hidden="true" className="relative size-5.5" strokeWidth={on ? 2.4 : 2} />
+                <Icon aria-hidden="true" className="relative size-5" strokeWidth={on ? 2.4 : 2} />
                 <span className="relative">{label}</span>
               </Link>
             </li>

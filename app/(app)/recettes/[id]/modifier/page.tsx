@@ -8,7 +8,7 @@ import { BackToList } from "../../back-to-list";
 import { DeleteRecipe } from "../../delete-recipe";
 import { RecipeForm } from "../../recipe-form";
 
-export const metadata: Metadata = { title: "Modifier la recette · Nos repas" };
+export const metadata: Metadata = { title: "Modifier la recette" };
 
 export default function EditRecipePage({ params }: PageProps<"/recettes/[id]/modifier">) {
   return (

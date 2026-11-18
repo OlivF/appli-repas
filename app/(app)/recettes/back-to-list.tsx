@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // La liste mémorise sa dernière adresse (recherche et filtres) : le retour la retrouve.
-export const LIST_HREF_KEY = "nos-repas:recettes";
+export const LIST_HREF_KEY = "popote:recettes";
 
 function readListHref() {
   const saved = window.sessionStorage.getItem(LIST_HREF_KEY);

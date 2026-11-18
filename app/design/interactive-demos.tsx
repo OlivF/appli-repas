@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
-import { BottomNav, SideNav } from "@/components/app-nav";
+import { BottomNav, TopNav } from "@/components/app-nav";
 import { Autocomplete } from "@/components/autocomplete";
+import { Logo } from "@/components/brand/logo";
 import { ChoiceChip } from "@/components/choice-chip";
 import { FavoriteButton } from "@/components/favorite-button";
 import { DayStrip } from "@/components/day-strip";
 import { ChoiceGroup, Field } from "@/components/field";
+import { AccountAvatar } from "@/components/layout/account-menu";
 import { MemberAvatar } from "@/components/member-avatar";
 import type { CardMember } from "@/components/member-card";
 import { MemberToggle } from "@/components/member-toggle";
@@ -31,18 +33,57 @@ import { DIETS } from "@/lib/members";
 import { AISLES, UNITS, aisleLabel, incompatibleDiets, type GroceryAisle } from "@/lib/recipes";
 import { DEMO_RECIPES } from "./demo-data";
 
-// Les deux barres de navigation, qu'on peut toucher pour voir la pastille glisser.
+// Le header (crème translucide, ombre fine une fois la page défilée), en exemple.
+function HeaderDemo({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`flex items-center gap-8 rounded-3xl border border-border/60 bg-background/80 px-5 shadow-bar ${className ?? ""}`}>
+      {children}
+    </div>
+  );
+}
+
+const DEMO_EMAIL = "camille@example.com";
+
+// Le header et la barre du bas, qu'on peut toucher pour voir la pastille glisser.
 export function NavDemo() {
   const [current, setCurrent] = useState("/semaine");
   return (
-    <div className="grid items-start gap-8 lg:grid-cols-[16rem_1fr]">
+    <div className="grid gap-8">
       <figure className="hidden space-y-3 lg:block">
-        <SideNav demo current={current} onSelect={setCurrent} />
-        <figcaption className="text-[0.875rem] text-muted-foreground">Ordinateur</figcaption>
+        <HeaderDemo className="h-16">
+          <Logo />
+          <TopNav demo current={current} onSelect={setCurrent} />
+          <AccountAvatar email={DEMO_EMAIL} className="ml-auto" />
+        </HeaderDemo>
+        <figcaption className="text-[0.875rem] text-muted-foreground">
+          Ordinateur : la navigation est dans le header, l’avatar ouvre le menu du compte.
+        </figcaption>
+      </figure>
+      <figure className="max-w-xl space-y-3">
+        <HeaderDemo className="h-16 justify-between gap-2">
+          <Logo className="text-[1.375rem]" />
+          <span className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="text-foreground">
+              Se connecter
+            </Button>
+            <Button size="sm" className="max-sm:hidden">
+              Créer mon compte
+            </Button>
+          </span>
+        </HeaderDemo>
+        <figcaption className="text-[0.875rem] text-muted-foreground">
+          Visiteur : se connecter, ou créer son compte. Sur téléphone, « Se connecter » seul.
+        </figcaption>
       </figure>
       <figure className="max-w-sm space-y-3">
+        <HeaderDemo className="h-14 justify-between">
+          <Logo className="text-[1.375rem]" />
+          <AccountAvatar email={DEMO_EMAIL} />
+        </HeaderDemo>
         <BottomNav demo current={current} onSelect={setCurrent} />
-        <figcaption className="text-[0.875rem] text-muted-foreground">Téléphone</figcaption>
+        <figcaption className="text-[0.875rem] text-muted-foreground">
+          Téléphone, connecté : le logo et l’avatar en haut, les onglets en bas.
+        </figcaption>
       </figure>
     </div>
   );

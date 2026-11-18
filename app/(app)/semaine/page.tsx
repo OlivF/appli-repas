@@ -7,7 +7,7 @@ import { addDays, dayLabel, parseWeekParam, todayInParis, weekLabel, weekRelatio
 import { loadWeek } from "@/lib/week-data";
 import { WeekBoard } from "./week-board";
 
-export const metadata: Metadata = { title: "La semaine · Nos repas" };
+export const metadata: Metadata = { title: "La semaine" };
 
 export default function WeekPage({ searchParams }: PageProps<"/semaine">) {
   return (

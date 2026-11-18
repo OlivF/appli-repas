@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SiteFooter } from "@/components/layout/site-footer";
 import { DAYS } from "@/lib/meal-slots";
 import { AuthForm } from "./auth-form";
 
@@ -27,31 +28,40 @@ const MODES = [
   { mode: "inscription", href: "/connexion/inscription", label: "Créer un compte" },
 ] as const;
 
+// Le logo est dans le header : le titre accueille.
+const TITLES = {
+  connexion: { title: "Content de te revoir", lead: "Ta semaine de repas t’attend." },
+  inscription: { title: "Crée ton compte", lead: "Les repas de la semaine, sans prise de tête." },
+} as const;
+
 export function AuthPage({ mode }: { mode: "connexion" | "inscription" }) {
   return (
-    <main className="mx-auto w-full max-w-md px-4 pt-10 pb-12">
-      <WeekDots />
-      <h1 className="mt-6 text-[2.5rem] leading-none font-extrabold tracking-tight">Nos repas</h1>
-      <p className="lead">Le menu de la semaine, pour toute la famille.</p>
+    <div data-site>
+      <main className="mx-auto w-full max-w-md px-4 pt-10 pb-16">
+        <WeekDots />
+        <h1 className="mt-6 text-[2.5rem] leading-[1.05]">{TITLES[mode].title}</h1>
+        <p className="lead">{TITLES[mode].lead}</p>
 
-      <nav aria-label="Compte" className="mt-10 grid grid-cols-2 gap-1 rounded-full bg-rim-pale p-1">
-        {MODES.map((item) => (
-          <Link
-            key={item.mode}
-            href={item.href}
-            aria-current={item.mode === mode ? "page" : undefined}
-            className={`flex min-h-12 items-center justify-center rounded-full px-3 text-base font-bold ${
-              item.mode === mode ? "bg-rim text-white" : "text-rim-deep"
-            }`}
-          >
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+        <nav aria-label="Compte" className="mt-10 grid grid-cols-2 gap-1 rounded-full bg-rim-pale p-1">
+          {MODES.map((item) => (
+            <Link
+              key={item.mode}
+              href={item.href}
+              aria-current={item.mode === mode ? "page" : undefined}
+              className={`flex min-h-12 items-center justify-center rounded-full px-3 text-base font-bold ${
+                item.mode === mode ? "bg-rim text-white" : "text-rim-deep"
+              }`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
 
-      <div className="mt-8">
-        <AuthForm key={mode} mode={mode} />
-      </div>
-    </main>
+        <div className="mt-8">
+          <AuthForm key={mode} mode={mode} />
+        </div>
+      </main>
+      <SiteFooter />
+    </div>
   );
 }

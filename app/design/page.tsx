@@ -9,7 +9,6 @@ import { ChoiceGroup, Field } from "@/components/field";
 import { BasketIllustration, BookIllustration, PlateIllustration, PotIllustration } from "@/components/illustrations";
 import { EmptyState } from "@/components/empty-state";
 import { KitchenPattern } from "@/components/kitchen-pattern";
-import { Logo } from "@/components/logo";
 import { MealPill } from "@/components/meal-label";
 import { MemberAvatar, MemberAvatars } from "@/components/member-avatar";
 import { MemberCard } from "@/components/member-card";
@@ -41,26 +40,33 @@ import {
   StepDemo,
   SwitchDemo,
 } from "./interactive-demos";
+import { LogoShowcase } from "./logo-showcase";
 import { ThemeToggle } from "./theme-toggle";
 
-export const metadata: Metadata = { title: "Le style de Nos repas" };
+export const metadata: Metadata = { title: { absolute: "Le style de Popote" } };
 
 // Référence visuelle de l'appli : chaque nouvel écran pioche ici. Accessible sans compte.
 export default function DesignPage() {
   return (
     <div className="mx-auto w-full max-w-5xl px-5 pt-6 pb-24 sm:px-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <Logo />
+      <div className="flex justify-end">
         <ThemeToggle />
       </div>
 
       <PageHeader
-        className="mt-10"
-        title="Le style de Nos repas"
+        className="mt-6"
+        title="Le style de Popote"
         lead="Tout ce qui compose l’appli, au même endroit. Chaque nouvel écran réutilise ces pièces, sans style fait à la main."
       />
 
       <div className="mt-14 space-y-20">
+        <Section
+          title="Logo"
+          lead="Une cocotte ronde dont la vapeur dessine un cœur. Tomate et brun ; le brun devient crème sur fond sombre. Lisible dès 16 px."
+        >
+          <LogoShowcase />
+        </Section>
+
         <Section title="Couleurs" lead="Une cuisine de famille : fond crème, texte brun, la tomate pour agir.">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Swatch name="Crème" hex="#FBF7F0" role="Fond des pages" className="bg-[#fbf7f0] text-[#2b2118]" />
@@ -382,7 +388,7 @@ export default function DesignPage() {
           </Card>
         </Section>
 
-        <Section title="Navigation" lead="En bas sur téléphone, sur le côté à partir de 1024 px. Touche un onglet.">
+        <Section title="Navigation" lead="Un header collant en haut ; les onglets en bas sur téléphone, dans le header à partir de 1024 px. Touche un onglet.">
           <NavDemo />
         </Section>
 
@@ -457,7 +463,7 @@ function Section({ title, lead, children }: { title: string; lead: string; child
     .toLowerCase()
     .replace(/[^a-z]+/g, "-");
   return (
-    <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-8">
+    <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-4">
       <h2 id={`${id}-title`} className="text-[1.875rem] leading-tight">
         {title}
       </h2>

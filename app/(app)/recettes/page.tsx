@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { loadRecipeList } from "@/lib/recipes-data";
 import { RecipeBrowser } from "./recipe-browser";
 
-export const metadata: Metadata = { title: "Recettes · Nos repas" };
+export const metadata: Metadata = { title: "Recettes" };
 
 export default function RecipesPage() {
   return (

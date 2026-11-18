@@ -7,7 +7,7 @@ import { loadRecipeForm } from "@/lib/recipes-data";
 import { BackToList } from "../back-to-list";
 import { RecipeForm } from "../recipe-form";
 
-export const metadata: Metadata = { title: "Nouvelle recette · Nos repas" };
+export const metadata: Metadata = { title: "Nouvelle recette" };
 
 export default function NewRecipePage() {
   return (

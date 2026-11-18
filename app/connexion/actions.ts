@@ -18,7 +18,7 @@ export async function signIn(_state: AuthFormState, formData: FormData): Promise
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: authErrorMessage(error.code), email };
-  redirect("/");
+  redirect("/semaine");
 }
 
 export async function signUp(_state: AuthFormState, formData: FormData): Promise<AuthFormState> {
@@ -37,5 +37,5 @@ export async function signOut() {
   const supabase = await createClient();
   // « local » : déconnecte ce téléphone seulement, pas ceux du reste du foyer.
   await supabase.auth.signOut({ scope: "local" });
-  redirect("/connexion");
+  redirect("/");
 }

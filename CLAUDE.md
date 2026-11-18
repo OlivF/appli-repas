@@ -1,4 +1,4 @@
-# Appli de planning des repas
+# Popote, appli de planning des repas
 
 Appli web multi-utilisateurs : chaque compte crée son foyer, ses membres, ses recettes, puis planifie la semaine et génère la liste de courses. Interface en français, très simple, pensée d'abord pour le téléphone.
 

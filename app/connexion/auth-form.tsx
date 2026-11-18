@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { SubmitButton } from "@/components/submit-button";
+import { FormSubmit } from "@/components/form-submit";
 import { signIn, signUp, type AuthFormState } from "./actions";
 
 export function AuthForm({ mode }: { mode: "connexion" | "inscription" }) {
@@ -56,7 +56,10 @@ export function AuthForm({ mode }: { mode: "connexion" | "inscription" }) {
       )}
 
       <div className="pt-2">
-        <SubmitButton>{isSignUp ? "Créer mon compte" : "Se connecter"}</SubmitButton>
+        {/* Le bouton de la charte : libellé de 19 px en gras, assez contrasté sur la tomate. */}
+        <FormSubmit block size="lg" pendingLabel={isSignUp ? "Création du compte…" : "Connexion…"}>
+          {isSignUp ? "Créer mon compte" : "Se connecter"}
+        </FormSubmit>
       </div>
     </form>
   );

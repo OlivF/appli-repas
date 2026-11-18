@@ -1,6 +1,6 @@
-# Nos repas
+# Popote
 
-Le planning des repas de la semaine pour toute la famille. Next.js et Supabase.
+Les repas de la semaine, sans prise de tête : le planning des repas de toute la famille et la liste de courses. Next.js et Supabase.
 
 ## Prérequis
 
@@ -46,6 +46,16 @@ supabase test db                   # règles d'accès entre foyers (RLS), en SQL
 docker compose exec web npm test   # logique et composants (Vitest)
 docker compose run --rm e2e        # parcours complets sur téléphone (Playwright), avec docker compose up lancé
 ```
+
+## Logo et icônes
+
+Le dessin du logo (la cocotte au cœur) vit dans `components/brand/cocotte.ts` ; le composant `<Logo variant="icon" | "full" />` est dans `components/brand/logo.tsx`. Après une retouche du dessin, régénère les icônes (`app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`, `public/icons/`) :
+
+```bash
+docker compose exec web node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/brand-icons.mjs
+```
+
+Un test Vitest vérifie que `app/icon.svg` suit le dessin. L'image de partage (`app/opengraph-image.tsx`) se génère au build, avec la police de `app/fonts/`.
 
 ## Branches et Pull Requests
 

@@ -514,7 +514,7 @@ export function WeekBoard({
         days={days}
         active={activeDay}
         onSelect={showDay}
-        className="sticky top-0 z-20 -mx-5 mt-2 bg-background/95 px-5 py-2 backdrop-blur-md sm:hidden"
+        className="sticky top-(--header-height) z-20 -mx-5 mt-2 bg-background/95 px-5 py-2 backdrop-blur-md sm:hidden"
       />
 
       <LayoutGroup>
