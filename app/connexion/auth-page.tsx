@@ -31,8 +31,8 @@ export function AuthPage({ mode }: { mode: "connexion" | "inscription" }) {
   return (
     <main className="mx-auto w-full max-w-md px-4 pt-10 pb-12">
       <WeekDots />
-      <h1 className="mt-6 text-[2.5rem] leading-none font-extrabold tracking-tight">Nos repas</h1>
-      <p className="lead">Le menu de la semaine, pour toute la famille.</p>
+      <h1 className="mt-6 text-[2.5rem] leading-none font-extrabold tracking-tight">Popote</h1>
+      <p className="lead">Les repas de la semaine, sans prise de tête.</p>
 
       <nav aria-label="Compte" className="mt-10 grid grid-cols-2 gap-1 rounded-full bg-rim-pale p-1">
         {MODES.map((item) => (

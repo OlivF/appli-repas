@@ -16,9 +16,15 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
+// Chaque page ne donne que son titre court : « Recettes » devient « Recettes · Popote ».
 export const metadata: Metadata = {
-  title: "Nos repas",
-  description: "Le menu de la semaine, pour toute la famille.",
+  title: {
+    default: "Popote · Les repas de la semaine, sans prise de tête.",
+    template: "%s · Popote",
+  },
+  description:
+    "Les repas de la semaine, sans prise de tête. Popote propose le menu de toute la famille, en tenant compte des régimes de chacun, et fait la liste de courses.",
+  applicationName: "Popote",
 };
 
 export const viewport: Viewport = {

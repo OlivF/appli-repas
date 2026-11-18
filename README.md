@@ -1,6 +1,6 @@
-# Nos repas
+# Popote
 
-Le planning des repas de la semaine pour toute la famille. Next.js et Supabase.
+Les repas de la semaine, sans prise de tête : le planning des repas de toute la famille et la liste de courses. Next.js et Supabase.
 
 ## Prérequis
 

@@ -10,7 +10,7 @@ import { summarizeMeals } from "@/lib/meal-slots";
 import { describeMember } from "@/lib/members";
 import { signOut } from "@/app/connexion/actions";
 
-export const metadata: Metadata = { title: "Le foyer · Nos repas" };
+export const metadata: Metadata = { title: "Le foyer" };
 
 // Le foyer : son nom, qui mange quand, ses membres, et la déconnexion.
 export default function HouseholdPage() {

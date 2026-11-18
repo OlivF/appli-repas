@@ -1,6 +1,6 @@
 import { cn } from "cn";
 
-// La marque : une tomate et sa feuille, puis « Nos repas » en Fraunces.
+// La marque : une tomate et sa feuille, puis « Popote » en Fraunces.
 export function TomatoMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" aria-hidden="true" className={cn("size-8 shrink-0", className)}>
@@ -17,7 +17,7 @@ export function Logo({ className }: { className?: string }) {
   return (
     <span className={cn("inline-flex items-center gap-2.5", className)}>
       <TomatoMark />
-      <span className="font-heading text-[1.375rem] leading-none">Nos repas</span>
+      <span className="font-heading text-[1.375rem] leading-none">Popote</span>
     </span>
   );
 }

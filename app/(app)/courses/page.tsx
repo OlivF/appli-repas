@@ -4,7 +4,7 @@ import { EmptyState } from "@/components/empty-state";
 import { BasketIllustration } from "@/components/illustrations";
 import { PageHeader } from "@/components/page-header";
 
-export const metadata: Metadata = { title: "Courses · Nos repas" };
+export const metadata: Metadata = { title: "Courses" };
 
 // L'onglet existe déjà ; la liste de courses arrive à l'étape 3.
 export default function CoursesPage() {

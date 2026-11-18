@@ -6,7 +6,7 @@ export function Screen({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto w-full max-w-md px-4 pt-4 pb-12">
       <Link href="/" className="inline-block py-2 text-base font-extrabold text-rim no-underline">
-        Nos repas
+        Popote
       </Link>
       <main className="mt-6">{children}</main>
     </div>

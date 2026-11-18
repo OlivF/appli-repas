@@ -4,7 +4,7 @@ test("sans session, on est envoyé vers la page de connexion", async ({ page }) 
   await page.goto("/");
 
   await expect(page).toHaveURL(/\/connexion$/);
-  await expect(page.getByRole("heading", { name: "Nos repas" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Popote" })).toBeVisible();
 });
 
 test("un mauvais mot de passe affiche une erreur", async ({ page }) => {
