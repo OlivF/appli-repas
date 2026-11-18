@@ -41,9 +41,10 @@ import {
   StepDemo,
   SwitchDemo,
 } from "./interactive-demos";
+import { LogoOptions } from "./logo-options";
 import { ThemeToggle } from "./theme-toggle";
 
-export const metadata: Metadata = { title: "Le style de Nos repas" };
+export const metadata: Metadata = { title: { absolute: "Le style de Popote" } };
 
 // Référence visuelle de l'appli : chaque nouvel écran pioche ici. Accessible sans compte.
 export default function DesignPage() {
@@ -56,11 +57,18 @@ export default function DesignPage() {
 
       <PageHeader
         className="mt-10"
-        title="Le style de Nos repas"
+        title="Le style de Popote"
         lead="Tout ce qui compose l’appli, au même endroit. Chaque nouvel écran réutilise ces pièces, sans style fait à la main."
       />
 
       <div className="mt-14 space-y-20">
+        <Section
+          title="Logo"
+          lead="Trois pistes pour Popote, chacune en icône, en logo horizontal et en monochrome. La piste choisie deviendra l’icône de l’onglet, du téléphone et des partages."
+        >
+          <LogoOptions />
+        </Section>
+
         <Section title="Couleurs" lead="Une cuisine de famille : fond crème, texte brun, la tomate pour agir.">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Swatch name="Crème" hex="#FBF7F0" role="Fond des pages" className="bg-[#fbf7f0] text-[#2b2118]" />
