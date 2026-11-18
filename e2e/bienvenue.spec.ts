@@ -111,10 +111,10 @@ test("un nouveau compte crée son foyer en trois écrans, puis le modifie", asyn
   await expect(page.getByRole("checkbox", { name: "Dîner lundi : Paul" })).toBeChecked();
   await page.goto("/foyer");
 
-  // Déconnexion
+  // Déconnexion : retour à la page d'accueil, et les pages du foyer sont fermées.
   await page.getByRole("button", { name: "Se déconnecter" }).click();
-  await expect(page).toHaveURL(/\/connexion$/);
-  await page.goto("/");
+  await expect(page).toHaveURL(/\/$/);
+  await page.goto("/foyer");
   await expect(page).toHaveURL(/\/connexion$/);
 });
 

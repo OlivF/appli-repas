@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter } from "next/font/google";
+import { Header } from "@/components/layout/Header";
 import { MotionProvider } from "@/components/motion-provider";
 import "./globals.css";
 
@@ -16,8 +17,15 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
+// Adresse publique du site, pour les liens absolus (image de partage). Vercel fournit l'adresse
+// de production ; en local, l'appli de dev.
+const SITE_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : "http://localhost:3000";
+
 // Chaque page ne donne que son titre court : « Recettes » devient « Recettes · Popote ».
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Popote · Les repas de la semaine, sans prise de tête.",
     template: "%s · Popote",
@@ -38,7 +46,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="fr" className={`${fraunces.variable} ${inter.variable}`}>
       <body>
-        <MotionProvider>{children}</MotionProvider>
+        <MotionProvider>
+          <Header />
+          {children}
+        </MotionProvider>
       </body>
     </html>
   );

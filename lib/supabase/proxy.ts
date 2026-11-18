@@ -1,11 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { SIGNED_IN_HOME, routeAccess } from "@/lib/routes";
 import { AUTH_COOKIE_NAME, SUPABASE_ANON_KEY, serverSupabaseUrl } from "./config";
-
-// Pages accessibles sans être connecté (et dont on écarte un compte connecté).
-const PUBLIC_PATHS = ["/connexion"];
-// Pages ouvertes à tous, connecté ou non : la référence visuelle, sans aucune donnée.
-const OPEN_PATHS = ["/design"];
 
 // Rafraîchit la session Supabase à chaque requête et protège les pages privées.
 export async function updateSession(request: NextRequest) {
@@ -32,12 +28,10 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const isLoggedIn = Boolean(data?.claims);
 
-  const { pathname } = request.nextUrl;
-  if (OPEN_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))) return response;
-  const isPublic = PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
-
-  if (!isLoggedIn && !isPublic) return redirectKeepingCookies(request, "/connexion", response);
-  if (isLoggedIn && isPublic) return redirectKeepingCookies(request, "/", response);
+  // Redirigé ici, avant le rendu : un compte connecté ne voit jamais l'accueil clignoter.
+  const access = routeAccess(request.nextUrl.pathname);
+  if (!isLoggedIn && access === "private") return redirectKeepingCookies(request, "/connexion", response);
+  if (isLoggedIn && access === "guest") return redirectKeepingCookies(request, SIGNED_IN_HOME, response);
 
   return response;
 }

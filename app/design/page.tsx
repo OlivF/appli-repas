@@ -9,7 +9,6 @@ import { ChoiceGroup, Field } from "@/components/field";
 import { BasketIllustration, BookIllustration, PlateIllustration, PotIllustration } from "@/components/illustrations";
 import { EmptyState } from "@/components/empty-state";
 import { KitchenPattern } from "@/components/kitchen-pattern";
-import { Logo } from "@/components/logo";
 import { MealPill } from "@/components/meal-label";
 import { MemberAvatar, MemberAvatars } from "@/components/member-avatar";
 import { MemberCard } from "@/components/member-card";
@@ -41,7 +40,7 @@ import {
   StepDemo,
   SwitchDemo,
 } from "./interactive-demos";
-import { LogoOptions } from "./logo-options";
+import { LogoShowcase } from "./logo-showcase";
 import { ThemeToggle } from "./theme-toggle";
 
 export const metadata: Metadata = { title: { absolute: "Le style de Popote" } };
@@ -50,13 +49,12 @@ export const metadata: Metadata = { title: { absolute: "Le style de Popote" } };
 export default function DesignPage() {
   return (
     <div className="mx-auto w-full max-w-5xl px-5 pt-6 pb-24 sm:px-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <Logo />
+      <div className="flex justify-end">
         <ThemeToggle />
       </div>
 
       <PageHeader
-        className="mt-10"
+        className="mt-6"
         title="Le style de Popote"
         lead="Tout ce qui compose l’appli, au même endroit. Chaque nouvel écran réutilise ces pièces, sans style fait à la main."
       />
@@ -64,9 +62,9 @@ export default function DesignPage() {
       <div className="mt-14 space-y-20">
         <Section
           title="Logo"
-          lead="Trois pistes pour Popote, chacune en icône, en logo horizontal et en monochrome. La piste choisie deviendra l’icône de l’onglet, du téléphone et des partages."
+          lead="Une cocotte ronde dont la vapeur dessine un cœur. Tomate et brun ; le brun devient crème sur fond sombre. Lisible dès 16 px."
         >
-          <LogoOptions />
+          <LogoShowcase />
         </Section>
 
         <Section title="Couleurs" lead="Une cuisine de famille : fond crème, texte brun, la tomate pour agir.">
@@ -390,7 +388,7 @@ export default function DesignPage() {
           </Card>
         </Section>
 
-        <Section title="Navigation" lead="En bas sur téléphone, sur le côté à partir de 1024 px. Touche un onglet.">
+        <Section title="Navigation" lead="Un header collant en haut ; les onglets en bas sur téléphone, dans le header à partir de 1024 px. Touche un onglet.">
           <NavDemo />
         </Section>
 
@@ -465,7 +463,7 @@ function Section({ title, lead, children }: { title: string; lead: string; child
     .toLowerCase()
     .replace(/[^a-z]+/g, "-");
   return (
-    <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-8">
+    <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-4">
       <h2 id={`${id}-title`} className="text-[1.875rem] leading-tight">
         {title}
       </h2>

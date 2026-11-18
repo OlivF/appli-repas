@@ -66,6 +66,14 @@
   --shadow-color: 92 58 32;
   --shadow-soft: 0 1px 2px rgb(var(--shadow-color) / 0.06), 0 8px 24px -10px rgb(var(--shadow-color) / 0.2);
   --shadow-lift: 0 2px 4px rgb(var(--shadow-color) / 0.06), 0 18px 36px -14px rgb(var(--shadow-color) / 0.28);
+  /* Ombre fine sous le header, quand la page défile. */
+  --shadow-bar: 0 1px 0 rgb(var(--shadow-color) / 0.07), 0 8px 18px -12px rgb(var(--shadow-color) / 0.3);
+
+  /* Hauteur du header collant : ce qui colle en haut se place juste dessous. */
+  --header-height: 3.5rem;
+  @media (width >= 64rem) {
+    --header-height: 4rem;
+  }
 
   /* Une couleur pastel par membre (fond, initiale). Attribuée à l'ajout, de 0 à 7. */
   --member-0-bg: #fad8cb; /* tomate */
@@ -128,6 +136,7 @@
     --shadow-color: 0 0 0;
     --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -10px rgb(0 0 0 / 0.55);
     --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.3), 0 18px 36px -14px rgb(0 0 0 / 0.65);
+    --shadow-bar: 0 1px 0 rgb(0 0 0 / 0.35), 0 8px 18px -12px rgb(0 0 0 / 0.7);
 
     --member-0-bg: #5b2617;
     --member-0-fg: #fcd9cc;
@@ -190,6 +199,7 @@
 
   --shadow-soft: var(--shadow-soft);
   --shadow-lift: var(--shadow-lift);
+  --shadow-bar: var(--shadow-bar);
 
   /* Coins : 12 px (petits éléments), 16 px (champs), 20-24 px (cartes), rond (boutons, puces). */
   --radius-sm: 0.5rem;
@@ -205,6 +215,8 @@
   html {
     -webkit-tap-highlight-color: transparent;
     font-family: var(--font-sans);
+    /* Une ancre (#logo) s'arrête sous le header collant, pas derrière. */
+    scroll-padding-top: calc(var(--header-height) + 1rem);
   }
 
   body {
@@ -280,6 +292,23 @@
     &:active:not(:disabled) {
       transform: none;
     }
+  }
+}
+
+/* Les cartes de la page d'accueil qui se posent dans la mini-semaine : elles arrivent penchées,
+   d'un peu plus haut (--from-x, --from-y, --from-r, après --delay), et se posent avec un léger
+   rebond sur leur position finale (celle de l'élément). En CSS : pas besoin d'attendre le JS. */
+@keyframes card-land {
+  from {
+    opacity: 0;
+    transform: translate(var(--from-x, 0), var(--from-y, 0)) rotate(var(--from-r, 0)) scale(0.92);
+  }
+}
+
+@utility card-land {
+  animation: card-land 750ms cubic-bezier(0.34, 1.3, 0.64, 1) var(--delay, 0ms) both;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 }
 

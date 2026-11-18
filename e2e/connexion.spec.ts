@@ -1,10 +1,10 @@
 import { expect, test } from "@playwright/test";
 
-test("sans session, on est envoyé vers la page de connexion", async ({ page }) => {
-  await page.goto("/");
+test("sans session, une page de l'appli renvoie vers la connexion", async ({ page }) => {
+  await page.goto("/semaine");
 
   await expect(page).toHaveURL(/\/connexion$/);
-  await expect(page.getByRole("heading", { name: "Popote" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Content de te revoir");
 });
 
 test("un mauvais mot de passe affiche une erreur", async ({ page }) => {

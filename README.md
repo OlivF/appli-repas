@@ -47,6 +47,16 @@ docker compose exec web npm test   # logique et composants (Vitest)
 docker compose run --rm e2e        # parcours complets sur téléphone (Playwright), avec docker compose up lancé
 ```
 
+## Logo et icônes
+
+Le dessin du logo (la cocotte au cœur) vit dans `components/brand/cocotte.ts` ; le composant `<Logo variant="icon" | "full" />` est dans `components/brand/logo.tsx`. Après une retouche du dessin, régénère les icônes (`app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`, `public/icons/`) :
+
+```bash
+docker compose exec web node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/brand-icons.mjs
+```
+
+Un test Vitest vérifie que `app/icon.svg` suit le dessin. L'image de partage (`app/opengraph-image.tsx`) se génère au build, avec la police de `app/fonts/`.
+
 ## Branches et Pull Requests
 
 Le code vit sur GitHub : `git@github.com:OlivF/appli-repas.git`. Chaque étape de la feuille de route se fait sur sa branche (`etape-2-recettes`…), poussée sur GitHub, puis fusionnée dans `main` par une Pull Request.
