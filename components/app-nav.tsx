@@ -53,14 +53,18 @@ export function SideNav({ current, ...props }: NavProps) {
 }
 
 // Barre du bas sur téléphone : quatre gros onglets, la pastille glisse vers l'onglet touché.
-// `demo` : affichée dans la page /design, dans le flux et non collée en bas de l'écran.
+// Collée au bas et aux bords de l'écran, coins du haut arrondis : rien ne défile dessous.
+// La marge du bas suit la zone sûre (barre d'accueil) quand la page s'étend sous elle.
+// `demo` : affichée dans la page /design, dans le flux, en pilule entière.
 function BottomNavBar({ active, demo = false, onSelect }: Omit<NavProps, "current"> & { active: string }) {
   return (
     <nav
       aria-label={demo ? "Exemple de navigation" : "Navigation principale"}
       className={cn(
-        "z-40 rounded-[1.75rem] border border-border/80 bg-card/95 p-1.5 shadow-lift backdrop-blur-md",
-        demo ? "relative" : "fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden",
+        "z-40 border-border/80 bg-card/95 p-1.5 shadow-lift backdrop-blur-md",
+        demo
+          ? "relative rounded-[1.75rem] border"
+          : "fixed inset-x-0 bottom-0 rounded-t-[1.75rem] border-t pb-[max(0.375rem,env(safe-area-inset-bottom))] lg:hidden",
       )}
     >
       <ul className="grid grid-cols-4">
