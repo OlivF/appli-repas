@@ -88,6 +88,12 @@ test("un nouveau compte crée son foyer en trois écrans, puis le modifie", asyn
   await page.getByLabel("Nom du foyer").fill("Famille Durand-Martin");
   await page.getByRole("button", { name: "Enregistrer" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Famille Durand-Martin");
+  // Rouvert aussitôt, le formulaire montre le nouveau nom, pas l'ancien.
+  await page.getByRole("link", { name: "Renommer le foyer" }).click();
+  await expect(page).toHaveURL(/\/bienvenue$/);
+  await expect(page.getByRole("textbox", { name: "Nom du foyer" })).toHaveValue("Famille Durand-Martin");
+  await page.getByRole("link", { name: "Annuler" }).click();
+  await expect(page).toHaveURL(/\/foyer$/);
 
   // Modifier les repas : la grille se rouvre telle qu'enregistrée ; un repas vidé disparaît
   await page.getByRole("link", { name: "Modifier les repas" }).click();
@@ -98,6 +104,12 @@ test("un nouveau compte crée son foyer en trois écrans, puis le modifie", asyn
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Famille Durand-Martin");
   await expect(meals.getByRole("heading", { name: "Petit-déj" })).toBeVisible();
   await expect(meals.getByRole("heading", { name: "Midi" })).toHaveCount(0);
+  // Rouverte aussitôt, la grille montre ce qui vient d'être enregistré, pas l'ancienne version.
+  await page.getByRole("link", { name: "Modifier les repas" }).click();
+  await expect(page).toHaveURL(/\/bienvenue\/repas$/);
+  await expect(page.getByRole("checkbox", { name: "Midi lundi : Léa" })).not.toBeChecked();
+  await expect(page.getByRole("checkbox", { name: "Dîner lundi : Paul" })).toBeChecked();
+  await page.goto("/foyer");
 
   // Déconnexion
   await page.getByRole("button", { name: "Se déconnecter" }).click();

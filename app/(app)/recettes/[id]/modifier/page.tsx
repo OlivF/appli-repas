@@ -35,7 +35,11 @@ async function EditRecipeForm({ params }: { params: Promise<{ id: string }> }) {
         title="Modifier la recette"
         lead={fromCatalog ? "Ta version de la recette du catalogue : change ce que tu veux." : undefined}
       />
+      {/* Le formulaire ne lit la recette qu'à sa création, or Next.js peut afficher cet écran
+          d'abord avec une version plus ancienne (page gardée ou préparée d'avance). La clé le
+          recrée quand la recette enregistrée change. Voir bienvenue/repas/page.tsx. */}
       <RecipeForm
+        key={JSON.stringify([recipe, ingredients, excludedIds])}
         recipe={recipe}
         ingredients={ingredients}
         members={members}

@@ -25,7 +25,10 @@ async function HouseholdStep() {
       <h1 className="page-title">
         {renaming ? "Renommer le foyer" : "Comment s’appelle ton foyer ?"}
       </h1>
+      {/* La clé recrée le champ quand le nom enregistré change : Next.js peut afficher cet écran
+          d'abord avec l'ancien nom (page gardée ou préparée d'avance). Voir repas/page.tsx. */}
       <HouseholdForm
+        key={household?.name ?? ""}
         name={household?.name ?? ""}
         submitLabel={renaming ? "Enregistrer" : "Continuer"}
       />

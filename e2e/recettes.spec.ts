@@ -89,8 +89,17 @@ test("chercher, filtrer, ouvrir une recette du catalogue puis la copier", async 
   await expect(page.getByRole("link", { name: "Modifier la recette" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Favori" })).toHaveAttribute("aria-pressed", "true");
 
-  // L'adresse de l'originale mène désormais à la copie
   const copyUrl = page.url();
+
+  // Rouvert ensuite, le formulaire montre ce qui vient d'être enregistré. On relit d'abord la
+  // fiche une seconde : Next.js en profite pour préparer le formulaire d'avance, avec ses données
+  // de la visite précédente (aucune requête ne le signale, d'où l'attente fixe).
+  await page.waitForTimeout(1000);
+  await page.getByRole("link", { name: "Modifier la recette" }).click();
+  await expect(page).toHaveURL(/\/recettes\/[0-9a-f-]+\/modifier$/);
+  await expect(page.getByRole("textbox", { name: "Titre" })).toHaveValue("Saumon de Léa");
+
+  // L'adresse de l'originale mène désormais à la copie
   await page.goto("/recettes/ca7a0000-0000-4000-8000-000000000022");
   await expect(page).toHaveURL(copyUrl);
 

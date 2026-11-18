@@ -22,6 +22,10 @@ async function MealsStep() {
   if (members.length === 0) redirect("/bienvenue/membres");
 
   const onboarding = step !== null;
+  const selected = initialSelection(
+    slots,
+    members.map((member) => member.id),
+  );
 
   return (
     <>
@@ -32,12 +36,13 @@ async function MealsStep() {
           ? "Touche une case pour dire qui est là. Le petit-déj et le dîner sont déjà cochés pour tout le monde."
           : "Touche une case pour dire qui est là."}
       </p>
+      {/* Next.js peut afficher cet écran d'abord avec des données plus anciennes (page gardée
+          ou préparée d'avance), puis les mettre à jour. Les cases ne lisent leur valeur qu'à leur
+          création : la clé les recrée quand la sélection enregistrée change. */}
       <MealSlotsForm
+        key={selected.join(" ")}
         members={members.map(({ id, first_name }) => ({ id, first_name }))}
-        selected={initialSelection(
-          slots,
-          members.map((member) => member.id),
-        )}
+        selected={selected}
       />
     </>
   );
