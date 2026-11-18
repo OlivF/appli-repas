@@ -140,3 +140,15 @@ test.describe("sur ordinateur", () => {
     await expect(dinner(page, 0)).toHaveAttribute("aria-label", tuesday!);
   });
 });
+
+test("sur téléphone, la barre d'onglets est collée au bas de l'écran", async ({ page }) => {
+  await newHousehold(page);
+  // Même tout en bas de la page : rien ne doit défiler sous la barre ni à côté.
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  const nav = page.getByRole("navigation", { name: "Navigation principale" });
+  const box = (await nav.boundingBox())!;
+  const screen = page.viewportSize()!;
+  expect(box.x).toBe(0);
+  expect(box.width).toBe(screen.width);
+  expect(box.y + box.height).toBeCloseTo(screen.height, 0);
+});

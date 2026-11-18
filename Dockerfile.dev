@@ -14,4 +14,5 @@ ENV NEXT_TELEMETRY_DISABLED=1
 EXPOSE 3000
 
 # npm install à chaque démarrage garde le volume node_modules à jour.
-CMD ["sh", "-c", "npm install && npm run dev"]
+# Sans audit : il ajoutait ~2 min sans rien afficher (lancer `npm audit` à la main).
+CMD ["sh", "-c", "npm install --no-audit --no-fund && npm run dev"]
