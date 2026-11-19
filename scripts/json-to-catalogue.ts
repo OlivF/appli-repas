@@ -11,6 +11,11 @@
 // portions, prep, cuisson, regimes, batch, batch_notes, kid_friendly, basique?,
 // ingredients: [[nom, quantité, unité, rayon]], etapes } ] }. `accompagnement` sert à la
 // lecture du fichier seulement : il n'est pas stocké.
+//
+// Référentiel d'ingrédients (0009) : chaque ligne insérée est rattachée à son ingrédient canonique
+// par le trigger recipe_ingredients_set_ingredient (nom ou alias normalisés, sinon un nouvel
+// ingrédient commun). Pour un produit nouveau, ajoute-le d'abord au référentiel commun (avec son
+// rayon, son unité d'achat, ses alias) dans la même migration, avant les recettes.
 
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";

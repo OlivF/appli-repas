@@ -16,7 +16,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
-import { BookOpen, Sparkles, Trash2, X } from "lucide-react";
+import { BookOpen, ShoppingBasket, Sparkles, Trash2, X } from "lucide-react";
 import { cn } from "cn";
 import { DayStrip } from "@/components/day-strip";
 import { EatersPicker } from "@/components/eaters-picker";
@@ -801,10 +801,16 @@ export function WeekBoard({
         }
       />
 
-      <div className="mt-6 max-w-md">
-        <WeekPicker label={label} relation={relation} prevHref={prevHref} nextHref={nextHref} />
+      <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+        <div className="w-full max-w-md">
+          <WeekPicker label={label} relation={relation} prevHref={prevHref} nextHref={nextHref} />
+        </div>
+        {hasCards && <ShoppingLink className="hidden sm:inline-flex" weekStart={weekStart} />}
       </div>
-      <div className="mt-5 sm:hidden">{proposeButton(true)}</div>
+      <div className="mt-5 flex flex-col gap-3 sm:hidden">
+        {proposeButton(true)}
+        {hasCards && <ShoppingLink block weekStart={weekStart} />}
+      </div>
 
       <div className="mt-4 min-h-6" aria-live="polite">
         {error && <FieldError alert>{error}</FieldError>}
@@ -917,5 +923,17 @@ export function WeekBoard({
         <SheetContent>{sheet && sheetMeal !== undefined && sheetDay !== undefined && sheetBody(sheet, sheetMeal, sheetDay)}</SheetContent>
       </Sheet>
     </DndContext>
+  );
+}
+
+// « Faire les courses » : la liste de courses de la semaine affichée.
+function ShoppingLink({ weekStart, block = false, className }: { weekStart: string; block?: boolean; className?: string }) {
+  return (
+    <Button asChild variant="secondary" size="lg" block={block} className={className}>
+      <Link href={`/courses?semaine=${weekStart}`}>
+        <ShoppingBasket aria-hidden="true" />
+        Faire les courses
+      </Link>
+    </Button>
   );
 }

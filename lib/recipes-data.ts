@@ -185,7 +185,7 @@ async function knownBases(supabase: Client, householdId: string): Promise<string
 export type KnownIngredient = { name: string; aisle: GroceryAisle; unit: IngredientUnit | null };
 
 // Les ingrédients déjà connus (catalogue et recettes du foyer), pour l'autocomplétion.
-async function knownIngredients(supabase: Client): Promise<KnownIngredient[]> {
+export async function knownIngredients(supabase: Client): Promise<KnownIngredient[]> {
   const { data, error } = await supabase.from("known_ingredients").select("name, aisle, unit").order("name");
   if (error) throw new Error(error.message);
   return data;

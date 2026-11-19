@@ -29,6 +29,7 @@ export function Autocomplete({
   onValueChange,
   options,
   onPick,
+  placement = "bottom",
   className,
   ...input
 }: Omit<ComponentProps<"input">, "value" | "onChange" | "id"> & {
@@ -37,6 +38,8 @@ export function Autocomplete({
   onValueChange: (value: string) => void;
   options: AutocompleteOption[];
   onPick?: (option: AutocompleteOption) => void;
+  // « top » : les suggestions s'ouvrent au-dessus (champ fixé en bas de l'écran).
+  placement?: "bottom" | "top";
 }) {
   const listId = useId();
   const [open, setOpen] = useState(false);
@@ -94,7 +97,10 @@ export function Autocomplete({
         id={listId}
         role="listbox"
         hidden={!expanded}
-        className="absolute inset-x-0 top-full z-30 mt-1.5 max-h-72 overflow-y-auto rounded-xl border border-border bg-popover p-1.5 shadow-lift"
+        className={cn(
+          "absolute inset-x-0 z-30 max-h-72 overflow-y-auto rounded-xl border border-border bg-popover p-1.5 shadow-lift",
+          placement === "top" ? "bottom-full mb-1.5" : "top-full mt-1.5",
+        )}
       >
         {expanded &&
           suggestions.map((option, index) => (
