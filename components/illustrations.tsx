@@ -99,3 +99,24 @@ export function BookIllustration({ className }: { className?: string }) {
     </Frame>
   );
 }
+
+// Un frigo, une tomate aimantée et une note sur la porte : « rien au frigo pour l'instant ».
+export function FridgeIllustration({ className }: { className?: string }) {
+  return (
+    <Frame className={className}>
+      <Sparkles />
+      <path className={LINE} strokeWidth="3" d="M50 138h100" />
+      <path d="M74 132v6M126 132v6" className="fill-none stroke-foreground [stroke-linecap:round]" strokeWidth="4" />
+      <rect x="64" y="12" width="72" height="122" rx="12" className="fill-card stroke-foreground" strokeWidth="3" />
+      <path d="M64 54h72" className="fill-none stroke-foreground" strokeWidth="3" />
+      <path d="M76 26v16M76 66v28" className="fill-none stroke-foreground [stroke-linecap:round]" strokeWidth="4" />
+      <circle cx="112" cy="33" r="9" className="fill-tomato stroke-foreground" strokeWidth="2.5" />
+      <path d="M107 25c2.5-3.5 7.5-3.5 10 0" className="fill-none stroke-sage-deep [stroke-linecap:round]" strokeWidth="2.5" />
+      <g transform="rotate(7 111 90)">
+        <rect x="97" y="74" width="28" height="34" rx="3" className="fill-mustard-soft stroke-foreground" strokeWidth="2.5" />
+        <path d="M103 86h16M103 94h11" className="fill-none stroke-mustard-deep [stroke-linecap:round]" strokeWidth="2.5" />
+        <circle cx="111" cy="74" r="4" className="fill-sage stroke-foreground" strokeWidth="2" />
+      </g>
+    </Frame>
+  );
+}

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import { Header } from "@/components/layout/Header";
 import { MotionProvider } from "@/components/motion-provider";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 // Titres : Fraunces, avec son axe SOFT pour des empattements arrondis, « livre de cuisine ».
@@ -49,6 +50,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <MotionProvider>
           <Header />
           {children}
+          <Toaster />
         </MotionProvider>
       </body>
     </html>

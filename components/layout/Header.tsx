@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { HeaderNav } from "@/components/app-nav";
 import { Logo } from "@/components/brand/logo";
+import { fridgeUrgentCount } from "@/lib/fridge-data";
 import { createClient } from "@/lib/supabase/server";
 import { AccountMenu } from "./account-menu";
 import { GuestActions } from "./guest-actions";
@@ -34,10 +35,11 @@ async function HeaderSession() {
   if (!data?.claims) return <GuestActions />;
 
   const email = typeof data.claims.email === "string" ? data.claims.email : undefined;
+  const fridgeCount = await fridgeUrgentCount();
   return (
     <>
       <div className="hidden lg:block">
-        <HeaderNav />
+        <HeaderNav fridgeCount={fridgeCount} />
       </div>
       <div className="ml-auto">
         <AccountMenu email={email} />

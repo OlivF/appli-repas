@@ -57,10 +57,14 @@ export async function loadWeekMenu(supabase: Client, householdId: string, weekSt
   return { planId: plan?.id ?? null, meals, list: Array.isArray(list) ? (list[0] ?? null) : list };
 }
 
-// La liste calculée depuis les plats : recettes, lignes et ingrédients canoniques.
-async function computeItems(supabase: Client, meals: ShoppingMeal[], members: PortionMember[], weekStart: string) {
+// Les recettes des plats, avec leurs lignes, et les ingrédients canoniques de ces lignes : de
+// quoi calculer la liste de courses ou le besoin de la semaine.
+export async function loadMenuRecipes(
+  supabase: Client,
+  meals: readonly ShoppingMeal[],
+): Promise<{ recipes: ShoppingRecipe[]; ingredients: ShoppingIngredient[] }> {
   const recipeIds = [...new Set(meals.map((meal) => meal.recipe_id))];
-  if (recipeIds.length === 0) return [];
+  if (recipeIds.length === 0) return { recipes: [], ingredients: [] };
   const { data: recipeRows, error } = await supabase
     .from("recipes")
     .select("id, title, servings, recipe_ingredients(ingredient_id, name, quantity, unit, aisle)")
@@ -78,7 +82,12 @@ async function computeItems(supabase: Client, meals: ShoppingMeal[], members: Po
         .in("id", ingredientIds)
     : { data: [] as ShoppingIngredient[], error: null };
   if (ingredientsError) throw new Error(ingredientsError.message);
+  return { recipes, ingredients };
+}
 
+// La liste calculée depuis les plats.
+async function computeItems(supabase: Client, meals: ShoppingMeal[], members: PortionMember[], weekStart: string) {
+  const { recipes, ingredients } = await loadMenuRecipes(supabase, meals);
   return buildShoppingList({ meals, recipes, members, ingredients, weekStart });
 }
 

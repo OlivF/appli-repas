@@ -12,3 +12,10 @@ globalThis.ResizeObserver ??= class {
   unobserve() {}
   disconnect() {}
 };
+
+// Ni la capture du pointeur, dont se sert Sonner (glisser un toast pour le fermer).
+Element.prototype.setPointerCapture ??= function () {};
+Element.prototype.releasePointerCapture ??= function () {};
+Element.prototype.hasPointerCapture ??= function () {
+  return false;
+};
