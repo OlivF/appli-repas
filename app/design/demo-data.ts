@@ -73,3 +73,22 @@ export const DEMO_RECIPES: ListRecipe[] = [
   ingredientNames: [],
   excludedIds: [],
 }));
+
+// Quelques basiques du catalogue : même élément principal, accompagnements différents.
+export const DEMO_BASICS: ListRecipe[] = [
+  { id: "steak-frites", title: "Steak haché et frites", base: "Steak haché", minutes: 28, diets: ["lactose_free"] },
+  { id: "steak-puree", title: "Steak haché et purée", base: "Steak haché", minutes: 33, diets: ["gluten_free"] },
+  { id: "steak-haricots", title: "Steak haché et haricots verts", base: "Steak haché", minutes: 18, diets: ["keto", "gluten_free"] },
+  { id: "poulet-riz", title: "Poulet et riz", base: "Poulet", minutes: 25, diets: ["gluten_free", "lactose_free"] },
+  { id: "poulet-brocolis", title: "Poulet et brocolis", base: "Poulet", minutes: 22, diets: ["keto", "gluten_free"] },
+].map((recipe) => ({
+  ...recipe,
+  diets: recipe.diets as ListRecipe["diets"],
+  meal_types: ["midi", "soir"],
+  favorite: false,
+  photo_url: null,
+  batch_friendly: false,
+  basic: true,
+  ingredientNames: [],
+  excludedIds: [],
+}));

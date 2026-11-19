@@ -14,6 +14,7 @@ import { MemberAvatar, MemberAvatars } from "@/components/member-avatar";
 import { MemberCard } from "@/components/member-card";
 import { PageHeader } from "@/components/page-header";
 import { BatchBadge, RecipeCard } from "@/components/recipe-card";
+import { RecipeChip, RecipeChipRow } from "@/components/recipe-chip";
 import { RecipeSteps } from "@/components/recipe-steps";
 import { ServingsIngredients } from "@/components/servings-ingredients";
 import { Badge } from "@/components/ui/badge";
@@ -292,6 +293,22 @@ export default function DesignPage() {
             <FavoriteDemo />
             <span className="text-muted-foreground">Le cœur des favoris : touche-le.</span>
           </div>
+          <h3 className="mt-10 text-xl">Les recettes qui se marient</h3>
+          <p className="mt-1 max-w-[60ch] text-muted-foreground">
+            Même élément principal, accompagnement différent : une seule cuisson. Sur la fiche, chaque recette
+            associée est une puce qui mène à la sienne ; la pastille Céto les distingue.
+          </p>
+          <RecipeChipRow id="design-partners" label="Se marie avec" className="mt-4">
+            <li>
+              <RecipeChip label="Steak haché et haricots verts" keto href="#recettes" />
+            </li>
+            <li>
+              <RecipeChip label="Steak haché et brocolis" keto href="#recettes" />
+            </li>
+            <li>
+              <RecipeChip label="Steak haché et purée" href="#recettes" />
+            </li>
+          </RecipeChipRow>
           <h3 className="mt-10 text-xl">Les étapes</h3>
           <div className="mt-4 max-w-xl">
             <RecipeSteps
@@ -374,7 +391,9 @@ export default function DesignPage() {
 
           <h3 className="mt-10 text-xl">La Bibliothèque</h3>
           <p className="mt-1 text-muted-foreground">
-            Chercher, filtrer, et toucher la recette à poser. Ce qui ne convient pas à quelqu’un est signalé et rangé en dernier.
+            Chercher, filtrer, et toucher la recette à poser. En tête, « Les basiques » : une ligne par élément
+            principal, ses accompagnements en puces. Ce qui ne convient pas à quelqu’un est signalé et rangé en
+            dernier ; une puce que personne à table ne peut manger est cachée.
           </p>
           <div className="mt-4">
             <LibraryDemo eaters={[OLIVIER, MARIE_LAURE]} />

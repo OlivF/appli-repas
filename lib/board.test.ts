@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBoard } from "@/lib/board";
+import { buildBoard, menuBase } from "@/lib/board";
 import type { SlotInput } from "@/lib/meal-slots";
 import { LEA, PAUL, TOM } from "@/test/helpers";
 
@@ -49,5 +49,34 @@ describe("buildBoard", () => {
   it("ne signale personne dans un créneau encore vide", () => {
     const board = buildBoard([{ day: 0, meal_type: "soir", member_ids: [PAUL] }], []);
     expect(board[0].days[0].slots[0].unfed).toEqual([]);
+  });
+});
+
+describe("menuBase", () => {
+  const bases: Record<string, string | null> = {
+    "r-famille": "Steak haché",
+    "r-lea": "Poulet",
+    "r-sans": null,
+    "r-mardi": "Saumon",
+  };
+  const baseOf = (recipeId: string) => bases[recipeId];
+  const cards = [
+    card("lea", 0, "soir", 1, [LEA]),
+    card("famille", 0, "soir", 0, [PAUL, TOM]),
+    card("mardi", 1, "soir", 0, [PAUL]),
+  ];
+
+  it("donne la base des autres plats du repas avant celle du plat qu'on change", () => {
+    expect(menuBase(cards, baseOf, { day: 0, meal_type: "soir", cardId: "lea" })).toBe("Steak haché");
+  });
+
+  it("garde la base du plat qu'on change quand les autres n'en ont pas", () => {
+    const others = [card("lea", 0, "soir", 1, [LEA]), { ...card("famille", 0, "soir", 0, [PAUL]), recipe_id: "r-sans" }];
+    expect(menuBase(others, baseOf, { day: 0, meal_type: "soir", cardId: "lea" })).toBe("Poulet");
+  });
+
+  it("suit l'ordre des plats pour un créneau à compléter, sans regarder les autres repas", () => {
+    expect(menuBase(cards, baseOf, { day: 0, meal_type: "soir" })).toBe("Steak haché");
+    expect(menuBase(cards, baseOf, { day: 2, meal_type: "soir" })).toBeNull();
   });
 });

@@ -40,7 +40,7 @@ Appli web multi-utilisateurs : chaque compte crée son foyer, ses membres, ses r
 - `households` : un foyer. `household_users` : comptes liés à un foyer (pour partager entre conjoints).
 - `members` : membres du foyer (prénom, année de naissance, régimes `keto` | `vegetarian` | `gluten_free` | `lactose_free`, appétit `normal` | `grand` → coefficient de portion 1 / 1.5, enfant < 12 ans → 0.7). Le formulaire demande l'âge.
 - `meal_slots` : créneaux configurables (jour 0 = lundi … 6 = dimanche, type `petit_dej` | `midi` | `soir` | `pique_nique`, `member_ids` : membres présents du même foyer ; un créneau vide n'existe pas).
-- `recipes` : titre, type(s) de repas, portions de base, préparable à l'avance (batch), temps, régimes compatibles, membres exclus.
+- `recipes` : titre, type(s) de repas, portions de base, préparable à l'avance (batch), temps, régimes compatibles, membres exclus. base : élément principal (steak haché, poulet…) ; deux recettes de même base s'associent et se cuisinent ensemble. basic : recette du panneau Les basiques.
 - `recipe_ingredients` : nom, quantité, unité, rayon.
 - `week_plans` + `planned_meals` : semaine (date du lundi), créneau → recette, verrou.
 

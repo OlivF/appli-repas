@@ -40,17 +40,18 @@ test("chercher, filtrer, ouvrir une recette du catalogue puis la copier", async 
   await newHousehold(page);
   await page.getByRole("link", { name: "Recettes" }).click();
   await expect(page).toHaveURL(/\/recettes$/);
-  await expect(page.getByRole("status")).toHaveText("40 recettes");
+  // 40 recettes du quotidien et 35 basiques
+  await expect(page.getByRole("status")).toHaveText("75 recettes");
 
   // Recherche par ingrédient, sans accent ni majuscule
   await page.getByRole("searchbox", { name: "Chercher une recette" }).fill("COURGETTE");
-  await expect(page.getByRole("status")).toHaveText("1 recette");
+  await expect(page.getByRole("status")).toHaveText("5 recettes");
   await expect(page.getByRole("link", { name: /Courgettes farcies à la viande/ })).toBeVisible();
   await page.getByRole("button", { name: "Effacer la recherche" }).click();
 
   // Filtre en puce, gardé dans l'adresse
   await chip(page, "Cétogène").click();
-  await expect(page.getByRole("status")).toHaveText("17 recettes");
+  await expect(page.getByRole("status")).toHaveText("33 recettes");
   await expect(page).toHaveURL(/regime=keto/);
 
   // Fiche : quantités pour les 2 membres, puis pour 3 au curseur
@@ -60,6 +61,11 @@ test("chercher, filtrer, ouvrir une recette du catalogue puis la copier", async 
   await expect(salmon).toHaveText("Pavés de saumon2");
   await page.getByRole("slider", { name: "Nombre de personnes" }).press("ArrowRight");
   await expect(salmon).toHaveText("Pavés de saumon3");
+
+  // Les recettes de même élément principal : celles pour les autres d'abord (celle-ci est céto)
+  const partners = page.getByRole("list", { name: "Se marie avec" });
+  await expect(partners.getByRole("link").first()).toHaveText("Saumon et pâtes au pesto");
+  await expect(partners.getByRole("link", { name: /Saumon et haricots verts/ })).toContainText("Céto");
 
   // Exclure Paul et mettre en favori, enregistré aussitôt
   await page.getByRole("button", { name: "Paul n’en mange pas" }).click();
@@ -105,7 +111,7 @@ test("chercher, filtrer, ouvrir une recette du catalogue puis la copier", async 
 
   // La copie remplace l'originale dans la liste
   await page.goto("/recettes?regime=keto");
-  await expect(page.getByRole("status")).toHaveText("17 recettes");
+  await expect(page.getByRole("status")).toHaveText("33 recettes");
   await expect(page.getByRole("link", { name: /Saumon de Léa/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /Saumon au four/ })).toHaveCount(0);
 });

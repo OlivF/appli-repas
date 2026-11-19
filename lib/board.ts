@@ -56,3 +56,16 @@ export function buildBoard<C extends BoardCard>(slots: readonly SlotInput[], car
     })),
   }));
 }
+
+// L'élément principal déjà au menu d'un repas, pour mettre ses basiques en tête : celui des
+// autres plats du créneau (dans leur ordre), sinon celui du plat qu'on change (`cardId`).
+export function menuBase<C extends { id: string; day: number; meal_type: MealType; position: number; recipe_id: string }>(
+  cards: readonly C[],
+  baseOf: (recipeId: string) => string | null | undefined,
+  target: { day: number; meal_type: MealType; cardId?: string },
+): string | null {
+  const here = cards
+    .filter((card) => card.day === target.day && card.meal_type === target.meal_type)
+    .sort((a, b) => Number(a.id === target.cardId) - Number(b.id === target.cardId) || a.position - b.position);
+  return here.map((card) => baseOf(card.recipe_id)).find((base) => base?.trim()) ?? null;
+}

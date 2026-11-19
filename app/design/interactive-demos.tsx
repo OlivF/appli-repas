@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/sheet";
 import { DIETS } from "@/lib/members";
 import { AISLES, UNITS, aisleLabel, incompatibleDiets, type GroceryAisle } from "@/lib/recipes";
-import { DEMO_RECIPES } from "./demo-data";
+import { DEMO_BASICS, DEMO_RECIPES } from "./demo-data";
 
 // Le header (crème translucide, ombre fine une fois la page défilée), en exemple.
 function HeaderDemo({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -343,9 +343,14 @@ export function LibraryDemo({ eaters }: { eaters: CardMember[] }) {
   const [picked, setPicked] = useState<string | null>(null);
   return (
     <div className="max-w-md rounded-3xl border border-border/70 bg-card p-4 shadow-soft">
-      <RecipeLibrary recipes={DEMO_RECIPES} mealType="soir" eaters={eaters} onPick={(recipe) => setPicked(recipe.title)} />
+      <RecipeLibrary
+        recipes={[...DEMO_RECIPES, ...DEMO_BASICS]}
+        mealType="soir"
+        eaters={eaters}
+        onPick={(recipe) => setPicked(recipe.title)}
+      />
       <p role="status" className="mt-4 text-[0.9375rem] text-muted-foreground">
-        {picked ? `Choisie : ${picked}` : "Touche une recette pour la choisir."}
+        {picked ? `Choisie : ${picked}` : "Touche une recette, ou une puce des basiques, pour la choisir."}
       </p>
     </div>
   );
