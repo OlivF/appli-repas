@@ -29,6 +29,7 @@ import { dayLabel } from "@/lib/week";
 import { ANNA_LUCIA, FAMILY, MARIE_LAURE, OLIVIER, OTIS, PALETTE } from "./demo-data";
 import {
   DayStripDemo,
+  DuoDemo,
   FavoriteDemo,
   GridCardsDemo,
   IngredientRowDemo,
@@ -380,6 +381,16 @@ export default function DesignPage() {
             <div className="max-w-md">
               <EmptySlot label="Choisir le midi de mardi" />
             </div>
+          </div>
+
+          <h3 className="mt-10 text-xl">Plusieurs plats sur un repas</h3>
+          <p className="mt-1 max-w-[60ch] text-muted-foreground">
+            Chacun mange un seul plat par repas. Deux plats de même base se cuisinent ensemble : la mention
+            les relie. « + Ajouter un plat » (on peut aussi y lâcher une recette) demande « Pour qui ? » ; les
+            avatars d’une carte disent qui la mange. Un coché que la recette ne respecte pas est signalé.
+          </p>
+          <div className="mt-4">
+            <DuoDemo family={FAMILY} keto={MARIE_LAURE} />
           </div>
 
           <h3 className="mt-10 text-xl">Dans la grille, sur ordinateur</h3>

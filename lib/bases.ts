@@ -9,6 +9,11 @@ function key(base: string | null | undefined) {
   return normalizeText(base ?? "").replace(/\s+/g, " ");
 }
 
+// La base comparable (sans accents, majuscules ni espaces en trop), ou null sans base.
+export function baseKey(base: string | null | undefined): string | null {
+  return key(base) || null;
+}
+
 export function sameBase(a: string | null | undefined, b: string | null | undefined) {
   const first = key(a);
   return first !== "" && first === key(b);
