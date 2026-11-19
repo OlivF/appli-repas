@@ -49,6 +49,10 @@ export type RecipeInput = {
   batch_friendly: boolean;
   batch_notes: string | null;
   kid_friendly: boolean;
+  // Élément principal : deux recettes de même base se cuisinent ensemble.
+  base: string | null;
+  // Recette du panneau « Les basiques ».
+  basic: boolean;
 };
 
 export type IngredientInput = {
@@ -68,7 +72,8 @@ export type RecipeFormErrors = Partial<
     | "prep_minutes"
     | "cook_minutes"
     | "ingredients"
-    | "batch_notes",
+    | "batch_notes"
+    | "base",
     string
   >
 >;
@@ -78,6 +83,7 @@ export type RecipeFormResult =
   | { ok: false; errors: RecipeFormErrors };
 
 const MAX_TITLE = 120;
+const MAX_BASE = 60;
 const MAX_DESCRIPTION = 300;
 const MAX_BATCH_NOTES = 1000;
 const MAX_INGREDIENT_NAME = 80;
@@ -97,6 +103,9 @@ export function parseRecipeForm(form: FormData, memberIds: string[]): RecipeForm
   if (description.length > MAX_DESCRIPTION) {
     errors.description = `Cette description est trop longue (${MAX_DESCRIPTION} caractères au plus).`;
   }
+
+  const base = text("base");
+  if (base.length > MAX_BASE) errors.base = `Cet élément principal est trop long (${MAX_BASE} caractères au plus).`;
 
   const photoUrl = text("photo_url");
   if (photoUrl && !/^https?:\/\/\S+$/i.test(photoUrl)) {
@@ -161,6 +170,8 @@ export function parseRecipeForm(form: FormData, memberIds: string[]): RecipeForm
       batch_friendly: batchFriendly,
       batch_notes: batchNotes || null,
       kid_friendly: form.get("kid_friendly") === "on",
+      base: base || null,
+      basic: form.get("basic") === "on",
     },
     ingredients,
     excludedMemberIds,
@@ -301,6 +312,7 @@ export type RecipeFilters = {
   diets: Diet[];
   batch: boolean;
   favorites: boolean;
+  basic: boolean;
 };
 
 export type FilterableRecipe = {
@@ -310,6 +322,7 @@ export type FilterableRecipe = {
   diets: readonly Diet[];
   batch_friendly: boolean;
   favorite: boolean;
+  basic: boolean;
 };
 
 // Repas en « ou » (midi ou dîner), régimes en « et » (céto et sans gluten).
@@ -320,11 +333,12 @@ export function filterRecipes<T extends FilterableRecipe>(recipes: T[], filters:
       (filters.mealTypes.length === 0 || filters.mealTypes.some((meal) => recipe.meal_types.includes(meal))) &&
       filters.diets.every((diet) => recipe.diets.includes(diet)) &&
       (!filters.batch || recipe.batch_friendly) &&
-      (!filters.favorites || recipe.favorite),
+      (!filters.favorites || recipe.favorite) &&
+      (!filters.basic || recipe.basic),
   );
 }
 
-// Dans l'adresse : ?q=creme&repas=soir,midi&regime=keto&avance=1&favoris=1
+// Dans l'adresse : ?q=creme&repas=soir,midi&regime=keto&avance=1&favoris=1&basiques=1
 export function filtersFromSearchParams(params: URLSearchParams): RecipeFilters {
   const list = (key: string) => (params.get(key) ?? "").split(",").filter(Boolean);
   const meals = list("repas");
@@ -335,6 +349,7 @@ export function filtersFromSearchParams(params: URLSearchParams): RecipeFilters 
     diets: DIETS.map((diet) => diet.value).filter((diet) => diets.includes(diet)),
     batch: params.get("avance") === "1",
     favorites: params.get("favoris") === "1",
+    basic: params.get("basiques") === "1",
   };
 }
 
@@ -345,7 +360,14 @@ export function filtersToSearchParams(filters: RecipeFilters): URLSearchParams {
   if (filters.diets.length > 0) params.set("regime", filters.diets.join(","));
   if (filters.batch) params.set("avance", "1");
   if (filters.favorites) params.set("favoris", "1");
+  if (filters.basic) params.set("basiques", "1");
   return params;
+}
+
+// Une recette du catalogue que le foyer a copiée disparaît : sa copie la remplace.
+export function hideCopiedOriginals<T extends { id: string; source_recipe_id: string | null }>(rows: readonly T[]): T[] {
+  const copied = new Set(rows.map((row) => row.source_recipe_id).filter(Boolean));
+  return rows.filter((row) => !copied.has(row.id));
 }
 
 // ─── Qui mange quoi ─────────────────────────────────────────────────────────

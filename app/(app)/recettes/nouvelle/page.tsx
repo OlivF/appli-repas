@@ -22,6 +22,6 @@ export default function NewRecipePage() {
 }
 
 async function NewRecipeForm() {
-  const { members, known } = await loadRecipeForm();
-  return <RecipeForm recipe={null} ingredients={[]} members={members} excludedIds={[]} known={known} />;
+  const { members, known, bases } = await loadRecipeForm();
+  return <RecipeForm recipe={null} ingredients={[]} members={members} excludedIds={[]} known={known} bases={bases} />;
 }

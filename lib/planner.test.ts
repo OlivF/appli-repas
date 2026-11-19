@@ -315,6 +315,47 @@ describe("proposeWeek : foyer de test", () => {
   });
 });
 
+describe("proposeWeek et nextIdea : les basiques", () => {
+  it("ne propose jamais une recette basique", () => {
+    for (const seed of SEEDS) {
+      const { cards } = propose(
+        [slot(0, "soir", [PAUL, TOM]), slot(1, "soir", [PAUL, TOM])],
+        [recipe("basique", { basic: true, favorite: true, minutes: 10 }), recipe("a"), recipe("b")],
+        { seed },
+      );
+      expect(cards.map((card) => card.recipe_id)).not.toContain("basique");
+    }
+  });
+
+  it("garde une carte verrouillée sur une basique et tient compte de sa viande", () => {
+    const locked: PlannerCard = {
+      day: 0,
+      meal_type: "soir",
+      position: 0,
+      recipe_id: "steak-frites",
+      member_ids: [PAUL, TOM],
+      locked: true,
+    };
+    const recipes = [
+      recipe("steak-frites", { basic: true, protein: "boeuf" }),
+      recipe("boeuf", { protein: "boeuf" }),
+      recipe("poulet", { protein: "volaille" }),
+    ];
+    for (const seed of SEEDS) {
+      const { cards } = propose([slot(0, "soir", [PAUL, TOM]), slot(1, "soir", [PAUL, TOM])], recipes, { locked: [locked], seed });
+      expect(cards).toHaveLength(1);
+      expect(cards[0].recipe_id).toBe("poulet");
+    }
+  });
+
+  it("ne propose pas une basique comme autre idée", () => {
+    const card: PlannerCard = { day: 0, meal_type: "soir", position: 0, recipe_id: "a", member_ids: [PAUL], locked: false };
+    expect(
+      nextIdea({ card, cards: [], members: MEMBERS, recipes: [recipe("a"), recipe("basique", { basic: true })], tried: [], seed: 1 }),
+    ).toBeNull();
+  });
+});
+
 describe("mainProtein", () => {
   it("prend le premier ingrédient de la boucherie ou de la poissonnerie", () => {
     expect(

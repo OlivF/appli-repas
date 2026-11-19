@@ -6,6 +6,7 @@ import { Autocomplete, type AutocompleteOption } from "@/components/autocomplete
 import { IngredientList } from "@/components/ingredient-list";
 import { MemberToggle } from "@/components/member-toggle";
 import { RecipeCard } from "@/components/recipe-card";
+import { RecipeChip } from "@/components/recipe-chip";
 import { LEA, PAUL, TOM } from "@/test/helpers";
 
 const OPTIONS: AutocompleteOption[] = [
@@ -140,5 +141,29 @@ describe("RecipeCard", () => {
   it("ne met pas d'article dans le lien : Chromium lui ôterait son nom", () => {
     render(<RecipeCard href="/recettes/1" title="Lasagnes" mealTypes={["soir"]} minutes={75} diets={[]} members={family} />);
     expect(within(screen.getByRole("link")).queryByRole("article")).not.toBeInTheDocument();
+  });
+});
+
+describe("RecipeChip", () => {
+  it("mène à la recette quand il a une adresse, avec la pastille Céto", () => {
+    render(<RecipeChip label="Steak haché et haricots verts" keto href="/recettes/1" />);
+    const link = screen.getByRole("link", { name: /Steak haché et haricots verts/ });
+    expect(link).toHaveAttribute("href", "/recettes/1");
+    expect(within(link).getByText("Céto")).toBeInTheDocument();
+  });
+
+  it("choisit la recette quand on le touche", async () => {
+    const onClick = vi.fn();
+    render(<RecipeChip label="frites" onClick={onClick} />);
+    await userEvent.click(screen.getByRole("button", { name: "frites" }));
+    expect(onClick).toHaveBeenCalledOnce();
+    expect(screen.queryByText("Céto")).not.toBeInTheDocument();
+  });
+
+  it("reste une simple pastille sans adresse ni action, pour être glissée", () => {
+    render(<RecipeChip label="frites" />);
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    expect(screen.getByText("frites")).toBeInTheDocument();
   });
 });

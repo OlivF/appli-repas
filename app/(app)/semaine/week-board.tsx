@@ -35,7 +35,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "@/components/use-media-query";
 import { WeekPicker } from "@/components/week-picker";
-import { buildBoard, type BoardSlot } from "@/lib/board";
+import { buildBoard, menuBase, type BoardSlot } from "@/lib/board";
 import type { MealType, SlotInput } from "@/lib/meal-slots";
 import { canEat } from "@/lib/planner";
 import type { RecipeMember } from "@/lib/recipes-data";
@@ -376,6 +376,15 @@ export function WeekBoard({
   const sheetMeal = sheet ? (sheet.kind === "card" ? sheetCard?.meal_type : sheet.meal_type) : undefined;
   const sheetDay = sheet ? (sheet.kind === "card" ? sheetCard?.day : sheet.day) : undefined;
   const sheetEaterIds = sheet ? (sheet.kind === "card" ? (sheetCard?.member_ids ?? []) : sheet.member_ids) : [];
+  // L'élément principal déjà au menu de ce repas : ses basiques passent en tête (une seule cuisson).
+  const sheetBase =
+    sheetDay !== undefined && sheetMeal !== undefined
+      ? menuBase(cards, (recipeId) => recipeById.get(recipeId)?.base, {
+          day: sheetDay,
+          meal_type: sheetMeal,
+          cardId: sheetCard?.id,
+        })
+      : null;
 
   const hasCards = cards.length > 0;
   const proposeButton = (block: boolean) => (
@@ -639,6 +648,7 @@ export function WeekBoard({
                 recipes={recipes}
                 mealType={sheetMeal}
                 eaters={sheetEaterIds.map((id) => memberById.get(id)).filter((member) => member !== undefined)}
+                firstBase={sheetBase}
                 onPick={(recipe) => {
                   const target = sheet;
                   setSheet(null);

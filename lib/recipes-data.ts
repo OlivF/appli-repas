@@ -2,9 +2,10 @@ import { notFound, redirect } from "next/navigation";
 import type { AvatarMember } from "@/components/member-avatar";
 import { loadHousehold } from "@/lib/data";
 import type { MealType } from "@/lib/meal-slots";
+import { recipePartners, uniqueBases } from "@/lib/bases";
 import { avatarInitials, type Diet } from "@/lib/members";
 import { mainProtein, type Protein } from "@/lib/planner";
-import type { GroceryAisle, IngredientUnit } from "@/lib/recipes";
+import { hideCopiedOriginals, type GroceryAisle, type IngredientUnit } from "@/lib/recipes";
 
 export type RecipeMember = AvatarMember & { diets: Diet[] };
 
@@ -19,6 +20,9 @@ export type ListRecipe = {
   ingredientNames: string[];
   favorite: boolean;
   excludedIds: string[];
+  // Élément principal (recettes associées) et panneau « Les basiques ».
+  base: string | null;
+  basic: boolean;
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -48,7 +52,7 @@ export async function householdRecipes(supabase: Client, householdId: string): P
     supabase
       .from("recipes")
       .select(
-        "id, household_id, source_recipe_id, title, photo_url, meal_types, prep_minutes, cook_minutes, diets, batch_friendly, recipe_ingredients(name, aisle, position)",
+        "id, household_id, source_recipe_id, title, photo_url, meal_types, prep_minutes, cook_minutes, diets, batch_friendly, base, basic, recipe_ingredients(name, aisle, position)",
       )
       .or(`household_id.is.null,household_id.eq.${householdId}`),
     supabase.from("recipe_favorites").select("recipe_id").eq("household_id", householdId),
@@ -59,10 +63,8 @@ export async function householdRecipes(supabase: Client, householdId: string): P
   if (exclusionsResult.error) throw new Error(exclusionsResult.error.message);
 
   const favorites = new Set(favoritesResult.data.map((row) => row.recipe_id));
-  const copied = new Set(recipesResult.data.map((recipe) => recipe.source_recipe_id).filter(Boolean));
 
-  return recipesResult.data
-    .filter((recipe) => !copied.has(recipe.id))
+  return hideCopiedOriginals(recipesResult.data)
     .map((recipe) => {
       const ingredients = [...recipe.recipe_ingredients].sort((a, b) => a.position - b.position);
       return {
@@ -79,6 +81,8 @@ export async function householdRecipes(supabase: Client, householdId: string): P
           .filter((row) => row.recipe_id === recipe.id)
           .map((row) => row.member_id),
         protein: mainProtein(ingredients),
+        base: recipe.base,
+        basic: recipe.basic,
       };
     })
     .sort((a, b) => a.title.localeCompare(b.title, "fr"));
@@ -138,6 +142,7 @@ export async function loadRecipe(id: string) {
 
   const { recipe_ingredients: ingredients, ...recipe } = row;
   return {
+    partners: recipe.base ? await partnersOf(supabase, household.id, recipe) : [],
     supabase,
     household,
     members,
@@ -147,6 +152,34 @@ export async function loadRecipe(id: string) {
     favorite: Boolean(favoriteResult.data),
     excludedIds: (exclusionsResult.data ?? []).map((row) => row.member_id),
   };
+}
+
+export type PartnerRecipe = { id: string; title: string; diets: Diet[] };
+
+// « Se marie avec » : les recettes visibles du foyer (copies à la place des originaux) qui ont
+// le même élément principal.
+async function partnersOf(
+  supabase: Client,
+  householdId: string,
+  recipe: { id: string; title: string; base: string | null; diets: Diet[] },
+): Promise<PartnerRecipe[]> {
+  const { data, error } = await supabase
+    .from("recipes")
+    .select("id, source_recipe_id, title, base, diets")
+    .or(`household_id.is.null,household_id.eq.${householdId}`);
+  if (error) throw new Error(error.message);
+  return recipePartners(recipe, hideCopiedOriginals(data)).map(({ id, title, diets }) => ({ id, title, diets }));
+}
+
+// Les éléments principaux déjà connus (catalogue et recettes du foyer), pour l'autocomplétion.
+async function knownBases(supabase: Client, householdId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("recipes")
+    .select("base")
+    .not("base", "is", null)
+    .or(`household_id.is.null,household_id.eq.${householdId}`);
+  if (error) throw new Error(error.message);
+  return uniqueBases(data.map((row) => row.base));
 }
 
 export type KnownIngredient = { name: string; aisle: GroceryAisle; unit: IngredientUnit | null };
@@ -159,19 +192,22 @@ async function knownIngredients(supabase: Client): Promise<KnownIngredient[]> {
 }
 
 // De quoi remplir le formulaire : la recette à modifier (jamais une recette du catalogue,
-// qu'on copie d'abord), les membres et les ingrédients connus.
+// qu'on copie d'abord), les membres, les ingrédients et les éléments principaux connus.
 export async function loadRecipeForm(id?: string) {
   if (id) {
-    const { supabase, recipe, ingredients, members, excludedIds, isCatalog } = await loadRecipe(id);
+    const { supabase, household, recipe, ingredients, members, excludedIds, isCatalog } = await loadRecipe(id);
     if (isCatalog) redirect(`/recettes/${id}`);
-    return { recipe, ingredients, members, excludedIds, known: await knownIngredients(supabase) };
+    const [known, bases] = await Promise.all([knownIngredients(supabase), knownBases(supabase, household.id)]);
+    return { recipe, ingredients, members, excludedIds, known, bases };
   }
-  const { supabase, members } = await loadReadyHousehold();
+  const { supabase, household, members } = await loadReadyHousehold();
+  const [known, bases] = await Promise.all([knownIngredients(supabase), knownBases(supabase, household.id)]);
   return {
     recipe: null,
     ingredients: [] as RecipeIngredient[],
     members,
     excludedIds: [] as string[],
-    known: await knownIngredients(supabase),
+    known,
+    bases,
   };
 }

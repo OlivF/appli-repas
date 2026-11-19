@@ -197,14 +197,14 @@ isOneToOne: false
                   ]
                 },"recipes": {
                   Row: {
-                    "batch_friendly": boolean,"batch_notes": string | null,"cook_minutes": number,"created_at": string,"description": string | null,"diets": (Database["public"]['Enums']["diet"])[],"household_id": string | null,"id": string,"kid_friendly": boolean,"meal_types": (Database["public"]['Enums']["meal_type"])[],"photo_url": string | null,"prep_minutes": number,"servings": number,"source_recipe_id": string | null,"steps": (string)[],"title": string
+                    "base": string | null,"basic": boolean,"batch_friendly": boolean,"batch_notes": string | null,"cook_minutes": number,"created_at": string,"description": string | null,"diets": (Database["public"]['Enums']["diet"])[],"household_id": string | null,"id": string,"kid_friendly": boolean,"meal_types": (Database["public"]['Enums']["meal_type"])[],"photo_url": string | null,"prep_minutes": number,"servings": number,"source_recipe_id": string | null,"steps": (string)[],"title": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "batch_friendly"?: boolean,"batch_notes"?: string | null,"cook_minutes"?: number,"created_at"?: string,"description"?: string | null,"diets"?: (Database["public"]['Enums']["diet"])[],"household_id"?: string | null,"id"?: string,"kid_friendly"?: boolean,"meal_types": (Database["public"]['Enums']["meal_type"])[],"photo_url"?: string | null,"prep_minutes"?: number,"servings": number,"source_recipe_id"?: string | null,"steps"?: (string)[],"title": string
+                    "base"?: string | null,"basic"?: boolean,"batch_friendly"?: boolean,"batch_notes"?: string | null,"cook_minutes"?: number,"created_at"?: string,"description"?: string | null,"diets"?: (Database["public"]['Enums']["diet"])[],"household_id"?: string | null,"id"?: string,"kid_friendly"?: boolean,"meal_types": (Database["public"]['Enums']["meal_type"])[],"photo_url"?: string | null,"prep_minutes"?: number,"servings": number,"source_recipe_id"?: string | null,"steps"?: (string)[],"title": string
                   }
                   Update: {
-                    "batch_friendly"?: boolean,"batch_notes"?: string | null,"cook_minutes"?: number,"created_at"?: string,"description"?: string | null,"diets"?: (Database["public"]['Enums']["diet"])[],"household_id"?: string | null,"id"?: string,"kid_friendly"?: boolean,"meal_types"?: (Database["public"]['Enums']["meal_type"])[],"photo_url"?: string | null,"prep_minutes"?: number,"servings"?: number,"source_recipe_id"?: string | null,"steps"?: (string)[],"title"?: string
+                    "base"?: string | null,"basic"?: boolean,"batch_friendly"?: boolean,"batch_notes"?: string | null,"cook_minutes"?: number,"created_at"?: string,"description"?: string | null,"diets"?: (Database["public"]['Enums']["diet"])[],"household_id"?: string | null,"id"?: string,"kid_friendly"?: boolean,"meal_types"?: (Database["public"]['Enums']["meal_type"])[],"photo_url"?: string | null,"prep_minutes"?: number,"servings"?: number,"source_recipe_id"?: string | null,"steps"?: (string)[],"title"?: string
                   }
                   Relationships: [
                     {
