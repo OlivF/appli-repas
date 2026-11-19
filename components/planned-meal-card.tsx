@@ -102,7 +102,11 @@ export function PlannedMealCard({
   const heading = (
     <>
       <span
-        className={cn("line-clamp-2 font-heading leading-tight", column ? "text-[0.9375rem]" : "text-[1.1875rem]")}
+        className={cn(
+          "line-clamp-2 font-heading leading-tight",
+          // Dans la grille, toujours la place de deux lignes : les cartes d'une ligne s'alignent.
+          column ? "min-h-[2lh] text-[0.9375rem]" : "text-[1.1875rem]",
+        )}
       >
         {recipe.title}
       </span>
