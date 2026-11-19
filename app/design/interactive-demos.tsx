@@ -8,6 +8,8 @@ import { Logo } from "@/components/brand/logo";
 import { ChoiceChip } from "@/components/choice-chip";
 import { FavoriteButton } from "@/components/favorite-button";
 import { DayStrip } from "@/components/day-strip";
+import { EatersPicker } from "@/components/eaters-picker";
+import { EmptySlot } from "@/components/empty-slot";
 import { ChoiceGroup, Field } from "@/components/field";
 import { AccountAvatar } from "@/components/layout/account-menu";
 import { MemberAvatar } from "@/components/member-avatar";
@@ -15,6 +17,7 @@ import type { CardMember } from "@/components/member-card";
 import { MemberToggle } from "@/components/member-toggle";
 import { PlannedMealCard } from "@/components/planned-meal-card";
 import { RecipeLibrary } from "@/components/recipe-library";
+import { SameBaseNote } from "@/components/same-base-note";
 import { SearchField } from "@/components/search-field";
 import { SwitchField } from "@/components/switch-field";
 import { StepProgress } from "@/components/step-progress";
@@ -311,6 +314,61 @@ export function PlannedCardsDemo({ family, keto }: { family: CardMember[]; keto:
         );
       })}
     </ul>
+  );
+}
+
+// Un dîner à deux plats de même base : steak-frites pour la famille, steak-haricots verts pour
+// qui mange céto. Toucher les avatars d'une carte ouvre « Qui mange ce plat ? » (ici, en dessous).
+export function DuoDemo({ family, keto }: { family: CardMember[]; keto: CardMember }) {
+  const [picked, setPicked] = useState([keto.id]);
+  const [asked, setAsked] = useState("Pour qui ?");
+  const theirs = family.filter((member) => member.id !== keto.id);
+  return (
+    <div className="max-w-md space-y-3">
+      <ul className="space-y-3">
+        <li>
+          <PlannedMealCard
+            recipe={{ title: "Steak haché et frites", minutes: 28, photo_url: null, mealType: "soir" }}
+            eaters={theirs}
+            household={family}
+            locked={false}
+            onEaters={() => {
+              setPicked(theirs.map((member) => member.id));
+              setAsked("Qui mange ce plat ?");
+            }}
+          />
+        </li>
+        <li>
+          <PlannedMealCard
+            recipe={{ title: "Steak haché et haricots verts", minutes: 18, photo_url: null, mealType: "soir" }}
+            eaters={[keto]}
+            household={family}
+            locked
+            onEaters={() => {
+              setPicked([keto.id]);
+              setAsked("Qui mange ce plat ?");
+            }}
+          />
+        </li>
+      </ul>
+      <SameBaseNote base="Steak haché" />
+      <EmptySlot
+        variant="add"
+        label="Ajouter un plat au dîner de lundi"
+        onClick={() => {
+          setPicked(family.filter((member) => member.diets.length > 0).map((member) => member.id));
+          setAsked("Pour qui ?");
+        }}
+      />
+      <EatersPicker
+        className="pt-4"
+        label={asked}
+        members={family}
+        selected={picked}
+        onChange={setPicked}
+        recipe={{ diets: ["lactose_free"], excludedIds: [] }}
+      />
+    </div>
   );
 }
 

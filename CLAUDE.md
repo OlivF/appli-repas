@@ -42,7 +42,7 @@ Appli web multi-utilisateurs : chaque compte crée son foyer, ses membres, ses r
 - `meal_slots` : créneaux configurables (jour 0 = lundi … 6 = dimanche, type `petit_dej` | `midi` | `soir` | `pique_nique`, `member_ids` : membres présents du même foyer ; un créneau vide n'existe pas).
 - `recipes` : titre, type(s) de repas, portions de base, préparable à l'avance (batch), temps, régimes compatibles, membres exclus. base : élément principal (steak haché, poulet…) ; deux recettes de même base s'associent et se cuisinent ensemble. basic : recette du panneau Les basiques.
 - `recipe_ingredients` : nom, quantité, unité, rayon.
-- `week_plans` + `planned_meals` : semaine (date du lundi), créneau → recette, verrou.
+- `week_plans` + `planned_meals` : semaine (date du lundi), créneau → recette, verrou. Un repas peut porter plusieurs plats (2 ou 3), chacun pour certains membres ; chaque présent mange un seul plat par repas. Le planner privilégie les duos de même base (plat famille + plat keto).
 
 ## Feuille de route
 

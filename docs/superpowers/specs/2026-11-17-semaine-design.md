@@ -82,6 +82,10 @@ Fonctions (`security invoker`) :
 
 ## Algorithme (`lib/planner.ts`, pur)
 
+> Depuis le 2026-11-19, un repas se propose par solutions entières (un plat pour tous, un plat par
+> groupe de régimes, un duo de même base) : voir `2026-11-19-plusieurs-plats-design.md`. Les règles
+> ci-dessous (disponibilité, repli, note d'une recette, déterminisme) restent valables.
+
 Entrées : créneaux (`day`, `meal_type`, `member_ids`), membres (régimes), recettes (types,
 régimes, membres exclus, favori, minutes, famille principale), cartes verrouillées, graine.
 Sortie : les nouvelles cartes (les verrouillées ne bougent pas) et les membres sans plat.

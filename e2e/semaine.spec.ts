@@ -33,18 +33,17 @@ async function newHousehold(page: Page) {
 }
 
 const day = (page: Page, index: number) => page.locator(`section[data-day="${index}"]`);
-// Dans une journée : petit-déj, puis dîner (la dernière carte).
+// Dans une journée : petit-déj, puis dîner ; la dernière carte est le dernier plat du dîner.
 const dinner = (page: Page, index: number) => day(page, index).getByRole("group").last();
 
 async function propose(page: Page) {
   await page.getByRole("button", { name: "Proposer la semaine" }).first().click();
   await expect(page.getByRole("button", { name: "Relancer" }).first()).toBeVisible();
-  // Au moins le petit-déj et le dîner chaque jour (le dimanche, Léa a souvent son plat à part :
-  // le catalogue n'a que 3 petits-déj et 6 dîners céto).
+  // Au moins le petit-déj et le dîner chaque jour ; souvent un plat pour Paul et un plat céto
+  // pour Léa.
   for (const index of [0, 1, 2, 3, 4, 5, 6]) {
     await expect.poll(() => day(page, index).getByRole("group").count()).toBeGreaterThanOrEqual(2);
   }
-  await expect(day(page, 0).getByRole("group")).toHaveCount(2);
 }
 
 test("proposer la semaine, verrouiller un plat, relancer", async ({ page }) => {
@@ -53,22 +52,23 @@ test("proposer la semaine, verrouiller un plat, relancer", async ({ page }) => {
   await expect(day(page, 0).getByRole("button", { name: /^Choisir le dîner de lundi/ })).toBeVisible();
 
   await propose(page);
-  // Céto pour tous : un seul plat par repas, que Léa peut manger.
-  await expect(dinner(page, 0)).toContainText("Pour tout le monde");
+  // Lundi soir : un duo de même base, le plat céto pour Léa.
+  await expect(day(page, 0).getByText(/^Même base : /)).toBeVisible();
   await expect(dinner(page, 0)).not.toContainText("Ne convient pas");
 
   const kept = await dinner(page, 0).getAttribute("aria-label");
   await dinner(page, 0).getByRole("button", { name: "Verrouiller" }).click();
   await expect(dinner(page, 0).getByRole("button", { name: "Déverrouiller" })).toHaveAttribute("aria-pressed", "true");
 
+  // Relancer garde le plat verrouillé ; l'autre plat du dîner se refait autour de lui.
   await page.getByRole("button", { name: "Relancer" }).first().click();
   await expect(page.getByRole("button", { name: "Relancer" }).first()).toBeEnabled();
-  await expect(dinner(page, 0)).toHaveAttribute("aria-label", kept!);
-  await expect(dinner(page, 0).getByRole("button", { name: "Déverrouiller" })).toBeVisible();
+  const keptCard = day(page, 0).getByRole("group", { name: kept!, exact: true });
+  await expect(keptCard.getByRole("button", { name: "Déverrouiller" })).toBeVisible();
 
   // Tout est enregistré : on le retrouve en revenant.
   await page.reload();
-  await expect(dinner(page, 0)).toHaveAttribute("aria-label", kept!);
+  await expect(keptCard.getByRole("button", { name: "Déverrouiller" })).toBeVisible();
 
   // La semaine suivante est encore vide.
   await page.getByRole("link", { name: "Semaine suivante" }).click();

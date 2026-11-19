@@ -494,13 +494,12 @@ export function WeekBoard({
       : sheet.kind === "add"
         ? picked
         : (sheetCard?.member_ids ?? []);
+  // Les présents du repas, dans l'ordre du foyer, comme partout ailleurs.
   const sheetPresent =
     sheetDay !== undefined && sheetMeal !== undefined
-      ? presentAt(sheetDay, sheetMeal)
-          .map((id) => memberById.get(id))
-          .filter((member) => member !== undefined)
+      ? members.filter((member) => presentAt(sheetDay, sheetMeal).includes(member.id))
       : [];
-  const pickedMembers = picked.map((id) => memberById.get(id)).filter((member) => member !== undefined);
+  const pickedMembers = members.filter((member) => picked.includes(member.id));
   // L'élément principal déjà au menu de ce repas : ses basiques passent en tête (une seule cuisson).
   const sheetBase =
     sheetDay !== undefined && sheetMeal !== undefined
