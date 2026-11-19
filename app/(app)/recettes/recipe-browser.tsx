@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { CookingPot, Heart } from "lucide-react";
+import { CookingPot, Heart, UtensilsCrossed } from "lucide-react";
 import { ChoiceChip } from "@/components/choice-chip";
 import { EmptyState } from "@/components/empty-state";
 import { ChoiceRow } from "@/components/field";
@@ -98,6 +98,14 @@ export function RecipeBrowser({ recipes, members }: { recipes: ListRecipe[]; mem
             icon={<Heart />}
           >
             Favoris
+          </ChoiceChip>
+          <ChoiceChip
+            type="checkbox"
+            checked={filters.basic}
+            onChange={(event) => update({ basic: event.target.checked })}
+            icon={<UtensilsCrossed />}
+          >
+            Basiques
           </ChoiceChip>
         </ChoiceRow>
       </div>

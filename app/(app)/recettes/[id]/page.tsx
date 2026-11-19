@@ -8,6 +8,7 @@ import { FormSubmit } from "@/components/form-submit";
 import { MEAL_TINT, MealPill } from "@/components/meal-label";
 import { PageHeader, SectionHeader } from "@/components/page-header";
 import { BatchBadge } from "@/components/recipe-card";
+import { RecipeChip, RecipeChipRow } from "@/components/recipe-chip";
 import { RecipeCover } from "@/components/recipe-cover";
 import { RecipeSteps } from "@/components/recipe-steps";
 import { Loading } from "@/components/screen";
@@ -43,7 +44,7 @@ function timeLine(prep: number, cook: number) {
 
 async function RecipeDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { recipe, ingredients, members, isCatalog, favorite, excludedIds } = await loadRecipe(id);
+  const { recipe, ingredients, members, isCatalog, favorite, excludedIds, partners } = await loadRecipe(id);
   const [mainMeal = "soir"] = recipe.meal_types;
   const time = timeLine(recipe.prep_minutes, recipe.cook_minutes);
 
@@ -89,6 +90,16 @@ async function RecipeDetail({ params }: { params: Promise<{ id: string }> }) {
           {recipe.batch_friendly && <BatchBadge />}
           {recipe.kid_friendly && <KidBadge />}
         </div>
+      )}
+
+      {partners.length > 0 && (
+        <RecipeChipRow id="partners-title" label="Se marie avec" className="mt-5">
+          {partners.map((partner) => (
+            <li key={partner.id}>
+              <RecipeChip label={partner.title} keto={partner.diets.includes("keto")} href={`/recettes/${partner.id}`} />
+            </li>
+          ))}
+        </RecipeChipRow>
       )}
 
       <div className="mt-6">
