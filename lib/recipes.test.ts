@@ -53,6 +53,8 @@ describe("parseRecipeForm", () => {
       kid_friendly: "on",
       steps: "Mélanger\nCuire",
       excluded: [LEA],
+      base: "  Crêpe ",
+      basic: "on",
     });
     expect(result).toEqual({
       ok: true,
@@ -69,10 +71,24 @@ describe("parseRecipeForm", () => {
         batch_friendly: true,
         batch_notes: "Pâte la veille",
         kid_friendly: true,
+        base: "Crêpe",
+        basic: true,
       },
       ingredients: [{ name: "Farine", quantity: 250, unit: "g", aisle: "epicerie" }],
       excludedMemberIds: [LEA],
     });
+  });
+
+  it("laisse la base vide à null, et la recette non basique par défaut", () => {
+    const result = parse({ base: "   " });
+    expect(result.ok && result.recipe.base).toBeNull();
+    expect(result.ok && result.recipe.basic).toBe(false);
+  });
+
+  it("refuse un élément principal de plus de 60 caractères", () => {
+    expect(parse({ base: "x".repeat(60) }).ok).toBe(true);
+    const result = parse({ base: "x".repeat(61) });
+    expect(!result.ok && result.errors.base).toBe("Cet élément principal est trop long (60 caractères au plus).");
   });
 
   it("demande un titre", () => {
@@ -254,11 +270,11 @@ describe("recherche", () => {
 
 describe("filterRecipes", () => {
   const recipes = [
-    { title: "Pancakes", ingredientNames: [], meal_types: ["petit_dej"], diets: ["vegetarian"], batch_friendly: true, favorite: false },
-    { title: "Saumon", ingredientNames: [], meal_types: ["soir"], diets: ["keto", "gluten_free"], batch_friendly: false, favorite: true },
-    { title: "Quiche", ingredientNames: [], meal_types: ["midi", "soir"], diets: ["keto"], batch_friendly: true, favorite: false },
+    { title: "Pancakes", ingredientNames: [], meal_types: ["petit_dej"], diets: ["vegetarian"], batch_friendly: true, favorite: false, basic: false },
+    { title: "Saumon", ingredientNames: [], meal_types: ["soir"], diets: ["keto", "gluten_free"], batch_friendly: false, favorite: true, basic: true },
+    { title: "Quiche", ingredientNames: [], meal_types: ["midi", "soir"], diets: ["keto"], batch_friendly: true, favorite: false, basic: false },
   ] as const;
-  const none: RecipeFilters = { query: "", mealTypes: [], diets: [], batch: false, favorites: false };
+  const none: RecipeFilters = { query: "", mealTypes: [], diets: [], batch: false, favorites: false, basic: false };
   const titles = (filters: Partial<RecipeFilters>) =>
     filterRecipes([...recipes], { ...none, ...filters }).map((recipe) => recipe.title);
 
@@ -279,6 +295,10 @@ describe("filterRecipes", () => {
     expect(titles({ favorites: true })).toEqual(["Saumon"]);
   });
 
+  it("filtre les basiques", () => {
+    expect(titles({ basic: true })).toEqual(["Saumon"]);
+  });
+
   it("combine recherche et filtres", () => {
     expect(titles({ query: "quiche", diets: ["keto"] })).toEqual(["Quiche"]);
   });
@@ -293,13 +313,15 @@ describe("filtres dans l'adresse", () => {
       diets: ["keto"],
       batch: true,
       favorites: true,
+      basic: true,
     };
     expect(filtersFromSearchParams(filtersToSearchParams(filters))).toEqual(filters);
+    expect(filtersToSearchParams(filters).get("basiques")).toBe("1");
   });
 
   it("n'écrit rien quand il n'y a pas de filtre", () => {
     expect(
-      filtersToSearchParams({ query: " ", mealTypes: [], diets: [], batch: false, favorites: false }).toString(),
+      filtersToSearchParams({ query: " ", mealTypes: [], diets: [], batch: false, favorites: false, basic: false }).toString(),
     ).toBe("");
   });
 
@@ -310,6 +332,7 @@ describe("filtres dans l'adresse", () => {
       diets: [],
       batch: false,
       favorites: false,
+      basic: false,
     });
   });
 });

@@ -20,6 +20,8 @@ export type PlannerRecipe = {
   // Préparation + cuisson.
   minutes: number;
   protein: Protein | null;
+  // Recette du panneau « Les basiques » : on la choisit à la main, jamais proposée.
+  basic?: boolean;
 };
 
 export type PlannerSlot = { day: number; meal_type: MealType; member_ids: readonly string[] };
@@ -202,7 +204,7 @@ export function proposeWeek(input: {
       .map((id) => members.get(id))
       .filter((member): member is PlannerMember => member !== undefined);
     let position = here.reduce((next, card) => Math.max(next, card.position + 1), 0);
-    const candidates = input.recipes.filter((recipe) => recipe.meal_types.includes(mealType));
+    const candidates = input.recipes.filter((recipe) => !recipe.basic && recipe.meal_types.includes(mealType));
 
     while (remaining.length > 0) {
       const choice = choose(remaining, day, mealType, candidates, week);
@@ -244,6 +246,7 @@ export function nextIdea(input: {
   const excluded = new Set([card.recipe_id, ...input.tried]);
   const candidates = input.recipes.filter(
     (recipe) =>
+      !recipe.basic &&
       recipe.meal_types.includes(card.meal_type) &&
       !excluded.has(recipe.id) &&
       eaters.every((member) => canEat(recipe, member)),
