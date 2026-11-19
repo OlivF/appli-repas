@@ -16,15 +16,17 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
-import { BookOpen, Sparkles, X } from "lucide-react";
+import { BookOpen, Sparkles, Trash2, X } from "lucide-react";
 import { cn } from "cn";
 import { DayStrip } from "@/components/day-strip";
+import { EatersPicker } from "@/components/eaters-picker";
 import { FieldError } from "@/components/field";
 import { MealLabel } from "@/components/meal-label";
 import { PageHeader } from "@/components/page-header";
 import { PlannedMealCard, type CardDragState } from "@/components/planned-meal-card";
 import type { EaterMember } from "@/components/recipe-card";
 import { LibraryItem, RecipeLibrary } from "@/components/recipe-library";
+import { SameBaseNote } from "@/components/same-base-note";
 import {
   Sheet,
   SheetContent,
@@ -35,15 +37,19 @@ import {
 import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "@/components/use-media-query";
 import { WeekPicker } from "@/components/week-picker";
-import { buildBoard, menuBase, type BoardSlot } from "@/lib/board";
+import { baseKey } from "@/lib/bases";
+import { buildBoard, menuBase, moveEaters, type BoardSlot } from "@/lib/board";
 import type { MealType, SlotInput } from "@/lib/meal-slots";
 import { canEat } from "@/lib/planner";
 import type { RecipeMember } from "@/lib/recipes-data";
 import { describeEaters } from "@/lib/recipes";
 import type { WeekCard, WeekRecipe } from "@/lib/week-data";
 import {
+  addDishAction,
   anotherIdeaAction,
   placeRecipeAction,
+  removeCardAction,
+  setEatersAction,
   proposeWeekAction,
   swapCardsAction,
   toggleLockAction,
@@ -54,9 +60,14 @@ import { BoardCard, DraggableRecipe, DroppableSlot } from "./board-pieces";
 type Card = WeekCard & { vid: string };
 type Day = { short: string; long: string; date: string };
 type Drag = { kind: "card"; card: Card } | { kind: "recipe"; recipe: WeekRecipe };
+// Le panneau du bas : changer un plat, choisir pour un repas (ou ses présents sans plat),
+// ajouter un plat (« Pour qui ? », recette déjà choisie après un dépôt), dire qui mange un plat.
 type SheetTarget =
   | { kind: "card"; cardId: string }
-  | { kind: "slot"; day: number; meal_type: MealType; member_ids: string[] };
+  | { kind: "slot"; day: number; meal_type: MealType; member_ids: string[] }
+  | { kind: "add"; day: number; meal_type: MealType; recipeId?: string }
+  | { kind: "eaters"; cardId: string };
+type PlaceSheet = Extract<SheetTarget, { kind: "card" | "slot" }>;
 
 // « le dîner de mardi », « le pique-nique de mercredi ».
 const MEAL_NOUN: Record<MealType, string> = {
@@ -72,6 +83,9 @@ function dayOffset(scroller: HTMLElement | null, day: number) {
   if (!scroller || !section) return null;
   return section.offsetLeft - parseFloat(getComputedStyle(scroller).paddingLeft);
 }
+
+// « au dîner de mardi », « au pique-nique de mercredi ».
+const toMeal = (mealType: MealType) => MEAL_NOUN[mealType].replace(/^le /, "au ");
 
 // Zone, au bord de l'écran, où un plat glissé fait venir le jour voisin (px).
 const EDGE = 44;
@@ -111,6 +125,9 @@ export function WeekBoard({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [sheet, setSheet] = useState<SheetTarget | null>(null);
+  // « Pour qui ? » / « Qui mange ce plat ? » : les présents cochés, et le rappel quand personne ne l'est.
+  const [picked, setPicked] = useState<string[]>([]);
+  const [pickHint, setPickHint] = useState(false);
   const [drawer, setDrawer] = useState(false);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
@@ -200,7 +217,7 @@ export function WeekBoard({
     );
   }
 
-  async function place(target: SheetTarget, recipe: WeekRecipe) {
+  async function place(target: PlaceSheet, recipe: WeekRecipe) {
     setError(null);
     setDelays({});
     if (target.kind === "card") {
@@ -267,6 +284,94 @@ export function WeekBoard({
     );
   }
 
+  // ─── Plusieurs plats par repas ────────────────────────────────────────────
+  // Les cartes rendues par le serveur, en gardant l'identité visuelle de celles déjà là
+  // (`fresh` : l'identité à donner aux nouvelles).
+  function syncCards(result: WeekCard[], before: readonly Card[], fresh?: string) {
+    setCards((current) =>
+      result.map((card) => ({
+        ...card,
+        vid: current.find((item) => item.id === card.id)?.vid ?? (before.some((item) => item.id === card.id) ? card.id : (fresh ?? card.id)),
+      })),
+    );
+  }
+
+  const presentAt = (day: number, mealType: MealType) =>
+    slots.find((slot) => slot.day === day && slot.meal_type === mealType)?.member_ids ?? [];
+
+  // « + Ajouter un plat » : pré-cochés, les présents qui ont un régime.
+  function openAdd(day: number, mealType: MealType, recipeId?: string) {
+    setPicked(presentAt(day, mealType).filter((id) => (memberById.get(id)?.diets.length ?? 0) > 0));
+    setPickHint(false);
+    setSheet({ kind: "add", day, meal_type: mealType, recipeId });
+  }
+
+  function openEaters(card: Card) {
+    setPicked(card.member_ids);
+    setPickHint(false);
+    setSheet({ kind: "eaters", cardId: card.id });
+  }
+
+  async function addDish(day: number, mealType: MealType, recipeId: string, memberIds: string[]) {
+    const before = cards;
+    const tempId = `nouvelle-${Date.now()}`;
+    const position = cards
+      .filter((card) => card.day === day && card.meal_type === mealType)
+      .reduce((next, card) => Math.max(next, card.position + 1), 0);
+    setError(null);
+    setDelays({});
+    setCards((current) =>
+      moveEaters(
+        [...current, { id: tempId, vid: tempId, day, meal_type: mealType, position, recipe_id: recipeId, member_ids: memberIds, locked: true }],
+        tempId,
+        memberIds,
+      ),
+    );
+    const result = await addDishAction(weekStart, { day, meal_type: mealType }, recipeId, memberIds).catch(() => ({
+      error: SAVE_ERROR,
+    }));
+    if ("error" in result) {
+      setCards(before);
+      setError(result.error);
+      return;
+    }
+    syncCards(result.cards, before, tempId);
+  }
+
+  async function changeEaters(cardId: string, memberIds: string[]) {
+    const before = cards;
+    setError(null);
+    setDelays({});
+    setCards((current) => moveEaters(current, cardId, memberIds));
+    const result = await setEatersAction(weekStart, cardId, memberIds).catch(() => ({ error: SAVE_ERROR }));
+    if ("error" in result) {
+      setCards(before);
+      setError(result.error);
+      return;
+    }
+    syncCards(result.cards, before);
+  }
+
+  function removeCard(cardId: string) {
+    void save(
+      (current) => current.filter((card) => card.id !== cardId),
+      () => removeCardAction(weekStart, cardId),
+    );
+  }
+
+  // La base que partagent au moins deux plats du repas, telle qu'écrite sur la recette.
+  function sharedBase(list: readonly Card[]) {
+    const seen = new Map<string, string>();
+    for (const card of list) {
+      const base = recipeById.get(card.recipe_id)?.base;
+      const key = baseKey(base);
+      if (!key || !base) continue;
+      if (seen.has(key)) return seen.get(key)!;
+      seen.set(key, base);
+    }
+    return null;
+  }
+
   // ─── Glisser-déposer ──────────────────────────────────────────────────────
   const fits = (recipeId: string, mealType: MealType) => recipeById.get(recipeId)?.meal_types.includes(mealType) ?? false;
 
@@ -281,7 +386,7 @@ export function WeekBoard({
         fits(target.recipe_id, current.card.meal_type)
       );
     }
-    if (targetId.startsWith("slot:")) {
+    if (targetId.startsWith("slot:") || targetId.startsWith("add:")) {
       const mealType = targetId.split(":")[2] as MealType;
       return current.kind === "recipe" && current.recipe.meal_types.includes(mealType);
     }
@@ -348,6 +453,11 @@ export function WeekBoard({
       else void place({ kind: "card", cardId: target.id }, current.recipe);
       return;
     }
+    if (current.kind === "recipe" && targetId.startsWith("add:")) {
+      const [, day, mealType] = targetId.split(":");
+      openAdd(Number(day), mealType as MealType, current.recipe.id);
+      return;
+    }
     if (current.kind === "recipe") {
       const [, day, mealType] = targetId.split(":");
       const slot = slots.find((item) => item.day === Number(day) && item.meal_type === mealType);
@@ -373,10 +483,24 @@ export function WeekBoard({
   }
 
   // ─── Panneau « Changer » ──────────────────────────────────────────────────
-  const sheetCard = sheet?.kind === "card" ? cards.find((card) => card.id === sheet.cardId) : undefined;
-  const sheetMeal = sheet ? (sheet.kind === "card" ? sheetCard?.meal_type : sheet.meal_type) : undefined;
-  const sheetDay = sheet ? (sheet.kind === "card" ? sheetCard?.day : sheet.day) : undefined;
-  const sheetEaterIds = sheet ? (sheet.kind === "card" ? (sheetCard?.member_ids ?? []) : sheet.member_ids) : [];
+  const sheetCard =
+    sheet?.kind === "card" || sheet?.kind === "eaters" ? cards.find((card) => card.id === sheet.cardId) : undefined;
+  const sheetMeal = sheet ? (sheet.kind === "card" || sheet.kind === "eaters" ? sheetCard?.meal_type : sheet.meal_type) : undefined;
+  const sheetDay = sheet ? (sheet.kind === "card" || sheet.kind === "eaters" ? sheetCard?.day : sheet.day) : undefined;
+  const sheetEaterIds = !sheet
+    ? []
+    : sheet.kind === "slot"
+      ? sheet.member_ids
+      : sheet.kind === "add"
+        ? picked
+        : (sheetCard?.member_ids ?? []);
+  const sheetPresent =
+    sheetDay !== undefined && sheetMeal !== undefined
+      ? presentAt(sheetDay, sheetMeal)
+          .map((id) => memberById.get(id))
+          .filter((member) => member !== undefined)
+      : [];
+  const pickedMembers = picked.map((id) => memberById.get(id)).filter((member) => member !== undefined);
   // L'élément principal déjà au menu de ce repas : ses basiques passent en tête (une seule cuisson).
   const sheetBase =
     sheetDay !== undefined && sheetMeal !== undefined
@@ -386,6 +510,162 @@ export function WeekBoard({
           cardId: sheetCard?.id,
         })
       : null;
+
+  function sheetBody(target: SheetTarget, mealType: MealType, day: number) {
+    const mealOfDay = `${MEAL_NOUN[mealType]} de ${days[day].long}`;
+
+    if (target.kind === "eaters") {
+      const recipe = sheetCard ? recipeById.get(sheetCard.recipe_id) : undefined;
+      return (
+        <>
+          <SheetHeader>
+            <SheetTitle>Qui mange ce plat ?</SheetTitle>
+            <SheetDescription>
+              {recipe?.title ?? "Recette"} · {mealOfDay}
+            </SheetDescription>
+          </SheetHeader>
+          <EatersPicker
+            label="Ceux qui le mangent"
+            labelHidden
+            members={sheetPresent}
+            selected={picked}
+            onChange={setPicked}
+            recipe={recipe}
+          />
+          <p className="mt-3 text-[0.9375rem] text-muted-foreground">
+            Un membre coché ici quitte l’autre plat du repas.
+          </p>
+          <Button
+            block
+            size="lg"
+            className="mt-5"
+            disabled={picked.length === 0}
+            onClick={() => {
+              setSheet(null);
+              void changeEaters(target.cardId, picked);
+            }}
+          >
+            Valider
+          </Button>
+        </>
+      );
+    }
+
+    if (target.kind === "add") {
+      const chosen = target.recipeId ? recipeById.get(target.recipeId) : undefined;
+      return (
+        <>
+          <SheetHeader>
+            <SheetTitle>
+              Ajouter un plat {toMeal(mealType)} de {days[day].long}
+            </SheetTitle>
+            <SheetDescription>
+              {chosen ? "Coche qui le mange, puis valide." : "Coche qui le mange, puis choisis la recette."}
+            </SheetDescription>
+          </SheetHeader>
+          <EatersPicker
+            members={sheetPresent}
+            selected={picked}
+            onChange={(ids) => {
+              setPicked(ids);
+              setPickHint(false);
+            }}
+            recipe={chosen}
+          />
+          {chosen ? (
+            <>
+              <LibraryItem recipe={chosen} mealType={mealType} className="mt-5" />
+              <Button
+                block
+                size="lg"
+                className="mt-5"
+                disabled={picked.length === 0}
+                onClick={() => {
+                  setSheet(null);
+                  void addDish(day, mealType, chosen.id, picked);
+                }}
+              >
+                Valider
+              </Button>
+            </>
+          ) : (
+            <>
+              {pickHint && (
+                <div className="mt-3">
+                  <FieldError alert>Touche d’abord qui mange ce plat.</FieldError>
+                </div>
+              )}
+              <RecipeLibrary
+                className="mt-5"
+                recipes={recipes}
+                mealType={mealType}
+                eaters={pickedMembers}
+                firstBase={menuBase(cards, (recipeId) => recipeById.get(recipeId)?.base, { day, meal_type: mealType })}
+                onPick={(recipe) => {
+                  if (picked.length === 0) {
+                    setPickHint(true);
+                    return;
+                  }
+                  setSheet(null);
+                  void addDish(day, mealType, recipe.id, picked);
+                }}
+              />
+            </>
+          )}
+        </>
+      );
+    }
+
+    return (
+      <>
+        <SheetHeader>
+          <SheetTitle>
+            {target.kind === "card" ? "Changer" : "Choisir"} {mealOfDay}
+          </SheetTitle>
+          <SheetDescription>
+            {describeEaters(
+              members,
+              members.filter((member) => !sheetEaterIds.includes(member.id)).map((member) => member.id),
+            )}
+            {sheetCard && (
+              <>
+                {" · "}
+                <Link href={`/recettes/${sheetCard.recipe_id}`} className="text-link">
+                  Voir la recette
+                </Link>
+              </>
+            )}
+          </SheetDescription>
+        </SheetHeader>
+        {target.kind === "card" && (
+          <div className="-mt-2 mb-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="-ml-3 text-muted-foreground"
+              onClick={() => {
+                setSheet(null);
+                removeCard(target.cardId);
+              }}
+            >
+              <Trash2 aria-hidden="true" />
+              Retirer ce plat
+            </Button>
+          </div>
+        )}
+        <RecipeLibrary
+          recipes={recipes}
+          mealType={mealType}
+          eaters={sheetEaterIds.map((id) => memberById.get(id)).filter((member) => member !== undefined)}
+          firstBase={sheetBase}
+          onPick={(recipe) => {
+            setSheet(null);
+            void place(target, recipe as WeekRecipe);
+          }}
+        />
+      </>
+    );
+  }
 
   const hasCards = cards.length > 0;
   const proposeButton = (block: boolean) => (
@@ -441,6 +721,7 @@ export function WeekBoard({
                     showMeal={slot.meal_type === "pique_nique"}
                     busy={busy.includes(card.id)}
                     onOpen={() => setSheet({ kind: "card", cardId: card.id })}
+                    onEaters={() => openEaters(card)}
                     onToggleLock={() => toggleLock(card)}
                     onAnotherIdea={() => void anotherIdea(card)}
                   />
@@ -449,6 +730,7 @@ export function WeekBoard({
             </AnimatePresence>
           </ul>
         )}
+        {slot.cards.length > 1 && sharedBase(slot.cards) && <SameBaseNote base={sharedBase(slot.cards)!} />}
         {slot.unfed.length > 0 && (
           <p className="text-[0.9375rem] text-muted-foreground">
             Rien de prévu pour{" "}
@@ -464,6 +746,16 @@ export function WeekBoard({
               Choisir
             </Button>
           </p>
+        )}
+        {slot.cards.length > 0 && (
+          <DroppableSlot
+            id={`add:${slot.day}:${slot.meal_type}`}
+            variant="add"
+            label={`Ajouter un plat ${toMeal(slot.meal_type)} de ${days[slot.day].long}`}
+            compact={wide}
+            dropState={dropState(`add:${slot.day}:${slot.meal_type}`) as "target" | "refused" | undefined}
+            onClick={() => openAdd(slot.day, slot.meal_type)}
+          />
         )}
       </div>
     );
@@ -623,42 +915,7 @@ export function WeekBoard({
       </DragOverlay>
 
       <Sheet open={sheet !== null} onOpenChange={(open) => !open && setSheet(null)}>
-        <SheetContent>
-          {sheet && sheetMeal !== undefined && sheetDay !== undefined && (
-            <>
-              <SheetHeader>
-                <SheetTitle>
-                  {sheet.kind === "card" ? "Changer" : "Choisir"} {MEAL_NOUN[sheetMeal]} de {days[sheetDay].long}
-                </SheetTitle>
-                <SheetDescription>
-                  {describeEaters(
-                    members,
-                    members.filter((member) => !sheetEaterIds.includes(member.id)).map((member) => member.id),
-                  )}
-                  {sheetCard && (
-                    <>
-                      {" · "}
-                      <Link href={`/recettes/${sheetCard.recipe_id}`} className="text-link">
-                        Voir la recette
-                      </Link>
-                    </>
-                  )}
-                </SheetDescription>
-              </SheetHeader>
-              <RecipeLibrary
-                recipes={recipes}
-                mealType={sheetMeal}
-                eaters={sheetEaterIds.map((id) => memberById.get(id)).filter((member) => member !== undefined)}
-                firstBase={sheetBase}
-                onPick={(recipe) => {
-                  const target = sheet;
-                  setSheet(null);
-                  void place(target, recipe as WeekRecipe);
-                }}
-              />
-            </>
-          )}
-        </SheetContent>
+        <SheetContent>{sheet && sheetMeal !== undefined && sheetDay !== undefined && sheetBody(sheet, sheetMeal, sheetDay)}</SheetContent>
       </Sheet>
     </DndContext>
   );

@@ -1,8 +1,12 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { EatersPicker } from "@/components/eaters-picker";
+import { EmptySlot } from "@/components/empty-slot";
+import { MemberToggle } from "@/components/member-toggle";
 import { PlannedMealCard } from "@/components/planned-meal-card";
 import { RecipeLibrary } from "@/components/recipe-library";
+import { SameBaseNote } from "@/components/same-base-note";
 import type { ListRecipe } from "@/lib/recipes-data";
 import { LEA, PAUL } from "@/test/helpers";
 
@@ -177,5 +181,64 @@ describe("RecipeLibrary : les basiques", () => {
   it("n'affiche pas la section sans basique", () => {
     render(<RecipeLibrary recipes={RECIPES} mealType="soir" />);
     expect(screen.queryByRole("region", { name: "Les basiques" })).not.toBeInTheDocument();
+  });
+});
+
+describe("plusieurs plats sur un repas", () => {
+  it("« + Ajouter un plat » : un petit cadre en pointillés, lu avec son repas", async () => {
+    const onClick = vi.fn();
+    render(<EmptySlot variant="add" label="Ajouter un plat au dîner de lundi" onClick={onClick} />);
+    const button = screen.getByRole("button", { name: "Ajouter un plat au dîner de lundi" });
+    expect(button).toHaveTextContent("Ajouter un plat");
+    await userEvent.click(button);
+    expect(onClick).toHaveBeenCalledOnce();
+  });
+
+  it("un avatar à cocher : « Léa mange ce plat »", async () => {
+    const onPressedChange = vi.fn();
+    render(<MemberToggle mode="pick" member={LEA_AVATAR} pressed={false} reason="Céto" onPressedChange={onPressedChange} />);
+    const toggle = screen.getByRole("button", { name: "Léa mange ce plat" });
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    expect(toggle).toHaveTextContent("Céto");
+    await userEvent.click(toggle);
+    expect(onPressedChange).toHaveBeenCalledWith(true);
+  });
+
+  it("les avatars d'une carte ouvrent « Qui mange ce plat ? », le reste de la carte ouvre « Changer »", async () => {
+    const onOpen = vi.fn();
+    const onEaters = vi.fn();
+    render(
+      <PlannedMealCard recipe={SALMON} eaters={[PAUL_AVATAR, LEA_AVATAR]} locked={false} onOpen={onOpen} onEaters={onEaters} />,
+    );
+    await userEvent.click(screen.getByRole("button", { name: /^Qui mange ce plat \? Pour Paul et Léa/ }));
+    expect(onEaters).toHaveBeenCalledOnce();
+    expect(onOpen).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: /Saumon au four/ }));
+    expect(onOpen).toHaveBeenCalledOnce();
+  });
+
+  it("« Pour qui ? » coche, décoche, et signale qui ne peut pas manger la recette", async () => {
+    const onChange = vi.fn();
+    const members = [
+      { ...PAUL_AVATAR, diets: [] },
+      { ...LEA_AVATAR, diets: ["keto" as const] },
+    ];
+    render(
+      <EatersPicker
+        members={members}
+        selected={[PAUL, LEA]}
+        onChange={onChange}
+        recipe={{ diets: [], excludedIds: [] }}
+      />,
+    );
+    expect(screen.getByRole("group", { name: "Pour qui ?" })).toBeInTheDocument();
+    expect(screen.getByText(/Ne convient pas à Léa/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Paul mange ce plat" }));
+    expect(onChange).toHaveBeenCalledWith([LEA]);
+  });
+
+  it("deux plats de même base sont liés : « Même base : steak haché »", () => {
+    render(<SameBaseNote base="Steak haché" />);
+    expect(screen.getByText("Même base : steak haché")).toBeInTheDocument();
   });
 });
