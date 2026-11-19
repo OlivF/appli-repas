@@ -31,7 +31,19 @@ Le schéma vit dans `supabase/migrations/`.
 supabase db reset   # repart de zéro : rejoue les migrations, puis supabase/seed.sql
 ```
 
-Le catalogue commun de recettes vit dans la migration `0003_recipe_catalog.sql` : il part en production avec `supabase db push`. `supabase/seed.sql` ne contient que le compte et le foyer de test, à ne jamais pousser en production.
+Le catalogue commun de recettes vit dans les migrations `0003_recipe_catalog.sql` et `0007_basics_catalog.sql` (les basiques) : il part en production avec `supabase db push`. `supabase/seed.sql` ne contient que le compte et le foyer de test, à ne jamais pousser en production.
+
+### Importer un lot de recettes
+
+Un lot de recettes en JSON (même format que `recettes-basiques.json`) devient une nouvelle migration :
+
+```bash
+docker compose exec web node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON \
+  scripts/json-to-catalogue.ts recettes-keto.json supabase/migrations/0008_keto_catalog.sql
+supabase db reset   # puis supabase test db
+```
+
+Chaque recette reçoit un identifiant fixe, dérivé de son titre, et la migration ignore celles qui existent déjà : on peut la rejouer sans doublon. Une migration déjà poussée en production ne se modifie plus : pour corriger un lot, on en écrit une nouvelle.
 
 Après un changement de schéma, régénère les types TypeScript :
 

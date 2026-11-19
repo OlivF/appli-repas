@@ -1,11 +1,11 @@
--- Catalogue commun (migration 0003) : le compte demandé, des recettes complètes,
--- et des régimes qui tiennent leurs promesses.
+-- Catalogue commun (migrations 0003 et 0007) : le compte demandé, des recettes complètes,
+-- des basiques qui s'associent, et des régimes qui tiennent leurs promesses.
 -- Lancer : supabase test db
 begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(15);
+select plan(20);
 
 create temp view catalog as
 select * from public.recipes where household_id is null;
@@ -17,12 +17,36 @@ join public.recipes r on r.id = ri.recipe_id
 where r.household_id is null;
 
 -- ── Le compte ───────────────────────────────────────────────────────────────
-select is((select count(*) from catalog), 40::bigint, 'Le catalogue compte 40 recettes');
+select is((select count(*) from catalog), 75::bigint, 'Le catalogue compte 75 recettes');
 
 select is(
   (select count(*) from catalog where id::text like 'ca7a0000-0000-4000-8000-%'),
   40::bigint,
-  'Les recettes du catalogue ont des identifiants fixes');
+  'Les 40 recettes de 0003 ont des identifiants fixes');
+
+-- ── Les basiques (0007) ─────────────────────────────────────────────────────
+select is((select count(*) from catalog where basic), 35::bigint, 'Le catalogue compte 35 basiques');
+
+select is(
+  (select count(*) from catalog where basic and 'keto' = any (diets)),
+  16::bigint,
+  'Dont 16 basiques cétogènes');
+
+select is(
+  (select count(*) from catalog where basic and base is null),
+  0::bigint,
+  'Chaque basique a un élément principal');
+
+select results_eq(
+  $$select base from catalog where basic group by base
+    having bool_or('keto' = any (diets)) and bool_or(not ('keto' = any (diets))) order by base$$,
+  $$values ('Côte de porc'), ('Poulet'), ('Saumon'), ('Steak'), ('Steak haché')$$,
+  'Chaque base de basique a une recette céto et une recette pour les autres');
+
+select is(
+  (select count(*) from catalog where basic and id::text !~ '^[0-9a-f]{8}-[0-9a-f]{4}-5'),
+  0::bigint,
+  'Les basiques ont des identifiants fixes, dérivés du titre');
 
 select cmp_ok(
   (select count(*) from catalog where 'petit_dej' = any (meal_types)), '>=', 10::bigint,

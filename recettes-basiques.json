@@ -1,0 +1,2011 @@
+{
+ "format": {
+  "ingredients": "[nom, quantite, unite, rayon]  unite: g | kg | ml | l | piece | cas | cac  rayon: fruits_legumes | boucherie | poissonnerie | cremerie | epicerie | surgeles | boulangerie | boissons | autre",
+  "types": "petit_dej | midi | soir | pique_nique",
+  "regimes": "keto | vegetarien | sans_gluten | sans_lactose  (= keto, vegetarian, gluten_free, lactose_free dans la base)",
+  "temps": "minutes ; cuisson = durée totale, viande et accompagnement cuisent en même temps",
+  "base": "élément principal partagé : deux recettes de même base s'associent (une pour la famille, une keto) et se cuisinent ensemble",
+  "basique": "true = recette du panneau « Les basiques »",
+  "note": "Frites non marquées sans gluten : certaines frites surgelées sont enrobées de farine. Recettes basiques du quotidien, une viande ou un poisson tout simple + un accompagnement. Les accompagnements haricots verts, courgettes, brocolis, purée de chou-fleur et salade verte sont keto ; frites, purée, polenta, pâtes et riz ne le sont pas. portions = nombre de personnes pour les quantités indiquées."
+ },
+ "recettes": [
+  {
+   "titre": "Steak haché et frites",
+   "description": "Le basique qui plaît à tout le monde.",
+   "base": "Steak haché",
+   "accompagnement": "Frites",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 3,
+   "cuisson": 25,
+   "regimes": [
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Steaks hachés pur bœuf",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Frites surgelées au four",
+     800,
+     "g",
+     "surgeles"
+    ]
+   ],
+   "etapes": [
+    "Étale les frites sur une plaque et enfourne-les à 220 °C pour 20 à 25 minutes, en les retournant à mi-cuisson.",
+    "Sors les steaks hachés du frigo 10 minutes avant.",
+    "Fais chauffer l'huile dans une poêle à feu vif et cuis les steaks 2 à 3 minutes de chaque côté. Sale et poivre en fin de cuisson."
+   ]
+  },
+  {
+   "titre": "Steak haché et polenta",
+   "description": "Le basique qui plaît à tout le monde.",
+   "base": "Steak haché",
+   "accompagnement": "Polenta",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 3,
+   "cuisson": 6,
+   "regimes": [
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Steaks hachés pur bœuf",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Polenta précuite",
+     250,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Beurre",
+     30,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Parmesan",
+     40,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Sors les steaks hachés du frigo 10 minutes avant.",
+    "Fais chauffer l'huile dans une poêle à feu vif et cuis les steaks 2 à 3 minutes de chaque côté. Sale et poivre en fin de cuisson.",
+    "Porte 1 litre d'eau salée à ébullition, verse la polenta en pluie en fouettant et laisse cuire 5 minutes.",
+    "Hors du feu, ajoute le beurre et le parmesan râpé."
+   ]
+  },
+  {
+   "titre": "Steak haché et pâtes au pesto",
+   "description": "Le basique qui plaît à tout le monde.",
+   "base": "Steak haché",
+   "accompagnement": "Pâtes au pesto",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 3,
+   "cuisson": 10,
+   "regimes": [],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Steaks hachés pur bœuf",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Pâtes",
+     400,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Pesto",
+     190,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Parmesan",
+     30,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Sors les steaks hachés du frigo 10 minutes avant.",
+    "Fais chauffer l'huile dans une poêle à feu vif et cuis les steaks 2 à 3 minutes de chaque côté. Sale et poivre en fin de cuisson.",
+    "Fais cuire les pâtes dans une grande casserole d'eau bouillante salée.",
+    "Égoutte-les et mélange-les avec le pesto. Parsème de parmesan."
+   ]
+  },
+  {
+   "titre": "Steak haché et purée",
+   "description": "Le basique qui plaît à tout le monde.",
+   "base": "Steak haché",
+   "accompagnement": "Purée",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 12,
+   "cuisson": 20,
+   "regimes": [
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Steaks hachés pur bœuf",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Pommes de terre",
+     1,
+     "kg",
+     "fruits_legumes"
+    ],
+    [
+     "Lait",
+     200,
+     "ml",
+     "cremerie"
+    ],
+    [
+     "Beurre",
+     40,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Épluche les pommes de terre, coupe-les en morceaux et fais-les cuire 20 minutes dans l'eau salée.",
+    "Égoutte, écrase au presse-purée avec le lait chaud et le beurre.",
+    "Sors les steaks hachés du frigo 10 minutes avant.",
+    "Fais chauffer l'huile dans une poêle à feu vif et cuis les steaks 2 à 3 minutes de chaque côté. Sale et poivre en fin de cuisson."
+   ]
+  },
+  {
+   "titre": "Steak haché et riz",
+   "description": "Le basique qui plaît à tout le monde.",
+   "base": "Steak haché",
+   "accompagnement": "Riz",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 3,
+   "cuisson": 12,
+   "regimes": [
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Steaks hachés pur bœuf",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Riz",
+     300,
+     "g",
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Fais cuire le riz dans l'eau bouillante salée le temps indiqué sur le paquet, puis égoutte.",
+    "Sors les steaks hachés du frigo 10 minutes avant.",
+    "Fais chauffer l'huile dans une poêle à feu vif et cuis les steaks 2 à 3 minutes de chaque côté. Sale et poivre en fin de cuisson."
+   ]
+  },
+  {
+   "titre": "Steak haché et haricots verts",
+   "description": "La version cétogène du basique : même viande, légume à la place du féculent.",
+   "base": "Steak haché",
+   "accompagnement": "Haricots verts",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 3,
+   "cuisson": 10,
+   "regimes": [
+    "keto",
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Steaks hachés pur bœuf",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Haricots verts",
+     500,
+     "g",
+     "surgeles"
+    ],
+    [
+     "Beurre",
+     30,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Sors les steaks hachés du frigo 10 minutes avant.",
+    "Fais chauffer l'huile dans une poêle à feu vif et cuis les steaks 2 à 3 minutes de chaque côté. Sale et poivre en fin de cuisson.",
+    "Fais cuire les haricots verts 8 à 10 minutes dans l'eau bouillante salée, égoutte-les et ajoute le beurre."
+   ]
+  },
+  {
+   "titre": "Steak haché et courgettes poêlées",
+   "description": "La version cétogène du basique : même viande, légume à la place du féculent.",
+   "base": "Steak haché",
+   "accompagnement": "Courgettes poêlées",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 7,
+   "cuisson": 12,
+   "regimes": [
+    "keto",
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Steaks hachés pur bœuf",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     3,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Courgettes",
+     4,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Gousses d'ail",
+     1,
+     "piece",
+     "fruits_legumes"
+    ]
+   ],
+   "etapes": [
+    "Sors les steaks hachés du frigo 10 minutes avant.",
+    "Fais chauffer l'huile dans une poêle à feu vif et cuis les steaks 2 à 3 minutes de chaque côté. Sale et poivre en fin de cuisson.",
+    "Coupe les courgettes en demi-rondelles et l'ail en lamelles.",
+    "Fais-les revenir 10 à 12 minutes dans l'huile d'olive à feu moyen-vif. Sale et poivre."
+   ]
+  },
+  {
+   "titre": "Steak haché et brocolis",
+   "description": "La version cétogène du basique : même viande, légume à la place du féculent.",
+   "base": "Steak haché",
+   "accompagnement": "Brocolis",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 5,
+   "cuisson": 8,
+   "regimes": [
+    "keto",
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Steaks hachés pur bœuf",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Brocolis",
+     500,
+     "g",
+     "fruits_legumes"
+    ],
+    [
+     "Beurre",
+     30,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Sors les steaks hachés du frigo 10 minutes avant.",
+    "Fais chauffer l'huile dans une poêle à feu vif et cuis les steaks 2 à 3 minutes de chaque côté. Sale et poivre en fin de cuisson.",
+    "Détaille les brocolis en bouquets et fais-les cuire 6 à 8 minutes à l'eau bouillante salée ou à la vapeur.",
+    "Égoutte et ajoute le beurre."
+   ]
+  },
+  {
+   "titre": "Steak haché et purée de chou-fleur",
+   "description": "La version cétogène du basique : même viande, légume à la place du féculent.",
+   "base": "Steak haché",
+   "accompagnement": "Purée de chou-fleur",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 7,
+   "cuisson": 15,
+   "regimes": [
+    "keto",
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Steaks hachés pur bœuf",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Chou-fleur",
+     1,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Beurre",
+     30,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Crème fraîche épaisse",
+     3,
+     "cas",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Sors les steaks hachés du frigo 10 minutes avant.",
+    "Fais chauffer l'huile dans une poêle à feu vif et cuis les steaks 2 à 3 minutes de chaque côté. Sale et poivre en fin de cuisson.",
+    "Détaille le chou-fleur en bouquets et fais-le cuire 15 minutes à l'eau salée, jusqu'à ce qu'il soit bien tendre.",
+    "Égoutte-le soigneusement, puis mixe-le avec le beurre et la crème. Sale et poivre."
+   ]
+  },
+  {
+   "titre": "Côte de porc et frites",
+   "description": "Le basique qui plaît à tout le monde.",
+   "base": "Côte de porc",
+   "accompagnement": "Frites",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 3,
+   "cuisson": 25,
+   "regimes": [
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Côtes de porc",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Herbes de Provence",
+     1,
+     "cac",
+     "epicerie"
+    ],
+    [
+     "Frites surgelées au four",
+     800,
+     "g",
+     "surgeles"
+    ]
+   ],
+   "etapes": [
+    "Étale les frites sur une plaque et enfourne-les à 220 °C pour 20 à 25 minutes, en les retournant à mi-cuisson.",
+    "Saupoudre les côtes de porc d'herbes de Provence.",
+    "Fais-les dorer dans l'huile chaude 5 à 6 minutes de chaque côté, à feu moyen. Sale et poivre."
+   ]
+  },
+  {
+   "titre": "Côte de porc et polenta",
+   "description": "Le basique qui plaît à tout le monde.",
+   "base": "Côte de porc",
+   "accompagnement": "Polenta",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 3,
+   "cuisson": 12,
+   "regimes": [
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Côtes de porc",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Herbes de Provence",
+     1,
+     "cac",
+     "epicerie"
+    ],
+    [
+     "Polenta précuite",
+     250,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Beurre",
+     30,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Parmesan",
+     40,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Saupoudre les côtes de porc d'herbes de Provence.",
+    "Fais-les dorer dans l'huile chaude 5 à 6 minutes de chaque côté, à feu moyen. Sale et poivre.",
+    "Porte 1 litre d'eau salée à ébullition, verse la polenta en pluie en fouettant et laisse cuire 5 minutes.",
+    "Hors du feu, ajoute le beurre et le parmesan râpé."
+   ]
+  },
+  {
+   "titre": "Côte de porc et pâtes au pesto",
+   "description": "Le basique qui plaît à tout le monde.",
+   "base": "Côte de porc",
+   "accompagnement": "Pâtes au pesto",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 3,
+   "cuisson": 12,
+   "regimes": [],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Côtes de porc",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Herbes de Provence",
+     1,
+     "cac",
+     "epicerie"
+    ],
+    [
+     "Pâtes",
+     400,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Pesto",
+     190,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Parmesan",
+     30,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Saupoudre les côtes de porc d'herbes de Provence.",
+    "Fais-les dorer dans l'huile chaude 5 à 6 minutes de chaque côté, à feu moyen. Sale et poivre.",
+    "Fais cuire les pâtes dans une grande casserole d'eau bouillante salée.",
+    "Égoutte-les et mélange-les avec le pesto. Parsème de parmesan."
+   ]
+  },
+  {
+   "titre": "Côte de porc et purée",
+   "description": "Le basique qui plaît à tout le monde.",
+   "base": "Côte de porc",
+   "accompagnement": "Purée",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 12,
+   "cuisson": 20,
+   "regimes": [
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Côtes de porc",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Herbes de Provence",
+     1,
+     "cac",
+     "epicerie"
+    ],
+    [
+     "Pommes de terre",
+     1,
+     "kg",
+     "fruits_legumes"
+    ],
+    [
+     "Lait",
+     200,
+     "ml",
+     "cremerie"
+    ],
+    [
+     "Beurre",
+     40,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Épluche les pommes de terre, coupe-les en morceaux et fais-les cuire 20 minutes dans l'eau salée.",
+    "Égoutte, écrase au presse-purée avec le lait chaud et le beurre.",
+    "Saupoudre les côtes de porc d'herbes de Provence.",
+    "Fais-les dorer dans l'huile chaude 5 à 6 minutes de chaque côté, à feu moyen. Sale et poivre."
+   ]
+  },
+  {
+   "titre": "Côte de porc et haricots verts",
+   "description": "La version cétogène du basique : même viande, légume à la place du féculent.",
+   "base": "Côte de porc",
+   "accompagnement": "Haricots verts",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 3,
+   "cuisson": 12,
+   "regimes": [
+    "keto",
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Côtes de porc",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Herbes de Provence",
+     1,
+     "cac",
+     "epicerie"
+    ],
+    [
+     "Haricots verts",
+     500,
+     "g",
+     "surgeles"
+    ],
+    [
+     "Beurre",
+     30,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Saupoudre les côtes de porc d'herbes de Provence.",
+    "Fais-les dorer dans l'huile chaude 5 à 6 minutes de chaque côté, à feu moyen. Sale et poivre.",
+    "Fais cuire les haricots verts 8 à 10 minutes dans l'eau bouillante salée, égoutte-les et ajoute le beurre."
+   ]
+  },
+  {
+   "titre": "Côte de porc et courgettes poêlées",
+   "description": "La version cétogène du basique : même viande, légume à la place du féculent.",
+   "base": "Côte de porc",
+   "accompagnement": "Courgettes poêlées",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 7,
+   "cuisson": 12,
+   "regimes": [
+    "keto",
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Côtes de porc",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     3,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Herbes de Provence",
+     1,
+     "cac",
+     "epicerie"
+    ],
+    [
+     "Courgettes",
+     4,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Gousses d'ail",
+     1,
+     "piece",
+     "fruits_legumes"
+    ]
+   ],
+   "etapes": [
+    "Saupoudre les côtes de porc d'herbes de Provence.",
+    "Fais-les dorer dans l'huile chaude 5 à 6 minutes de chaque côté, à feu moyen. Sale et poivre.",
+    "Coupe les courgettes en demi-rondelles et l'ail en lamelles.",
+    "Fais-les revenir 10 à 12 minutes dans l'huile d'olive à feu moyen-vif. Sale et poivre."
+   ]
+  },
+  {
+   "titre": "Côte de porc et purée de chou-fleur",
+   "description": "La version cétogène du basique : même viande, légume à la place du féculent.",
+   "base": "Côte de porc",
+   "accompagnement": "Purée de chou-fleur",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 7,
+   "cuisson": 15,
+   "regimes": [
+    "keto",
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Côtes de porc",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Herbes de Provence",
+     1,
+     "cac",
+     "epicerie"
+    ],
+    [
+     "Chou-fleur",
+     1,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Beurre",
+     30,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Crème fraîche épaisse",
+     3,
+     "cas",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Saupoudre les côtes de porc d'herbes de Provence.",
+    "Fais-les dorer dans l'huile chaude 5 à 6 minutes de chaque côté, à feu moyen. Sale et poivre.",
+    "Détaille le chou-fleur en bouquets et fais-le cuire 15 minutes à l'eau salée, jusqu'à ce qu'il soit bien tendre.",
+    "Égoutte-le soigneusement, puis mixe-le avec le beurre et la crème. Sale et poivre."
+   ]
+  },
+  {
+   "titre": "Steak et frites",
+   "description": "Le basique qui plaît à tout le monde.",
+   "base": "Steak",
+   "accompagnement": "Frites",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 3,
+   "cuisson": 25,
+   "regimes": [
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Pavés de bœuf",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Frites surgelées au four",
+     800,
+     "g",
+     "surgeles"
+    ]
+   ],
+   "etapes": [
+    "Étale les frites sur une plaque et enfourne-les à 220 °C pour 20 à 25 minutes, en les retournant à mi-cuisson.",
+    "Sors les pavés du frigo 15 minutes avant.",
+    "Saisis-les dans l'huile très chaude 2 à 3 minutes de chaque côté selon la cuisson voulue. Laisse reposer 2 minutes, sale et poivre."
+   ]
+  },
+  {
+   "titre": "Steak et purée",
+   "description": "Le basique qui plaît à tout le monde.",
+   "base": "Steak",
+   "accompagnement": "Purée",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 12,
+   "cuisson": 20,
+   "regimes": [
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Pavés de bœuf",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Pommes de terre",
+     1,
+     "kg",
+     "fruits_legumes"
+    ],
+    [
+     "Lait",
+     200,
+     "ml",
+     "cremerie"
+    ],
+    [
+     "Beurre",
+     40,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Épluche les pommes de terre, coupe-les en morceaux et fais-les cuire 20 minutes dans l'eau salée.",
+    "Égoutte, écrase au presse-purée avec le lait chaud et le beurre.",
+    "Sors les pavés du frigo 15 minutes avant.",
+    "Saisis-les dans l'huile très chaude 2 à 3 minutes de chaque côté selon la cuisson voulue. Laisse reposer 2 minutes, sale et poivre."
+   ]
+  },
+  {
+   "titre": "Steak et polenta",
+   "description": "Le basique qui plaît à tout le monde.",
+   "base": "Steak",
+   "accompagnement": "Polenta",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 3,
+   "cuisson": 6,
+   "regimes": [
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Pavés de bœuf",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Polenta précuite",
+     250,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Beurre",
+     30,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Parmesan",
+     40,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Sors les pavés du frigo 15 minutes avant.",
+    "Saisis-les dans l'huile très chaude 2 à 3 minutes de chaque côté selon la cuisson voulue. Laisse reposer 2 minutes, sale et poivre.",
+    "Porte 1 litre d'eau salée à ébullition, verse la polenta en pluie en fouettant et laisse cuire 5 minutes.",
+    "Hors du feu, ajoute le beurre et le parmesan râpé."
+   ]
+  },
+  {
+   "titre": "Steak et haricots verts",
+   "description": "La version cétogène du basique : même viande, légume à la place du féculent.",
+   "base": "Steak",
+   "accompagnement": "Haricots verts",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 3,
+   "cuisson": 10,
+   "regimes": [
+    "keto",
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Pavés de bœuf",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Haricots verts",
+     500,
+     "g",
+     "surgeles"
+    ],
+    [
+     "Beurre",
+     30,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Sors les pavés du frigo 15 minutes avant.",
+    "Saisis-les dans l'huile très chaude 2 à 3 minutes de chaque côté selon la cuisson voulue. Laisse reposer 2 minutes, sale et poivre.",
+    "Fais cuire les haricots verts 8 à 10 minutes dans l'eau bouillante salée, égoutte-les et ajoute le beurre."
+   ]
+  },
+  {
+   "titre": "Steak et salade verte",
+   "description": "La version cétogène du basique : même viande, légume à la place du féculent.",
+   "base": "Steak",
+   "accompagnement": "Salade verte",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 7,
+   "cuisson": 6,
+   "regimes": [
+    "keto",
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Pavés de bœuf",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     4,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Salade verte",
+     1,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Vinaigre de cidre",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Moutarde",
+     1,
+     "cac",
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Sors les pavés du frigo 15 minutes avant.",
+    "Saisis-les dans l'huile très chaude 2 à 3 minutes de chaque côté selon la cuisson voulue. Laisse reposer 2 minutes, sale et poivre.",
+    "Lave et essore la salade.",
+    "Mélange la moutarde, le vinaigre et l'huile, sale, poivre, et assaisonne la salade au dernier moment."
+   ]
+  },
+  {
+   "titre": "Steak et courgettes poêlées",
+   "description": "La version cétogène du basique : même viande, légume à la place du féculent.",
+   "base": "Steak",
+   "accompagnement": "Courgettes poêlées",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 7,
+   "cuisson": 12,
+   "regimes": [
+    "keto",
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Pavés de bœuf",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     3,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Courgettes",
+     4,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Gousses d'ail",
+     1,
+     "piece",
+     "fruits_legumes"
+    ]
+   ],
+   "etapes": [
+    "Sors les pavés du frigo 15 minutes avant.",
+    "Saisis-les dans l'huile très chaude 2 à 3 minutes de chaque côté selon la cuisson voulue. Laisse reposer 2 minutes, sale et poivre.",
+    "Coupe les courgettes en demi-rondelles et l'ail en lamelles.",
+    "Fais-les revenir 10 à 12 minutes dans l'huile d'olive à feu moyen-vif. Sale et poivre."
+   ]
+  },
+  {
+   "titre": "Poulet et frites",
+   "description": "Le basique qui plaît à tout le monde.",
+   "base": "Poulet",
+   "accompagnement": "Frites",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 4,
+   "cuisson": 25,
+   "regimes": [
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Blancs de poulet",
+     600,
+     "g",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Paprika",
+     1,
+     "cac",
+     "epicerie"
+    ],
+    [
+     "Frites surgelées au four",
+     800,
+     "g",
+     "surgeles"
+    ]
+   ],
+   "etapes": [
+    "Étale les frites sur une plaque et enfourne-les à 220 °C pour 20 à 25 minutes, en les retournant à mi-cuisson.",
+    "Coupe les blancs de poulet en deux dans l'épaisseur pour qu'ils cuisent vite, et saupoudre-les de paprika.",
+    "Fais-les dorer dans l'huile 5 à 6 minutes de chaque côté. Sale et poivre."
+   ]
+  },
+  {
+   "titre": "Poulet et riz",
+   "description": "Le basique qui plaît à tout le monde.",
+   "base": "Poulet",
+   "accompagnement": "Riz",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 4,
+   "cuisson": 12,
+   "regimes": [
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Blancs de poulet",
+     600,
+     "g",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Paprika",
+     1,
+     "cac",
+     "epicerie"
+    ],
+    [
+     "Riz",
+     300,
+     "g",
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Fais cuire le riz dans l'eau bouillante salée le temps indiqué sur le paquet, puis égoutte.",
+    "Coupe les blancs de poulet en deux dans l'épaisseur pour qu'ils cuisent vite, et saupoudre-les de paprika.",
+    "Fais-les dorer dans l'huile 5 à 6 minutes de chaque côté. Sale et poivre."
+   ]
+  },
+  {
+   "titre": "Poulet et pâtes au pesto",
+   "description": "Le basique qui plaît à tout le monde.",
+   "base": "Poulet",
+   "accompagnement": "Pâtes au pesto",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 4,
+   "cuisson": 12,
+   "regimes": [],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Blancs de poulet",
+     600,
+     "g",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Paprika",
+     1,
+     "cac",
+     "epicerie"
+    ],
+    [
+     "Pâtes",
+     400,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Pesto",
+     190,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Parmesan",
+     30,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Coupe les blancs de poulet en deux dans l'épaisseur pour qu'ils cuisent vite, et saupoudre-les de paprika.",
+    "Fais-les dorer dans l'huile 5 à 6 minutes de chaque côté. Sale et poivre.",
+    "Fais cuire les pâtes dans une grande casserole d'eau bouillante salée.",
+    "Égoutte-les et mélange-les avec le pesto. Parsème de parmesan."
+   ]
+  },
+  {
+   "titre": "Poulet et polenta",
+   "description": "Le basique qui plaît à tout le monde.",
+   "base": "Poulet",
+   "accompagnement": "Polenta",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 4,
+   "cuisson": 12,
+   "regimes": [
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Blancs de poulet",
+     600,
+     "g",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Paprika",
+     1,
+     "cac",
+     "epicerie"
+    ],
+    [
+     "Polenta précuite",
+     250,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Beurre",
+     30,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Parmesan",
+     40,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Coupe les blancs de poulet en deux dans l'épaisseur pour qu'ils cuisent vite, et saupoudre-les de paprika.",
+    "Fais-les dorer dans l'huile 5 à 6 minutes de chaque côté. Sale et poivre.",
+    "Porte 1 litre d'eau salée à ébullition, verse la polenta en pluie en fouettant et laisse cuire 5 minutes.",
+    "Hors du feu, ajoute le beurre et le parmesan râpé."
+   ]
+  },
+  {
+   "titre": "Poulet et haricots verts",
+   "description": "La version cétogène du basique : même viande, légume à la place du féculent.",
+   "base": "Poulet",
+   "accompagnement": "Haricots verts",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 4,
+   "cuisson": 12,
+   "regimes": [
+    "keto",
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Blancs de poulet",
+     600,
+     "g",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Paprika",
+     1,
+     "cac",
+     "epicerie"
+    ],
+    [
+     "Haricots verts",
+     500,
+     "g",
+     "surgeles"
+    ],
+    [
+     "Beurre",
+     30,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Coupe les blancs de poulet en deux dans l'épaisseur pour qu'ils cuisent vite, et saupoudre-les de paprika.",
+    "Fais-les dorer dans l'huile 5 à 6 minutes de chaque côté. Sale et poivre.",
+    "Fais cuire les haricots verts 8 à 10 minutes dans l'eau bouillante salée, égoutte-les et ajoute le beurre."
+   ]
+  },
+  {
+   "titre": "Poulet et courgettes poêlées",
+   "description": "La version cétogène du basique : même viande, légume à la place du féculent.",
+   "base": "Poulet",
+   "accompagnement": "Courgettes poêlées",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 8,
+   "cuisson": 12,
+   "regimes": [
+    "keto",
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Blancs de poulet",
+     600,
+     "g",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     3,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Paprika",
+     1,
+     "cac",
+     "epicerie"
+    ],
+    [
+     "Courgettes",
+     4,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Gousses d'ail",
+     1,
+     "piece",
+     "fruits_legumes"
+    ]
+   ],
+   "etapes": [
+    "Coupe les blancs de poulet en deux dans l'épaisseur pour qu'ils cuisent vite, et saupoudre-les de paprika.",
+    "Fais-les dorer dans l'huile 5 à 6 minutes de chaque côté. Sale et poivre.",
+    "Coupe les courgettes en demi-rondelles et l'ail en lamelles.",
+    "Fais-les revenir 10 à 12 minutes dans l'huile d'olive à feu moyen-vif. Sale et poivre."
+   ]
+  },
+  {
+   "titre": "Poulet et brocolis",
+   "description": "La version cétogène du basique : même viande, légume à la place du féculent.",
+   "base": "Poulet",
+   "accompagnement": "Brocolis",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 6,
+   "cuisson": 12,
+   "regimes": [
+    "keto",
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Blancs de poulet",
+     600,
+     "g",
+     "boucherie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Paprika",
+     1,
+     "cac",
+     "epicerie"
+    ],
+    [
+     "Brocolis",
+     500,
+     "g",
+     "fruits_legumes"
+    ],
+    [
+     "Beurre",
+     30,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Coupe les blancs de poulet en deux dans l'épaisseur pour qu'ils cuisent vite, et saupoudre-les de paprika.",
+    "Fais-les dorer dans l'huile 5 à 6 minutes de chaque côté. Sale et poivre.",
+    "Détaille les brocolis en bouquets et fais-les cuire 6 à 8 minutes à l'eau bouillante salée ou à la vapeur.",
+    "Égoutte et ajoute le beurre."
+   ]
+  },
+  {
+   "titre": "Saumon et riz",
+   "description": "Le basique qui plaît à tout le monde.",
+   "base": "Saumon",
+   "accompagnement": "Riz",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 3,
+   "cuisson": 12,
+   "regimes": [
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Pavés de saumon",
+     4,
+     "piece",
+     "poissonnerie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Citrons",
+     1,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Riz",
+     300,
+     "g",
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Fais cuire le riz dans l'eau bouillante salée le temps indiqué sur le paquet, puis égoutte.",
+    "Cuis les pavés de saumon côté peau dans l'huile 5 minutes, puis 2 à 3 minutes de l'autre côté.",
+    "Sale, poivre et arrose d'un filet de citron."
+   ]
+  },
+  {
+   "titre": "Saumon et pâtes au pesto",
+   "description": "Le basique qui plaît à tout le monde.",
+   "base": "Saumon",
+   "accompagnement": "Pâtes au pesto",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 3,
+   "cuisson": 10,
+   "regimes": [],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Pavés de saumon",
+     4,
+     "piece",
+     "poissonnerie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Citrons",
+     1,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Pâtes",
+     400,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Pesto",
+     190,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Parmesan",
+     30,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Cuis les pavés de saumon côté peau dans l'huile 5 minutes, puis 2 à 3 minutes de l'autre côté.",
+    "Sale, poivre et arrose d'un filet de citron.",
+    "Fais cuire les pâtes dans une grande casserole d'eau bouillante salée.",
+    "Égoutte-les et mélange-les avec le pesto. Parsème de parmesan."
+   ]
+  },
+  {
+   "titre": "Saumon et purée",
+   "description": "Le basique qui plaît à tout le monde.",
+   "base": "Saumon",
+   "accompagnement": "Purée",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 12,
+   "cuisson": 20,
+   "regimes": [
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Pavés de saumon",
+     4,
+     "piece",
+     "poissonnerie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Citrons",
+     1,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Pommes de terre",
+     1,
+     "kg",
+     "fruits_legumes"
+    ],
+    [
+     "Lait",
+     200,
+     "ml",
+     "cremerie"
+    ],
+    [
+     "Beurre",
+     40,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Épluche les pommes de terre, coupe-les en morceaux et fais-les cuire 20 minutes dans l'eau salée.",
+    "Égoutte, écrase au presse-purée avec le lait chaud et le beurre.",
+    "Cuis les pavés de saumon côté peau dans l'huile 5 minutes, puis 2 à 3 minutes de l'autre côté.",
+    "Sale, poivre et arrose d'un filet de citron."
+   ]
+  },
+  {
+   "titre": "Saumon et haricots verts",
+   "description": "La version cétogène du basique : même viande, légume à la place du féculent.",
+   "base": "Saumon",
+   "accompagnement": "Haricots verts",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 3,
+   "cuisson": 10,
+   "regimes": [
+    "keto",
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Pavés de saumon",
+     4,
+     "piece",
+     "poissonnerie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Citrons",
+     1,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Haricots verts",
+     500,
+     "g",
+     "surgeles"
+    ],
+    [
+     "Beurre",
+     30,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Cuis les pavés de saumon côté peau dans l'huile 5 minutes, puis 2 à 3 minutes de l'autre côté.",
+    "Sale, poivre et arrose d'un filet de citron.",
+    "Fais cuire les haricots verts 8 à 10 minutes dans l'eau bouillante salée, égoutte-les et ajoute le beurre."
+   ]
+  },
+  {
+   "titre": "Saumon et brocolis",
+   "description": "La version cétogène du basique : même viande, légume à la place du féculent.",
+   "base": "Saumon",
+   "accompagnement": "Brocolis",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 5,
+   "cuisson": 8,
+   "regimes": [
+    "keto",
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Pavés de saumon",
+     4,
+     "piece",
+     "poissonnerie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Citrons",
+     1,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Brocolis",
+     500,
+     "g",
+     "fruits_legumes"
+    ],
+    [
+     "Beurre",
+     30,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Cuis les pavés de saumon côté peau dans l'huile 5 minutes, puis 2 à 3 minutes de l'autre côté.",
+    "Sale, poivre et arrose d'un filet de citron.",
+    "Détaille les brocolis en bouquets et fais-les cuire 6 à 8 minutes à l'eau bouillante salée ou à la vapeur.",
+    "Égoutte et ajoute le beurre."
+   ]
+  },
+  {
+   "titre": "Saumon et purée de chou-fleur",
+   "description": "La version cétogène du basique : même viande, légume à la place du féculent.",
+   "base": "Saumon",
+   "accompagnement": "Purée de chou-fleur",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 7,
+   "cuisson": 15,
+   "regimes": [
+    "keto",
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Pavés de saumon",
+     4,
+     "piece",
+     "poissonnerie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Citrons",
+     1,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Chou-fleur",
+     1,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Beurre",
+     30,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Crème fraîche épaisse",
+     3,
+     "cas",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Cuis les pavés de saumon côté peau dans l'huile 5 minutes, puis 2 à 3 minutes de l'autre côté.",
+    "Sale, poivre et arrose d'un filet de citron.",
+    "Détaille le chou-fleur en bouquets et fais-le cuire 15 minutes à l'eau salée, jusqu'à ce qu'il soit bien tendre.",
+    "Égoutte-le soigneusement, puis mixe-le avec le beurre et la crème. Sale et poivre."
+   ]
+  }
+ ]
+}
