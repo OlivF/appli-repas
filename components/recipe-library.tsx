@@ -6,11 +6,13 @@ import { cn } from "cn";
 import { ChoiceChip } from "@/components/choice-chip";
 import { ChoiceRow } from "@/components/field";
 import { MEAL_TINT } from "@/components/meal-label";
+import { RecipeChip, RecipeChipRow } from "@/components/recipe-chip";
 import { RecipeCover } from "@/components/recipe-cover";
 import { SearchField } from "@/components/search-field";
 import { Button } from "@/components/ui/button";
 import { MEAL_TYPES, type MealType } from "@/lib/meal-slots";
 import { DIETS, type Diet } from "@/lib/members";
+import { basicRows, sideLabel } from "@/lib/bases";
 import type { ListRecipe } from "@/lib/recipes-data";
 import { filterRecipes, formatDuration, memberEatability } from "@/lib/recipes";
 
@@ -33,13 +35,17 @@ export function unsuitableFor(recipe: LibraryRecipe, eaters: readonly LibraryEat
 }
 
 // La Bibliothèque : chercher et filtrer les recettes, pour en poser une dans la semaine.
-// `mealType` : seulement les recettes de ce repas. `eaters` : ceux qui mangeront, pour
-// signaler (et ranger en dernier) ce qui ne leur convient pas. `onPick` : chaque recette
-// est un bouton. `renderItem` : pour envelopper chaque recette (glisser-déposer).
+// En tête, « Les basiques » : une ligne par élément principal, ses accompagnements en puces ;
+// la liste du dessous a les autres recettes. `mealType` : seulement les recettes de ce repas.
+// `eaters` : ceux qui mangeront, pour signaler (et ranger en dernier) ce qui ne leur convient
+// pas ; une puce que personne ne peut manger est cachée. `firstBase` : la ligne à mettre en
+// tête (la base déjà au menu de ce repas). `onPick` : chaque recette est un bouton.
+// `renderItem` : pour envelopper chaque recette et chaque puce (glisser-déposer).
 export function RecipeLibrary({
   recipes,
   mealType,
   eaters = [],
+  firstBase,
   onPick,
   renderItem,
   className,
@@ -47,6 +53,7 @@ export function RecipeLibrary({
   recipes: LibraryRecipe[];
   mealType?: MealType;
   eaters?: readonly LibraryEater[];
+  firstBase?: string | null;
   onPick?: (recipe: LibraryRecipe) => void;
   renderItem?: (recipe: LibraryRecipe, item: ReactNode) => ReactNode;
   className?: string;
@@ -55,17 +62,37 @@ export function RecipeLibrary({
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const update = (patch: Partial<Filters>) => setFilters((current) => ({ ...current, ...patch }));
 
-  const visible = useMemo(() => {
+  const shown = useMemo(() => {
     const ofMeal = mealType ? recipes.filter((recipe) => recipe.meal_types.includes(mealType)) : recipes;
-    return filterRecipes(ofMeal, { ...filters, batch: false, basic: false })
-      .filter((recipe) => !filters.quick || recipe.minutes <= QUICK_MINUTES)
-      .map((recipe) => ({ recipe, unsuitable: unsuitableFor(recipe, eaters) }))
-      .sort(
-        (a, b) =>
-          Number(a.unsuitable.length > 0) - Number(b.unsuitable.length > 0) ||
-          a.recipe.title.localeCompare(b.recipe.title, "fr"),
-      );
-  }, [recipes, mealType, filters, eaters]);
+    return filterRecipes(ofMeal, { ...filters, batch: false, basic: false }).filter(
+      (recipe) => !filters.quick || recipe.minutes <= QUICK_MINUTES,
+    );
+  }, [recipes, mealType, filters]);
+
+  const visible = useMemo(
+    () =>
+      shown
+        .filter((recipe) => !recipe.basic)
+        .map((recipe) => ({ recipe, unsuitable: unsuitableFor(recipe, eaters) }))
+        .sort(
+          (a, b) =>
+            Number(a.unsuitable.length > 0) - Number(b.unsuitable.length > 0) ||
+            a.recipe.title.localeCompare(b.recipe.title, "fr"),
+        ),
+    [shown, eaters],
+  );
+
+  const basics = useMemo(
+    () =>
+      basicRows(
+        shown.filter(
+          (recipe) => recipe.basic && (eaters.length === 0 || unsuitableFor(recipe, eaters).length < eaters.length),
+        ),
+        firstBase,
+      ),
+    [shown, eaters, firstBase],
+  );
+  const count = visible.length + basics.reduce((total, row) => total + row.recipes.length, 0);
 
   return (
     <div className={className}>
@@ -120,7 +147,7 @@ export function RecipeLibrary({
 
       <div className="mt-2 flex min-h-11 items-center justify-between gap-4">
         <p role="status" className="font-semibold text-muted-foreground">
-          {visible.length} {visible.length > 1 ? "recettes" : "recette"}
+          {count} {count > 1 ? "recettes" : "recette"}
         </p>
         {JSON.stringify(filters) !== JSON.stringify(NO_FILTERS) && (
           <Button variant="link" onClick={() => setFilters(NO_FILTERS)}>
@@ -128,6 +155,30 @@ export function RecipeLibrary({
           </Button>
         )}
       </div>
+
+      {basics.length > 0 && (
+        <section aria-labelledby={`${searchId}-basics`} className="mt-2 mb-6">
+          <h3 id={`${searchId}-basics`} className="text-xl">
+            Les basiques
+          </h3>
+          <div className="mt-2 space-y-3">
+            {basics.map((row, index) => (
+              <RecipeChipRow key={row.base} id={`${searchId}-basics-${index}`} label={row.base}>
+                {row.recipes.map((recipe) => {
+                  const chip = (
+                    <RecipeChip
+                      label={sideLabel(recipe.title, recipe.base)}
+                      keto={recipe.diets.includes("keto")}
+                      onClick={onPick && (() => onPick(recipe))}
+                    />
+                  );
+                  return <li key={recipe.id}>{renderItem ? renderItem(recipe, chip) : chip}</li>;
+                })}
+              </RecipeChipRow>
+            ))}
+          </div>
+        </section>
+      )}
 
       <ul aria-label="Recettes" className="mt-1 space-y-2">
         {visible.map(({ recipe, unsuitable }) => {

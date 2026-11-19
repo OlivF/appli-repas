@@ -376,6 +376,12 @@ export function WeekBoard({
   const sheetMeal = sheet ? (sheet.kind === "card" ? sheetCard?.meal_type : sheet.meal_type) : undefined;
   const sheetDay = sheet ? (sheet.kind === "card" ? sheetCard?.day : sheet.day) : undefined;
   const sheetEaterIds = sheet ? (sheet.kind === "card" ? (sheetCard?.member_ids ?? []) : sheet.member_ids) : [];
+  // L'élément principal déjà au menu de ce repas : ses basiques passent en tête (une seule cuisson).
+  const sheetBase =
+    cards
+      .filter((card) => card.day === sheetDay && card.meal_type === sheetMeal)
+      .map((card) => recipeById.get(card.recipe_id)?.base)
+      .find(Boolean) ?? null;
 
   const hasCards = cards.length > 0;
   const proposeButton = (block: boolean) => (
@@ -639,6 +645,7 @@ export function WeekBoard({
                 recipes={recipes}
                 mealType={sheetMeal}
                 eaters={sheetEaterIds.map((id) => memberById.get(id)).filter((member) => member !== undefined)}
+                firstBase={sheetBase}
                 onPick={(recipe) => {
                   const target = sheet;
                   setSheet(null);

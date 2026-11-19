@@ -113,3 +113,69 @@ describe("RecipeLibrary", () => {
     expect(onPick).toHaveBeenCalledWith(RECIPES[0]);
   });
 });
+
+describe("RecipeLibrary : les basiques", () => {
+  const BASICS = [
+    listRecipe("b1", "Steak haché et frites", { basic: true, base: "Steak haché" }),
+    listRecipe("b2", "Steak haché et haricots verts", { basic: true, base: "Steak haché", diets: ["keto"] }),
+    listRecipe("b3", "Poulet et riz", { basic: true, base: "Poulet" }),
+  ];
+  const ALL = [...RECIPES, ...BASICS];
+  const basics = () => screen.getByRole("region", { name: "Les basiques" });
+  const rowNames = () =>
+    within(basics())
+      .getAllByRole("list")
+      .map((list) => document.getElementById(list.getAttribute("aria-labelledby") ?? "")?.textContent);
+  const chips = (base: string) =>
+    within(within(basics()).getByRole("list", { name: base })).getAllByRole("listitem").map((item) => item.textContent);
+
+  it("range les basiques en tête, une ligne par base, sans les répéter dans la liste", () => {
+    render(<RecipeLibrary recipes={ALL} mealType="soir" />);
+    expect(rowNames()).toEqual(["Poulet", "Steak haché"]);
+    expect(chips("Steak haché")).toEqual(["frites", "haricots vertsCéto"]);
+    expect(within(screen.getByRole("list", { name: "Recettes" })).queryByText(/Steak haché/)).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("5 recettes");
+  });
+
+  it("cherche aussi dans les basiques", async () => {
+    render(<RecipeLibrary recipes={ALL} mealType="soir" />);
+    await userEvent.type(screen.getByRole("searchbox"), "frites");
+    expect(rowNames()).toEqual(["Steak haché"]);
+    expect(chips("Steak haché")).toEqual(["frites"]);
+    expect(screen.getByRole("status")).toHaveTextContent("1 recette");
+  });
+
+  it("cache les puces que personne à table ne peut manger", () => {
+    render(<RecipeLibrary recipes={ALL} mealType="soir" eaters={[{ ...LEA_AVATAR, diets: ["keto"] }]} />);
+    expect(rowNames()).toEqual(["Steak haché"]);
+    expect(chips("Steak haché")).toEqual(["haricots vertsCéto"]);
+  });
+
+  it("met en tête la base déjà au menu de ce repas", () => {
+    render(<RecipeLibrary recipes={ALL} mealType="soir" firstBase="steak hache" />);
+    expect(rowNames()).toEqual(["Steak haché", "Poulet"]);
+  });
+
+  it("choisit la recette en touchant sa puce", async () => {
+    const onPick = vi.fn();
+    render(<RecipeLibrary recipes={ALL} mealType="soir" onPick={onPick} />);
+    await userEvent.click(within(basics()).getByRole("button", { name: "frites" }));
+    expect(onPick).toHaveBeenCalledWith(BASICS[0]);
+  });
+
+  it("enveloppe chaque puce, pour la glisser vers la grille", () => {
+    render(
+      <RecipeLibrary
+        recipes={ALL}
+        renderItem={(recipe, item) => <div data-testid={`glisser-${recipe.id}`}>{item}</div>}
+      />,
+    );
+    expect(screen.getByTestId("glisser-b1")).toHaveTextContent("frites");
+    expect(within(basics()).queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("n'affiche pas la section sans basique", () => {
+    render(<RecipeLibrary recipes={RECIPES} mealType="soir" />);
+    expect(screen.queryByRole("region", { name: "Les basiques" })).not.toBeInTheDocument();
+  });
+});
