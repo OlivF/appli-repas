@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBoard, menuBase } from "@/lib/board";
+import { buildBoard, menuBase, moveEaters } from "@/lib/board";
 import type { SlotInput } from "@/lib/meal-slots";
 import { LEA, PAUL, TOM } from "@/test/helpers";
 
@@ -78,5 +78,33 @@ describe("menuBase", () => {
   it("suit l'ordre des plats pour un créneau à compléter, sans regarder les autres repas", () => {
     expect(menuBase(cards, baseOf, { day: 0, meal_type: "soir" })).toBe("Steak haché");
     expect(menuBase(cards, baseOf, { day: 2, meal_type: "soir" })).toBeNull();
+  });
+});
+
+describe("moveEaters", () => {
+  const ZOE = "44444444-4444-4444-8444-444444444444";
+  const cards = [
+    card("famille", 0, "soir", 0, [PAUL, TOM, ZOE]),
+    card("lea", 0, "soir", 1, [LEA]),
+    card("mardi", 1, "soir", 0, [PAUL, TOM]),
+  ];
+  const eatersOf = (list: ReturnType<typeof moveEaters<(typeof cards)[number]>>) =>
+    Object.fromEntries(list.map((item) => [item.id, item.member_ids]));
+
+  it("met les mangeurs sur le plat, les retire des autres plats du repas, et verrouille le plat", () => {
+    const result = moveEaters(cards, "lea", [LEA, TOM]);
+    expect(eatersOf(result)).toEqual({ famille: [PAUL, ZOE], lea: [LEA, TOM], mardi: [PAUL, TOM] });
+    expect(result.find((item) => item.id === "lea")?.locked).toBe(true);
+    expect(result.find((item) => item.id === "famille")?.locked).toBe(false);
+  });
+
+  it("fait disparaître un plat qui n'a plus personne", () => {
+    const result = moveEaters(cards, "lea", [LEA, PAUL, TOM, ZOE]);
+    expect(result.map((item) => item.id)).toEqual(["lea", "mardi"]);
+  });
+
+  it("ne touche pas aux autres repas", () => {
+    const result = moveEaters(cards, "famille", [PAUL]);
+    expect(eatersOf(result).mardi).toEqual([PAUL, TOM]);
   });
 });

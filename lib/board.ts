@@ -69,3 +69,21 @@ export function menuBase<C extends { id: string; day: number; meal_type: MealTyp
     .sort((a, b) => Number(a.id === target.cardId) - Number(b.id === target.cardId) || a.position - b.position);
   return here.map((card) => baseOf(card.recipe_id)).find((base) => base?.trim()) ?? null;
 }
+
+// Chaque présent mange un seul plat par repas : `eaterIds` passent sur le plat `cardId` (qui se
+// verrouille, choix fait à la main) et quittent les autres plats du même repas ; un plat qui
+// n'a plus personne disparaît. Même règle que set_planned_meal_eaters, pour l'écran.
+export function moveEaters<C extends { id: string; day: number; meal_type: MealType; member_ids: string[]; locked: boolean }>(
+  cards: readonly C[],
+  cardId: string,
+  eaterIds: readonly string[],
+): C[] {
+  const target = cards.find((card) => card.id === cardId);
+  if (!target) return [...cards];
+  return cards.flatMap((card) => {
+    if (card.id === cardId) return [{ ...card, member_ids: [...eaterIds], locked: true }];
+    if (card.day !== target.day || card.meal_type !== target.meal_type) return [card];
+    const rest = card.member_ids.filter((id) => !eaterIds.includes(id));
+    return rest.length > 0 ? [{ ...card, member_ids: rest }] : [];
+  });
+}
