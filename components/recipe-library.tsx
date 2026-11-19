@@ -57,7 +57,7 @@ export function RecipeLibrary({
 
   const visible = useMemo(() => {
     const ofMeal = mealType ? recipes.filter((recipe) => recipe.meal_types.includes(mealType)) : recipes;
-    return filterRecipes(ofMeal, { ...filters, batch: false })
+    return filterRecipes(ofMeal, { ...filters, batch: false, basic: false })
       .filter((recipe) => !filters.quick || recipe.minutes <= QUICK_MINUTES)
       .map((recipe) => ({ recipe, unsuitable: unsuitableFor(recipe, eaters) }))
       .sort(

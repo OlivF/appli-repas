@@ -65,6 +65,8 @@ function listRecipe(id: string, title: string, overrides: Partial<ListRecipe> = 
     ingredientNames: [],
     favorite: false,
     excludedIds: [],
+    base: null,
+    basic: false,
     ...overrides,
   };
 }

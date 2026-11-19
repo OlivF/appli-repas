@@ -22,7 +22,7 @@ import {
 } from "@/lib/recipes";
 import { LIST_HREF_KEY } from "./back-to-list";
 
-const NO_FILTERS: RecipeFilters = { query: "", mealTypes: [], diets: [], batch: false, favorites: false };
+const NO_FILTERS: RecipeFilters = { query: "", mealTypes: [], diets: [], batch: false, favorites: false, basic: false };
 
 function toggle<T>(list: T[], value: T, on: boolean) {
   return on ? [...list, value] : list.filter((item) => item !== value);

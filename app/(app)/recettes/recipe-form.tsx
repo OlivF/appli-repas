@@ -15,6 +15,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
+import { suggestBase } from "@/lib/bases";
 import { MEAL_TYPES, type MealType } from "@/lib/meal-slots";
 import { DIETS, type Diet } from "@/lib/members";
 import {
@@ -44,6 +45,8 @@ export type FormRecipe = {
   batch_friendly: boolean;
   batch_notes: string | null;
   kid_friendly: boolean;
+  base: string | null;
+  basic: boolean;
 };
 
 type Row = { key: string; name: string; quantity: string; unit: IngredientUnit; aisle: GroceryAisle };
@@ -65,12 +68,15 @@ export function RecipeForm({
   members,
   excludedIds,
   known,
+  bases,
 }: {
   recipe: FormRecipe | null;
   ingredients: RecipeIngredient[];
   members: RecipeMember[];
   excludedIds: string[];
   known: KnownIngredient[];
+  // Les éléments principaux déjà connus (foyer et catalogue), pour l'autocomplétion.
+  bases: string[];
 }) {
   const [state, formAction, pending] = useActionState(saveRecipe, null);
   const errors = state?.errors ?? {};
@@ -87,6 +93,10 @@ export function RecipeForm({
   const [batch, setBatch] = useState(recipe?.batch_friendly ?? false);
   const [batchNotes, setBatchNotes] = useState(recipe?.batch_notes ?? "");
   const [kid, setKid] = useState(recipe?.kid_friendly ?? false);
+  const [basic, setBasic] = useState(recipe?.basic ?? false);
+  const [base, setBase] = useState(recipe?.base ?? "");
+  // Une nouvelle recette prend l'élément principal de ses ingrédients, tant qu'on n'y touche pas.
+  const [baseTouched, setBaseTouched] = useState(recipe !== null);
   const [steps, setSteps] = useState((recipe?.steps ?? []).join("\n"));
   const [excluded, setExcluded] = useState(excludedIds);
   const [rows, setRows] = useState<Row[]>(() => {
@@ -106,6 +116,9 @@ export function RecipeForm({
     () => known.map((ingredient) => ({ value: ingredient.name, hint: aisleLabel(ingredient.aisle) })),
     [known],
   );
+  const baseOptions = useMemo<AutocompleteOption[]>(() => bases.map((value) => ({ value })), [bases]);
+  const suggestedBase = useMemo(() => suggestBase(rows, bases) ?? "", [rows, bases]);
+  const shownBase = baseTouched ? base : suggestedBase;
   const knownByName = useMemo(
     () => new Map(known.map((ingredient) => [normalizeText(ingredient.name), ingredient])),
     [known],
@@ -166,6 +179,28 @@ export function RecipeForm({
               onChange={(event) => setTitle(event.target.value)}
               placeholder="Gratin de courgettes"
               autoComplete="off"
+              aria-describedby={describedBy}
+              aria-invalid={invalid}
+            />
+          )}
+        </Field>
+        <Field
+          id={`${id}-base`}
+          label="Élément principal"
+          help="Deux recettes avec le même élément principal se cuisinent ensemble."
+          error={errors.base}
+        >
+          {({ describedBy, invalid }) => (
+            <Autocomplete
+              id={`${id}-base`}
+              name="base"
+              value={shownBase}
+              options={baseOptions}
+              placeholder="Steak haché"
+              onValueChange={(value) => {
+                setBaseTouched(true);
+                setBase(value);
+              }}
               aria-describedby={describedBy}
               aria-invalid={invalid}
             />
@@ -332,6 +367,14 @@ export function RecipeForm({
           label="Plaît aux enfants"
           checked={kid}
           onCheckedChange={setKid}
+        />
+        <SwitchField
+          id={`${id}-basic`}
+          name="basic"
+          label="Recette basique"
+          description="Elle apparaît dans « Les basiques » de la semaine."
+          checked={basic}
+          onCheckedChange={setBasic}
         />
       </Card>
 

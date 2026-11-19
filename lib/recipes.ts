@@ -364,6 +364,12 @@ export function filtersToSearchParams(filters: RecipeFilters): URLSearchParams {
   return params;
 }
 
+// Une recette du catalogue que le foyer a copiée disparaît : sa copie la remplace.
+export function hideCopiedOriginals<T extends { id: string; source_recipe_id: string | null }>(rows: readonly T[]): T[] {
+  const copied = new Set(rows.map((row) => row.source_recipe_id).filter(Boolean));
+  return rows.filter((row) => !copied.has(row.id));
+}
+
 // ─── Qui mange quoi ─────────────────────────────────────────────────────────
 
 // Les régimes d'un membre que la recette ne respecte pas.

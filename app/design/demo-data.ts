@@ -68,6 +68,8 @@ export const DEMO_RECIPES: ListRecipe[] = [
   diets: recipe.diets as ListRecipe["diets"],
   photo_url: null,
   batch_friendly: false,
+  base: null,
+  basic: false,
   ingredientNames: [],
   excludedIds: [],
 }));

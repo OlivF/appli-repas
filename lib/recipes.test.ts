@@ -8,6 +8,7 @@ import {
   filtersToSearchParams,
   formatDuration,
   formatIngredientQuantity,
+  hideCopiedOriginals,
   incompatibleDiets,
   matchesSearch,
   memberEatability,
@@ -301,6 +302,17 @@ describe("filterRecipes", () => {
 
   it("combine recherche et filtres", () => {
     expect(titles({ query: "quiche", diets: ["keto"] })).toEqual(["Quiche"]);
+  });
+});
+
+describe("hideCopiedOriginals", () => {
+  it("cache une recette du catalogue que le foyer a copiée : la copie la remplace", () => {
+    const rows = [
+      { id: "catalogue", source_recipe_id: null },
+      { id: "copie", source_recipe_id: "catalogue" },
+      { id: "autre", source_recipe_id: null },
+    ];
+    expect(hideCopiedOriginals(rows).map((row) => row.id)).toEqual(["copie", "autre"]);
   });
 });
 

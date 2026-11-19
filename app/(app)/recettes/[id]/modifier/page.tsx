@@ -23,7 +23,7 @@ export default function EditRecipePage({ params }: PageProps<"/recettes/[id]/mod
 
 async function EditRecipeForm({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { recipe, ingredients, members, excludedIds, known } = await loadRecipeForm(id);
+  const { recipe, ingredients, members, excludedIds, known, bases } = await loadRecipeForm(id);
   // Le chargeur renvoie vers la fiche une recette du catalogue : ici, elle est au foyer.
   if (!recipe) return null;
   const fromCatalog = recipe.source_recipe_id !== null;
@@ -45,6 +45,7 @@ async function EditRecipeForm({ params }: { params: Promise<{ id: string }> }) {
         members={members}
         excludedIds={excludedIds}
         known={known}
+        bases={bases}
       />
       <div className="mt-10 border-t border-border pt-6">
         <DeleteRecipe recipeId={recipe.id} fromCatalog={fromCatalog} />
