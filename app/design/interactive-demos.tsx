@@ -19,9 +19,15 @@ import { PlannedMealCard } from "@/components/planned-meal-card";
 import { RecipeLibrary } from "@/components/recipe-library";
 import { SameBaseNote } from "@/components/same-base-note";
 import { SearchField } from "@/components/search-field";
+import { AisleIcon } from "@/components/aisle-icon";
+import { ShoppingAddBar } from "@/components/shopping-add-bar";
+import { ShoppingAisle, ShoppingFold } from "@/components/shopping-aisle";
+import { ShoppingItemSheet } from "@/components/shopping-item-sheet";
+import { PantryItemRow, ShoppingItemRow, type RowItem } from "@/components/shopping-item-row";
 import { SwitchField } from "@/components/switch-field";
 import { StepProgress } from "@/components/step-progress";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import {
@@ -34,6 +40,7 @@ import {
 } from "@/components/ui/sheet";
 import { DIETS } from "@/lib/members";
 import { AISLES, UNITS, aisleLabel, incompatibleDiets, type GroceryAisle } from "@/lib/recipes";
+import type { ShoppingSource } from "@/lib/shopping";
 import { DEMO_BASICS, DEMO_RECIPES } from "./demo-data";
 
 // Le header (crème translucide, ombre fine une fois la page défilée), en exemple.
@@ -410,6 +417,88 @@ export function LibraryDemo({ eaters }: { eaters: CardMember[] }) {
       <p role="status" className="mt-4 text-[0.9375rem] text-muted-foreground">
         {picked ? `Choisie : ${picked}` : "Touche une recette, ou une puce des basiques, pour la choisir."}
       </p>
+    </div>
+  );
+}
+
+const SHOPPING_SOURCES: Record<string, ShoppingSource[]> = {
+  lait: [{ recipeId: "porridge", recipeTitle: "Porridge aux pommes et à la cannelle", day: 1, mealType: "petit_dej", eaters: 5 }],
+  creme: [
+    { recipeId: "poulet", recipeTitle: "Poulet à la crème et aux champignons", day: 1, mealType: "soir", eaters: 5 },
+    { recipeId: "saumon", recipeTitle: "Salade de saumon à la crème", day: 0, mealType: "midi", eaters: 1 },
+  ],
+  oeufs: [{ recipeId: "omelette", recipeTitle: "Omelette aux fines herbes", day: 3, mealType: "soir", eaters: 4 }],
+};
+
+// La liste de courses : la progression, un rayon qu'on coche (l'article coché glisse en bas),
+// « … » qui ouvre « Pour quoi ? », un rayon tout pris replié, le placard, la barre d'ajout.
+export function ShoppingDemo() {
+  const [items, setItems] = useState<RowItem[]>([
+    { id: "lait", label: "Lait", quantity: "1,8 l", checked: false, quantityChanged: false },
+    { id: "creme", label: "Crème fraîche épaisse", quantity: "200 g + 2 c. à soupe", checked: false, quantityChanged: true },
+    { id: "oeufs", label: "Œufs", quantity: "12", checked: true, quantityChanged: false },
+  ]);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const open = items.find((item) => item.id === openId) ?? null;
+  const done = items.filter((item) => item.checked).length + 2;
+  const sorted = [...items].sort((a, b) => Number(a.checked) - Number(b.checked));
+  const toggle = (id: string) =>
+    setItems((current) =>
+      current.map((item) => (item.id === id ? { ...item, checked: !item.checked, quantityChanged: false } : item)),
+    );
+
+  return (
+    <div className="max-w-md space-y-4">
+      <div>
+        <p className="font-heading text-[1.625rem] leading-tight tabular-nums">{`${done} sur 34`}</p>
+        <Progress value={(done / 34) * 100} aria-label="Articles pris" className="mt-2 h-1.5" />
+      </div>
+
+      <ShoppingAisle aisle="cremerie" label="Crèmerie" remaining={items.filter((item) => !item.checked).length}>
+        {sorted.map((item) => (
+          <ShoppingItemRow key={item.id} item={item} onToggle={() => toggle(item.id)} onMore={() => setOpenId(item.id)} />
+        ))}
+      </ShoppingAisle>
+
+      <ShoppingAisle aisle="boucherie" label="Boucherie" remaining={0}>
+        <ShoppingItemRow item={{ id: "steaks", label: "Steaks hachés pur bœuf", quantity: "5", checked: true, quantityChanged: false }} onToggle={() => {}} onMore={() => {}} />
+        <ShoppingItemRow item={{ id: "lardons", label: "Lardons", quantity: "200 g", checked: true, quantityChanged: false }} onToggle={() => {}} onMore={() => {}} />
+      </ShoppingAisle>
+
+      <ShoppingFold icon={<AisleIcon aisle="placard" className="size-5" />} title="Placard" hint="À vérifier avant de commander">
+        <PantryItemRow label="Huile d’olive" note="pour 5 recettes" onNeeded={() => {}} />
+        <PantryItemRow label="Sel" note="pour 9 recettes" onNeeded={() => {}} />
+      </ShoppingFold>
+
+      <ShoppingAddBar
+        fixed={false}
+        options={[
+          { value: "Œufs", hint: "Crèmerie" },
+          { value: "Papier toilette", hint: "Autre" },
+          { value: "Pain", hint: "Boulangerie" },
+        ]}
+        onAdd={async () => null}
+      />
+
+      <ShoppingItemSheet
+        item={
+          open && {
+            label: open.label,
+            quantity: open.quantity,
+            manual: false,
+            pantry: false,
+            needed: false,
+            quantityText: null,
+            sources: SHOPPING_SOURCES[open.id] ?? [],
+          }
+        }
+        open={open !== null}
+        onOpenChange={(value) => !value && setOpenId(null)}
+        onHaveIt={() => setOpenId(null)}
+        onBackToPantry={() => setOpenId(null)}
+        onEdit={async () => null}
+        onDelete={() => setOpenId(null)}
+      />
     </div>
   );
 }

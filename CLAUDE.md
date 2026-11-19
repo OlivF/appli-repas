@@ -44,12 +44,13 @@ Appli web multi-utilisateurs : chaque compte crée son foyer, ses membres, ses r
 - `recipe_ingredients` : nom, quantité, unité, rayon.
 - `ingredients` : référentiel d'ingrédients canoniques (commun + propres au foyer) : nom, rayon, unité d'achat, poids d'une pièce, densité, alias, placard. `recipe_ingredients.ingredient_id` y renvoie. Base commune de la liste de courses, du frigo et du menu IA.
 - `week_plans` + `planned_meals` : semaine (date du lundi), créneau → recette, verrou. Un repas peut porter plusieurs plats (2 ou 3), chacun pour certains membres ; chaque présent mange un seul plat par repas. Le planner privilégie les duos de même base (plat famille + plat keto).
+- `shopping_lists` + `shopping_items` : une liste par semaine (signature du menu pour savoir si elle est à jour), partagée par les comptes du foyer. Articles : ingrédient canonique, quantités dans l'unité d'achat (`amounts`), rayon, placard, sources (recette, jour, repas, convives), coché, « J'en ai déjà » (`removed`, gardé pour le frigo), ajouté à la main. Calcul pur dans `lib/shopping.ts` ; jamais de mise à jour automatique : bandeau « Le menu a changé ».
 
 ## Feuille de route
 
 1. Socle : auth, création du foyer, membres, créneaux, déploiement Vercel.
 2. Recettes (CRUD + catalogue de base) et grille de la semaine avec proposition auto et glisser-déposer.
-3. Liste de courses (quantités ajustées aux convives, regroupées par rayon, à cocher / copier).
+3. ✅ Liste de courses (quantités ajustées aux convives, regroupées par rayon, à cocher / copier).
 4. Batch cooking du dimanche, PWA installable.
 
 ## Foyer de test

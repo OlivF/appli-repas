@@ -6,6 +6,14 @@ import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
+// « 200 g + 2 c. à soupe » : chaque morceau reste d'un bloc ; la ligne ne se coupe qu'après « + ».
+function unbreakableParts(quantity: string) {
+  return quantity
+    .split(" + ")
+    .map((part) => part.replace(/ /g, "\u00a0"))
+    .join(" + ");
+}
+
 export type RowItem = { id: string; label: string; quantity: string; checked: boolean; quantityChanged: boolean };
 
 // Une ligne de la liste : toute la ligne coche ou décoche (cible ≥ 56 px) ; « … » ouvre le panneau
@@ -33,7 +41,7 @@ export function ShoppingItemRow({ item, onToggle, onMore }: { item: RowItem; onT
         >
           {item.checked && <Check className="size-4.5" strokeWidth={3.5} />}
         </span>
-        <span className="min-w-0 flex-1">
+        <span className="min-w-[40%] flex-1">
           <span
             className={cn(
               "block text-[1.0625rem] leading-snug font-semibold break-words",
@@ -47,13 +55,8 @@ export function ShoppingItemRow({ item, onToggle, onMore }: { item: RowItem; onT
           )}
         </span>
         {item.quantity && (
-          <span
-            className={cn(
-              "shrink-0 text-right font-semibold whitespace-nowrap tabular-nums",
-              item.checked && "text-muted-foreground line-through",
-            )}
-          >
-            {item.quantity}
+          <span className={cn("text-right font-semibold tabular-nums", item.checked && "text-muted-foreground line-through")}>
+            {unbreakableParts(item.quantity)}
           </span>
         )}
       </button>

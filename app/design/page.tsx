@@ -39,6 +39,7 @@ import {
   PlannedCardsDemo,
   SearchDemo,
   SheetDemo,
+  ShoppingDemo,
   StepDemo,
   SwitchDemo,
 } from "./interactive-demos";
@@ -408,6 +409,20 @@ export default function DesignPage() {
           </p>
           <div className="mt-4">
             <LibraryDemo eaters={[OLIVIER, MARIE_LAURE]} />
+          </div>
+        </Section>
+
+        <Section
+          title="Liste de courses"
+          lead="On la suit au drive, d’une main. Toute la ligne coche ; l’article coché se barre et glisse en bas de son rayon. « … » dit pour quoi on l’achète."
+        >
+          <p className="max-w-[60ch] text-muted-foreground">
+            Les rayons dans l’ordre du drive ; un rayon tout pris se replie. « quantité modifiée » : la quantité a
+            augmenté à la mise à jour, la case a été décochée. Le placard, replié, se vérifie avant de commander.
+            La barre d’ajout est fixée au-dessus du menu du bas ; ses suggestions s’ouvrent vers le haut.
+          </p>
+          <div className="mt-5">
+            <ShoppingDemo />
           </div>
         </Section>
 

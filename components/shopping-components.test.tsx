@@ -30,6 +30,16 @@ describe("ShoppingItemRow", () => {
     expect(onMore).toHaveBeenCalledOnce();
   });
 
+  it("une quantité en deux morceaux ne se coupe qu'après le « + »", () => {
+    render(
+      <ul>
+        <ShoppingItemRow item={{ ...ONIONS, label: "Crème fraîche épaisse", quantity: "200 g + 2 c. à soupe" }} onToggle={() => {}} onMore={() => {}} />
+      </ul>,
+    );
+    // toHaveTextContent remplace les espaces insécables : on lit le texte brut.
+    expect(screen.getByRole("checkbox").textContent).toContain("200\u00a0g + 2\u00a0c.\u00a0à\u00a0soupe");
+  });
+
   it("barre un article coché et signale une quantité modifiée", () => {
     const { rerender } = render(
       <ul>
