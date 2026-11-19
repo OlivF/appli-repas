@@ -255,7 +255,10 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "copy_recipe":
+            "add_planned_meal":
+{ Args: { "eater_ids": (string)[],"target_day": number,"target_household_id": string,"target_meal_type": Database["public"]['Enums']["meal_type"],"target_recipe_id": string,"target_week_start": string }; Returns: string
+                           },
+"copy_recipe":
 { Args: { "catalog_recipe_id": string,"target_household_id": string }; Returns: string
                            },
 "create_household":
@@ -266,6 +269,9 @@ isOneToOne: false
                            },
 "save_week_proposal":
 { Args: { "cards": Json,"new_seed": number,"target_household_id": string,"target_week_start": string }; Returns: string
+                           },
+"set_planned_meal_eaters":
+{ Args: { "eater_ids": (string)[],"target_card_id": string }; Returns: undefined
                            },
 "swap_planned_meals":
 { Args: { "first_id": string,"second_id": string }; Returns: undefined
