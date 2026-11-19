@@ -278,10 +278,15 @@ const MEAL_WORDS: Record<MealType, string> = {
   soir: "soir",
 };
 
+// « lun. soir · 4 pers. »
+export function sourceDetail(source: ShoppingSource): string {
+  const day = `${DAYS[source.day].short.toLocaleLowerCase("fr")}.`;
+  return `${day} ${MEAL_WORDS[source.mealType]} · ${source.eaters} pers.`;
+}
+
 // « Steak haché et frites · lun. soir · 4 pers. »
 export function sourceLabel(source: ShoppingSource): string {
-  const day = `${DAYS[source.day].short.toLocaleLowerCase("fr")}.`;
-  return `${source.recipeTitle} · ${day} ${MEAL_WORDS[source.mealType]} · ${source.eaters} pers.`;
+  return `${source.recipeTitle} · ${sourceDetail(source)}`;
 }
 
 // Placard : « pour 5 recettes » (recettes différentes).
