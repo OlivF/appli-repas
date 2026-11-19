@@ -12,7 +12,8 @@ import { loadWeek, weekCards, type WeekCard } from "@/lib/week-data";
 export type ActionError = { error: string };
 export type ProposeResult = { cards: WeekCard[] } | ActionError;
 export type CardResult = { card: WeekCard } | ActionError;
-export type IdeaResult = { card: WeekCard } | { none: true } | ActionError;
+// « Autre idée » sur un duo change aussi l'autre plat : `cards` rend les cartes changées.
+export type IdeaResult = { cards: WeekCard[] } | { none: true } | ActionError;
 export type DoneResult = { ok: true } | ActionError;
 
 const WRONG_MEAL = "Cette recette ne va pas à ce repas.";
@@ -129,7 +130,8 @@ export async function placeRecipeAction(weekStart: string, target: PlaceTarget, 
 }
 
 // « Autre idée » : une recette qui convient à tous les mangeurs de la carte, ni l'actuelle
-// ni une de `tried` (déjà proposées pour cette carte).
+// ni une de `tried` (déjà proposées pour cette carte). Sur un duo de même base, l'autre plat
+// change aussi quand il est libre (voir nextIdea).
 export async function anotherIdeaAction(weekStart: string, cardId: string, tried: string[]): Promise<IdeaResult> {
   if (!isWeekStart(weekStart)) return { error: SAVE_ERROR };
   const { supabase, members, recipes, plan, cards } = await loadWeek(weekStart);
@@ -137,7 +139,7 @@ export async function anotherIdeaAction(weekStart: string, cardId: string, tried
   if (!card) return { error: SAVE_ERROR };
   if (card.locked) return { error: LOCKED };
 
-  const recipeId = nextIdea({
+  const idea = nextIdea({
     card,
     cards: cards.filter((item) => item.id !== cardId),
     members,
@@ -145,8 +147,15 @@ export async function anotherIdeaAction(weekStart: string, cardId: string, tried
     tried,
     seed: plan?.seed ?? 0,
   });
-  if (!recipeId) return { none: true };
+  if (!idea) return { none: true };
 
-  const { error } = await supabase.from("planned_meals").update({ recipe_id: recipeId }).eq("id", cardId);
-  return error ? { error: SAVE_ERROR } : { card: { ...card, recipe_id: recipeId } };
+  const changed = [
+    { ...card, recipe_id: idea.recipe_id },
+    ...(idea.partner ? [{ ...idea.partner.card, recipe_id: idea.partner.recipe_id }] : []),
+  ];
+  for (const item of changed) {
+    const { error } = await supabase.from("planned_meals").update({ recipe_id: item.recipe_id }).eq("id", item.id);
+    if (error) return { error: SAVE_ERROR };
+  }
+  return { cards: changed };
 }

@@ -260,9 +260,10 @@ export function WeekBoard({
     }
     setTried((current) => ({ ...current, [card.id]: already }));
     setCards((current) =>
-      current.map((item) =>
-        item.id === card.id ? { ...item, recipe_id: result.card.recipe_id, vid: `${item.id}:${result.card.recipe_id}` } : item,
-      ),
+      current.map((item) => {
+        const changed = result.cards.find((other) => other.id === item.id);
+        return changed ? { ...item, recipe_id: changed.recipe_id, vid: `${item.id}:${changed.recipe_id}` } : item;
+      }),
     );
   }
 

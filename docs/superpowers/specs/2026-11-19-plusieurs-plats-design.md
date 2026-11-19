@@ -37,6 +37,7 @@ s'affichent avec le « Rien de prévu pour … · Choisir » existant.
 | Avatars cochés | Cercle tomate + coche ; le barré reste pour « ne convient pas » / « n'en mange pas » |
 | « Qui mange ce plat ? » | Bouton « Valider » ; au moins une personne cochée |
 | Branche | `plusieurs-plats` partie de `recettes-associees`, PR empilée sur #5 |
+| Note d'une solution | Moyenne des notes des cartes (et non la somme), puis bonus et pénalités |
 | Le reste | Prompt « B » de l'utilisateur, plus les choix de Claude ci-dessous, validés (« go ») |
 
 ## Approches envisagées
@@ -62,7 +63,8 @@ Réglages en tête de `lib/planner.ts` : `SAME_BASE_BONUS = 5`, `SAME_PROTEIN_BO
 - Solutions : la meilleure recette pour tous ; si 2 groupes ou plus, la meilleure par groupe ; pour
   chaque base, la meilleure recette de cette base par groupe (ou, avec un seul groupe, quand une carte
   verrouillée du repas a cette base).
-- Note = somme des notes actuelles des cartes ; +5 si toutes les cartes du repas (≥ 2, verrouillées
+- Note = **moyenne** des notes actuelles des cartes (choix de l'utilisateur : avec la somme, chaque
+  carte rapportant ~+2, deux plats céto différents battaient un plat céto unique) ; +5 si toutes les cartes du repas (≥ 2, verrouillées
   comprises) ont la même base, sinon +2 si elles ont la même famille de protéine ; −3 par carte céto
   servie à au moins un membre non céto ; −1 par carte ajoutée au-delà de la première ; −3 par repas
   déjà servi dans la semaine avec la même base (un duo compte une fois).
