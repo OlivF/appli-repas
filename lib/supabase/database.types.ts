@@ -5,7 +5,45 @@ export type Database = {
   
   "public": {
           Tables: {
-            "household_users": {
+            "fridge_items": {
+                  Row: {
+                    "best_before": string | null,"created_at": string,"household_id": string,"id": string,"ingredient_id": string | null,"label": string,"origin": Database["public"]['Enums']["fridge_origin"],"quantity": number | null,"recipe_id": string | null,"reserved_list_id": string | null,"unit": Database["public"]['Enums']["shopping_unit"] | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "best_before"?: string | null,"created_at"?: string,"household_id": string,"id"?: string,"ingredient_id"?: string | null,"label": string,"origin"?: Database["public"]['Enums']["fridge_origin"],"quantity"?: number | null,"recipe_id"?: string | null,"reserved_list_id"?: string | null,"unit"?: Database["public"]['Enums']["shopping_unit"] | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "best_before"?: string | null,"created_at"?: string,"household_id"?: string,"id"?: string,"ingredient_id"?: string | null,"label"?: string,"origin"?: Database["public"]['Enums']["fridge_origin"],"quantity"?: number | null,"recipe_id"?: string | null,"reserved_list_id"?: string | null,"unit"?: Database["public"]['Enums']["shopping_unit"] | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "fridge_items_household_id_fkey"
+      columns: ["household_id"]
+isOneToOne: false
+      referencedRelation: "households"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "fridge_items_ingredient_id_fkey"
+      columns: ["ingredient_id"]
+isOneToOne: false
+      referencedRelation: "ingredients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "fridge_items_recipe_id_fkey"
+      columns: ["recipe_id"]
+isOneToOne: false
+      referencedRelation: "recipes"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "fridge_items_reserved_list_id_fkey"
+      columns: ["reserved_list_id"]
+isOneToOne: false
+      referencedRelation: "shopping_lists"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"household_users": {
                   Row: {
                     "created_at": string,"household_id": string,"user_id": string
                   }
@@ -101,14 +139,14 @@ isOneToOne: false
                   ]
                 },"planned_meals": {
                   Row: {
-                    "created_at": string,"day": number,"household_id": string,"id": string,"locked": boolean,"meal_type": Database["public"]['Enums']["meal_type"],"member_ids": (string)[],"position": number,"recipe_id": string,"week_plan_id": string
+                    "created_at": string,"day": number,"household_id": string,"id": string,"locked": boolean,"meal_type": Database["public"]['Enums']["meal_type"],"member_ids": (string)[],"position": number,"recipe_id": string,"skipped": boolean,"week_plan_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"day": number,"household_id": string,"id"?: string,"locked"?: boolean,"meal_type": Database["public"]['Enums']["meal_type"],"member_ids": (string)[],"position"?: number,"recipe_id": string,"week_plan_id": string
+                    "created_at"?: string,"day": number,"household_id": string,"id"?: string,"locked"?: boolean,"meal_type": Database["public"]['Enums']["meal_type"],"member_ids": (string)[],"position"?: number,"recipe_id": string,"skipped"?: boolean,"week_plan_id": string
                   }
                   Update: {
-                    "created_at"?: string,"day"?: number,"household_id"?: string,"id"?: string,"locked"?: boolean,"meal_type"?: Database["public"]['Enums']["meal_type"],"member_ids"?: (string)[],"position"?: number,"recipe_id"?: string,"week_plan_id"?: string
+                    "created_at"?: string,"day"?: number,"household_id"?: string,"id"?: string,"locked"?: boolean,"meal_type"?: Database["public"]['Enums']["meal_type"],"member_ids"?: (string)[],"position"?: number,"recipe_id"?: string,"skipped"?: boolean,"week_plan_id"?: string
                   }
                   Relationships: [
                     {
@@ -249,14 +287,14 @@ isOneToOne: false
                   ]
                 },"shopping_items": {
                   Row: {
-                    "aisle": Database["public"]['Enums']["grocery_aisle"],"amounts": NonNullable<Json>,"checked": boolean,"created_at": string,"household_id": string,"id": string,"ingredient_id": string | null,"label": string,"list_id": string,"manual": boolean,"needed": boolean,"pantry": boolean,"position": number,"quantity_changed": boolean,"quantity_text": string | null,"removed": boolean,"sources": NonNullable<Json>
+                    "aisle": Database["public"]['Enums']["grocery_aisle"],"amounts": NonNullable<Json>,"checked": boolean,"created_at": string,"from_fridge": number,"household_id": string,"id": string,"ingredient_id": string | null,"label": string,"list_id": string,"manual": boolean,"maybe_in_fridge": boolean,"needed": boolean,"pantry": boolean,"position": number,"quantity_changed": boolean,"quantity_text": string | null,"removed": boolean,"sources": NonNullable<Json>,"stored": boolean
                   }
                   ComputedFields: never
                   Insert: {
-                    "aisle"?: Database["public"]['Enums']["grocery_aisle"],"amounts"?: NonNullable<Json>,"checked"?: boolean,"created_at"?: string,"household_id": string,"id"?: string,"ingredient_id"?: string | null,"label": string,"list_id": string,"manual"?: boolean,"needed"?: boolean,"pantry"?: boolean,"position"?: number,"quantity_changed"?: boolean,"quantity_text"?: string | null,"removed"?: boolean,"sources"?: NonNullable<Json>
+                    "aisle"?: Database["public"]['Enums']["grocery_aisle"],"amounts"?: NonNullable<Json>,"checked"?: boolean,"created_at"?: string,"from_fridge"?: number,"household_id": string,"id"?: string,"ingredient_id"?: string | null,"label": string,"list_id": string,"manual"?: boolean,"maybe_in_fridge"?: boolean,"needed"?: boolean,"pantry"?: boolean,"position"?: number,"quantity_changed"?: boolean,"quantity_text"?: string | null,"removed"?: boolean,"sources"?: NonNullable<Json>,"stored"?: boolean
                   }
                   Update: {
-                    "aisle"?: Database["public"]['Enums']["grocery_aisle"],"amounts"?: NonNullable<Json>,"checked"?: boolean,"created_at"?: string,"household_id"?: string,"id"?: string,"ingredient_id"?: string | null,"label"?: string,"list_id"?: string,"manual"?: boolean,"needed"?: boolean,"pantry"?: boolean,"position"?: number,"quantity_changed"?: boolean,"quantity_text"?: string | null,"removed"?: boolean,"sources"?: NonNullable<Json>
+                    "aisle"?: Database["public"]['Enums']["grocery_aisle"],"amounts"?: NonNullable<Json>,"checked"?: boolean,"created_at"?: string,"from_fridge"?: number,"household_id"?: string,"id"?: string,"ingredient_id"?: string | null,"label"?: string,"list_id"?: string,"manual"?: boolean,"maybe_in_fridge"?: boolean,"needed"?: boolean,"pantry"?: boolean,"position"?: number,"quantity_changed"?: boolean,"quantity_text"?: string | null,"removed"?: boolean,"sources"?: NonNullable<Json>,"stored"?: boolean
                   }
                   Relationships: [
                     {
@@ -281,14 +319,14 @@ isOneToOne: false
                   ]
                 },"shopping_lists": {
                   Row: {
-                    "household_id": string,"id": string,"menu_signature": string,"updated_at": string,"week_plan_id": string
+                    "fridge_signature": string,"household_id": string,"id": string,"menu_signature": string,"settled_at": string | null,"stored_at": string | null,"updated_at": string,"week_plan_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "household_id": string,"id"?: string,"menu_signature"?: string,"updated_at"?: string,"week_plan_id": string
+                    "fridge_signature"?: string,"household_id": string,"id"?: string,"menu_signature"?: string,"settled_at"?: string | null,"stored_at"?: string | null,"updated_at"?: string,"week_plan_id": string
                   }
                   Update: {
-                    "household_id"?: string,"id"?: string,"menu_signature"?: string,"updated_at"?: string,"week_plan_id"?: string
+                    "fridge_signature"?: string,"household_id"?: string,"id"?: string,"menu_signature"?: string,"settled_at"?: string | null,"stored_at"?: string | null,"updated_at"?: string,"week_plan_id"?: string
                   }
                   Relationships: [
                     {
@@ -345,6 +383,9 @@ isOneToOne: false
 "add_shopping_item":
 { Args: { "quantity_text": string,"raw_label": string,"target_list_id": string }; Returns: string
                            },
+"apply_fridge_settlement":
+{ Args: { "changes": Json,"target_list_id": string }; Returns: boolean
+                           },
 "copy_recipe":
 { Args: { "catalog_recipe_id": string,"target_household_id": string }; Returns: string
                            },
@@ -364,11 +405,11 @@ isOneToOne: false
 { Args: { "first_id": string,"second_id": string }; Returns: undefined
                            },
 "sync_shopping_list":
-{ Args: { "items": Json,"signature": string,"target_week_plan_id": string }; Returns: string
+{ Args: { "fridge": string,"items": Json,"signature": string,"target_week_plan_id": string }; Returns: string
                            }
           }
           Enums: {
-            "appetite": "normal"|"grand","diet": "keto"|"vegetarian"|"gluten_free"|"lactose_free","grocery_aisle": "fruits_legumes"|"boucherie"|"poissonnerie"|"cremerie"|"epicerie"|"surgeles"|"boulangerie"|"boissons"|"autre","ingredient_unit": "g"|"kg"|"ml"|"l"|"piece"|"cas"|"cac","meal_type": "petit_dej"|"midi"|"soir"|"pique_nique","shopping_unit": "g"|"ml"|"piece"
+            "appetite": "normal"|"grand","diet": "keto"|"vegetarian"|"gluten_free"|"lactose_free","fridge_origin": "manual"|"shopping"|"leftover","grocery_aisle": "fruits_legumes"|"boucherie"|"poissonnerie"|"cremerie"|"epicerie"|"surgeles"|"boulangerie"|"boissons"|"autre","ingredient_unit": "g"|"kg"|"ml"|"l"|"piece"|"cas"|"cac","meal_type": "petit_dej"|"midi"|"soir"|"pique_nique","shopping_unit": "g"|"ml"|"piece"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -484,7 +525,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "appetite": ["normal", "grand"],"diet": ["keto", "vegetarian", "gluten_free", "lactose_free"],"grocery_aisle": ["fruits_legumes", "boucherie", "poissonnerie", "cremerie", "epicerie", "surgeles", "boulangerie", "boissons", "autre"],"ingredient_unit": ["g", "kg", "ml", "l", "piece", "cas", "cac"],"meal_type": ["petit_dej", "midi", "soir", "pique_nique"],"shopping_unit": ["g", "ml", "piece"]
+            "appetite": ["normal", "grand"],"diet": ["keto", "vegetarian", "gluten_free", "lactose_free"],"fridge_origin": ["manual", "shopping", "leftover"],"grocery_aisle": ["fruits_legumes", "boucherie", "poissonnerie", "cremerie", "epicerie", "surgeles", "boulangerie", "boissons", "autre"],"ingredient_unit": ["g", "kg", "ml", "l", "piece", "cas", "cac"],"meal_type": ["petit_dej", "midi", "soir", "pique_nique"],"shopping_unit": ["g", "ml", "piece"]
           }
         }
 } as const

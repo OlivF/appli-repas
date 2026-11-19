@@ -33,6 +33,9 @@ function listItem(fields: Partial<ListItem> & Pick<ListItem, "id" | "label">): L
     manual: false,
     quantity_text: null,
     position: 0,
+    from_fridge: 0,
+    maybe_in_fridge: false,
+    stored: false,
     ...fields,
   };
 }

@@ -24,13 +24,14 @@ type ItemRow = Database["public"]["Tables"]["shopping_items"]["Row"];
 export type ListItem = StoredItem & { id: string };
 
 export const ITEM_COLUMNS =
-  "id, ingredient_id, label, amounts, aisle, pantry, sources, checked, removed, needed, quantity_changed, manual, quantity_text, position";
+  "id, ingredient_id, label, amounts, aisle, pantry, sources, checked, removed, needed, quantity_changed, manual, quantity_text, position, from_fridge, maybe_in_fridge, stored";
 
 export function toListItem(row: Pick<ItemRow, keyof ListItem>): ListItem {
   return {
     ...row,
     amounts: row.amounts as Amount[],
     sources: row.sources as ShoppingSource[],
+    from_fridge: Number(row.from_fridge),
   };
 }
 
@@ -105,6 +106,8 @@ export async function syncShoppingList(
   const { data: listId, error } = await supabase.rpc("sync_shopping_list", {
     target_week_plan_id: menu.planId,
     signature: menuSignature(menu.meals),
+    // Le frigo arrive avec l'étape C.
+    fridge: "",
     items: merged.map((item) => ({
       ingredient_id: item.ingredient_id,
       label: item.label,
@@ -117,6 +120,9 @@ export async function syncShoppingList(
       needed: item.needed,
       quantity_changed: item.quantity_changed,
       position: item.position,
+      from_fridge: item.from_fridge,
+      maybe_in_fridge: item.maybe_in_fridge,
+      stored: item.stored,
     })),
   });
   if (error || !listId) throw new Error(error?.message ?? "Liste non enregistrée");
