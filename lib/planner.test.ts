@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import basicsFile from "@/recettes-basiques.json";
+import { baseKey } from "@/lib/bases";
 import type { MealType } from "@/lib/meal-slots";
 import type { Diet } from "@/lib/members";
 import {
@@ -11,6 +13,7 @@ import {
   type PlannerRecipe,
   type PlannerSlot,
 } from "@/lib/planner";
+import type { GroceryAisle } from "@/lib/recipes";
 import { LEA, PAUL, TOM } from "@/test/helpers";
 
 const ZOE = "44444444-4444-4444-8444-444444444444";
@@ -31,6 +34,7 @@ function recipe(id: string, overrides: Partial<PlannerRecipe> = {}): PlannerReci
     favorite: false,
     minutes: 30,
     protein: null,
+    base: null,
     ...overrides,
   };
 }
@@ -55,11 +59,27 @@ describe("canEat", () => {
 });
 
 describe("proposeWeek : qui mange quoi", () => {
-  it("prend une recette pour tous quand elle existe", () => {
+  it("un seul plat pour des présents qui ont les mêmes régimes", () => {
+    const { cards } = propose([slot(0, "soir", [PAUL, TOM])], [recipe("a"), recipe("b")]);
+    expect(cards).toHaveLength(1);
+    expect(cards[0].member_ids).toEqual([PAUL, TOM]);
+  });
+
+  it("un plat par régime plutôt qu'un plat céto pour tous", () => {
     const { cards } = propose([slot(0, "soir", [PAUL, LEA])], [recipe("a"), recipe("k", { diets: ["keto"] })]);
     expect(cards).toEqual([
-      { day: 0, meal_type: "soir", position: 0, recipe_id: "k", member_ids: [PAUL, LEA], locked: false },
+      { day: 0, meal_type: "soir", position: 0, recipe_id: "a", member_ids: [PAUL], locked: false },
+      { day: 0, meal_type: "soir", position: 1, recipe_id: "k", member_ids: [LEA], locked: false },
     ]);
+  });
+
+  it("un seul plat céto pour tous quand il n'y a rien d'autre", () => {
+    const { cards } = propose(
+      [slot(0, "soir", [PAUL, LEA])],
+      [recipe("k1", { diets: ["keto"] }), recipe("k2", { diets: ["keto"] })],
+    );
+    expect(cards).toHaveLength(1);
+    expect(cards[0].member_ids).toEqual([PAUL, LEA]);
   });
 
   it("sinon la recette qui couvre le plus, puis une carte pour les autres", () => {
@@ -178,6 +198,21 @@ describe("proposeWeek : verrous", () => {
     ]);
   });
 
+  it("ajoute à côté d'une carte verrouillée un plat de sa base, même basique", () => {
+    for (const seed of SEEDS) {
+      const { cards } = propose(
+        [slot(0, "soir", [PAUL, LEA])],
+        [
+          recipe("frites", { base: "Steak haché", basic: true }),
+          recipe("haricots", { base: "steak HACHÉ", basic: true, diets: ["keto"] }),
+          recipe("pizza", { diets: ["keto"], favorite: true }),
+        ],
+        { locked: [{ ...locked, recipe_id: "frites" }], seed },
+      );
+      expect(cards.map((card) => [card.recipe_id, card.member_ids])).toEqual([["haricots", [LEA]]]);
+    }
+  });
+
   it("n'ajoute rien à un créneau entièrement verrouillé", () => {
     const { cards, unfed } = propose([slot(0, "soir", [PAUL])], [recipe("a"), recipe("b")], { locked: [locked] });
     expect(cards).toEqual([]);
@@ -230,8 +265,8 @@ describe("proposeWeek : graine et préférences", () => {
 });
 
 // Le foyer de test de CLAUDE.md, sur les 40 recettes du catalogue
-// [n, repas, régimes, minutes, famille].
-const CATALOG: [string, MealType[], Diet[], number, string | null][] = [
+// [n, repas, régimes, minutes, famille, base].
+const CATALOG: [string, MealType[], Diet[], number, string | null, string?][] = [
   ["1", ["petit_dej"], ["vegetarian"], 5, null],
   ["2", ["petit_dej"], ["vegetarian"], 15, null],
   ["3", ["petit_dej"], ["vegetarian"], 30, null],
@@ -246,14 +281,14 @@ const CATALOG: [string, MealType[], Diet[], number, string | null][] = [
   ["12", ["soir"], [], 75, "boeuf"],
   ["13", ["soir"], ["gluten_free"], 60, "boeuf"],
   ["14", ["soir", "midi"], [], 40, "porc"],
-  ["15", ["soir"], ["gluten_free", "lactose_free"], 90, "volaille"],
+  ["15", ["soir"], ["gluten_free", "lactose_free"], 90, "volaille", "Poulet"],
   ["16", ["soir", "midi"], [], 50, "porc"],
   ["17", ["soir"], ["vegetarian", "gluten_free"], 45, null],
   ["18", ["soir"], ["gluten_free", "lactose_free"], 80, "boeuf"],
   ["19", ["soir"], [], 20, "porc"],
   ["20", ["soir"], ["vegetarian", "gluten_free", "lactose_free"], 40, null],
-  ["21", ["soir"], ["keto", "gluten_free"], 40, "volaille"],
-  ["22", ["soir"], ["keto", "gluten_free"], 30, "poisson"],
+  ["21", ["soir"], ["keto", "gluten_free"], 40, "volaille", "Poulet"],
+  ["22", ["soir"], ["keto", "gluten_free"], 30, "poisson", "Saumon"],
   ["23", ["soir"], ["keto", "gluten_free"], 50, "boeuf"],
   ["24", ["soir"], ["keto", "gluten_free"], 50, "porc"],
   ["25", ["soir"], ["keto", "gluten_free"], 45, "porc"],
@@ -305,14 +340,6 @@ describe("proposeWeek : foyer de test", () => {
     }
   });
 
-  it("propose un dîner céto pour toute la famille du lundi au samedi", () => {
-    const { cards } = proposeWeek({ slots, members, recipes, locked: [], seed: 1 });
-    for (const day of [0, 1, 2, 3, 4, 5]) {
-      const dinners = cards.filter((card) => card.day === day && card.meal_type === "soir");
-      expect(dinners).toHaveLength(1);
-      expect(dinners[0].member_ids).toHaveLength(5);
-    }
-  });
 });
 
 describe("proposeWeek et nextIdea : les basiques", () => {
@@ -376,6 +403,104 @@ describe("mainProtein", () => {
   });
 });
 
+// Les 35 basiques du catalogue (recettes-basiques.json), telles que la semaine les reçoit.
+const DIET_OF: Record<string, Diet> = {
+  keto: "keto",
+  vegetarien: "vegetarian",
+  sans_gluten: "gluten_free",
+  sans_lactose: "lactose_free",
+};
+const BASICS: PlannerRecipe[] = basicsFile.recettes.map((item) =>
+  recipe(item.titre, {
+    meal_types: item.types as MealType[],
+    diets: item.regimes.map((diet) => DIET_OF[diet]),
+    minutes: item.prep + item.cuisson,
+    protein: mainProtein(item.ingredients.map(([name, , , aisle]) => ({ name: String(name), aisle: aisle as GroceryAisle }))),
+    base: item.base,
+    basic: item.basique,
+  }),
+);
+
+describe("proposeWeek : foyer de test, avec les basiques", () => {
+  const [olivier, marieLaure, timothe, annaLucia, otis] = ["olivier", "marie-laure", "timothe", "anna-lucia", "otis"];
+  const family = [olivier, marieLaure, timothe, annaLucia, otis];
+  const others = [olivier, timothe, annaLucia, otis];
+  const members: PlannerMember[] = family.map((id) => ({ id, diets: id === marieLaure ? ["keto"] : [] }));
+  const recipes = [
+    ...CATALOG.map(([id, meal_types, diets, minutes, protein, base]) =>
+      recipe(id, { meal_types, diets, minutes, protein, base: base ?? null }),
+    ),
+    ...BASICS,
+  ];
+  const byId = new Map(recipes.map((item) => [item.id, item]));
+  const dish = (card: PlannerCard) => byId.get(card.recipe_id)!;
+  const slots: PlannerSlot[] = [
+    ...[0, 1, 2, 3, 4, 5, 6].flatMap((day) => [slot(day, "petit_dej", family), slot(day, "soir", family)]),
+    ...[0, 1, 3, 4].map((day) => slot(day, "midi", [marieLaure])),
+    slot(2, "pique_nique", [annaLucia, otis]),
+  ];
+  const week = (seed: number) => proposeWeek({ slots, members, recipes, locked: [], seed });
+  const at = (cards: PlannerCard[], day: number, meal: MealType) =>
+    cards.filter((card) => card.day === day && card.meal_type === meal);
+
+  it.each(SEEDS)("lundi soir : un duo de même base, le plat céto pour Marie-Laure seule (graine %i)", (seed) => {
+    const monday = at(week(seed).cards, 0, "soir");
+    expect(monday).toHaveLength(2);
+    const hers = monday.find((card) => card.member_ids.includes(marieLaure))!;
+    const theirs = monday.find((card) => card !== hers)!;
+    expect(hers.member_ids).toEqual([marieLaure]);
+    expect([...theirs.member_ids].sort()).toEqual([...others].sort());
+    expect(dish(hers).diets).toContain("keto");
+    expect(dish(theirs).diets).not.toContain("keto");
+    expect(baseKey(dish(theirs).base)).not.toBeNull();
+    expect(baseKey(dish(theirs).base)).toBe(baseKey(dish(hers).base));
+  });
+
+  it.each(SEEDS)("midi de Marie-Laure : une seule carte céto, jamais une basique (graine %i)", (seed) => {
+    const { cards } = week(seed);
+    for (const day of [0, 1, 3, 4]) {
+      const lunch = at(cards, day, "midi");
+      expect(lunch).toHaveLength(1);
+      expect(dish(lunch[0]).diets).toContain("keto");
+      expect(dish(lunch[0]).basic).toBeFalsy();
+    }
+  });
+
+  it.each(SEEDS)("mercredi pique-nique : un plat pour Otis et Anna-Lucia (graine %i)", (seed) => {
+    const picnic = at(week(seed).cards, 2, "pique_nique");
+    expect(picnic).toHaveLength(1);
+    expect([...picnic[0].member_ids].sort()).toEqual([annaLucia, otis].sort());
+  });
+
+  it.each(SEEDS)("une basique n'est jamais seule dans son repas (graine %i)", (seed) => {
+    const { cards } = week(seed);
+    for (const card of cards.filter((item) => dish(item).basic)) {
+      const partners = at(cards, card.day, card.meal_type).filter((other) => other !== card);
+      expect(partners.some((other) => baseKey(dish(other).base) === baseKey(dish(card).base))).toBe(true);
+    }
+  });
+
+  it.each(SEEDS)("ne répète pas une base quand il y a le choix (graine %i)", (seed) => {
+    const dinners = [0, 1, 2].map((day) => slot(day, "soir", family));
+    const { cards } = proposeWeek({ slots: dinners, members, recipes, locked: [], seed });
+    const bases = [0, 1, 2].map((day) => baseKey(dish(at(cards, day, "soir")[0]).base));
+    expect(new Set(bases).size).toBe(3);
+  });
+
+  it("même graine, même semaine ; autre graine, autre semaine", () => {
+    expect(week(7)).toEqual(week(7));
+    expect(new Set(SEEDS.map((seed) => JSON.stringify(week(seed).cards))).size).toBeGreaterThan(1);
+  });
+
+  it.each(SEEDS)("foyer sans régime : un seul plat par repas, jamais une basique (graine %i)", (seed) => {
+    const plain = members.map((member) => ({ ...member, diets: [] }));
+    const { cards, unfed } = proposeWeek({ slots, members: plain, recipes, locked: [], seed });
+    expect(unfed).toEqual([]);
+    for (const { day, meal_type } of slots) expect(at(cards, day, meal_type)).toHaveLength(1);
+    expect(cards.some((card) => dish(card).basic)).toBe(false);
+  });
+});
+
 describe("nextIdea", () => {
   const card: PlannerCard = { day: 0, meal_type: "soir", position: 0, recipe_id: "a", member_ids: [PAUL], locked: false };
   const recipes = [recipe("a"), recipe("b"), recipe("c")];
@@ -385,9 +510,9 @@ describe("nextIdea", () => {
   }
 
   it("propose une autre recette, jamais une déjà essayée", () => {
-    const first = idea([]);
+    const first = idea([])!.recipe_id;
     expect(["b", "c"]).toContain(first);
-    const second = idea([first!]);
+    const second = idea([first])!.recipe_id;
     expect(["b", "c"]).toContain(second);
     expect(second).not.toBe(first);
   });
@@ -402,11 +527,38 @@ describe("nextIdea", () => {
       card: ketoCard,
       recipes: [recipe("k1", { diets: ["keto"] }), recipe("k2", { diets: ["keto"] }), recipe("a")],
     });
-    expect(result).toBe("k2");
+    expect(result).toEqual({ recipe_id: "k2" });
   });
 
   it("évite une recette déjà dans la semaine", () => {
     const others: PlannerCard[] = [{ ...card, day: 3, recipe_id: "b" }];
-    expect(idea([], { cards: others })).toBe("c");
+    expect(idea([], { cards: others })).toEqual({ recipe_id: "c" });
+  });
+
+  describe("sur un duo de même base", () => {
+    const duoRecipes = [
+      recipe("sh-frites", { base: "Steak haché", basic: true }),
+      recipe("sh-haricots", { base: "Steak haché", basic: true, diets: ["keto"] }),
+      recipe("sh-puree", { base: "Steak haché", basic: true }),
+      recipe("po-riz", { base: "Poulet", basic: true }),
+      recipe("po-brocolis", { base: "Poulet", basic: true, diets: ["keto"] }),
+      recipe("lasagnes"),
+    ];
+    const theirs: PlannerCard = { day: 0, meal_type: "soir", position: 0, recipe_id: "sh-frites", member_ids: [PAUL, TOM], locked: false };
+    const hers: PlannerCard = { day: 0, meal_type: "soir", position: 1, recipe_id: "sh-haricots", member_ids: [LEA], locked: false };
+    const duoIdea = (partner: PlannerCard, tried: string[] = []) =>
+      nextIdea({ card: theirs, cards: [partner], members: MEMBERS, recipes: duoRecipes, tried, seed: 1 });
+
+    it("l'autre plat libre : un nouveau duo pour les deux, sur une autre base", () => {
+      expect(duoIdea(hers)).toEqual({ recipe_id: "po-riz", partner: { card: hers, recipe_id: "po-brocolis" } });
+    });
+
+    it("l'autre plat verrouillé : une autre recette de sa base", () => {
+      expect(duoIdea({ ...hers, locked: true })).toEqual({ recipe_id: "sh-puree" });
+    });
+
+    it("plus d'autre base à essayer : une idée ordinaire, pour ce plat seul", () => {
+      expect(duoIdea(hers, ["po-riz"])).toEqual({ recipe_id: "lasagnes" });
+    });
   });
 });

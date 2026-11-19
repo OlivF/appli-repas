@@ -10,7 +10,8 @@ import type { EaterMember } from "@/components/recipe-card";
 
 // Pièces glissables et cibles du planning, reliées à dnd-kit. Identifiants :
 // « card:<id> » (carte, glissable et cible), « slot:<jour>:<repas> » (créneau vide, cible),
-// « recipe:<id> » (recette de la Bibliothèque, glissable).
+// « recipe:<id> » (recette de la Bibliothèque, glissable), « add:<jour>:<repas> » (« + Ajouter
+// un plat » sous les plats d'un repas, cible).
 
 const SPRING = { type: "spring", stiffness: 420, damping: 34 } as const;
 
@@ -28,6 +29,7 @@ export function BoardCard({
   showMeal,
   busy,
   onOpen,
+  onEaters,
   onToggleLock,
   onAnotherIdea,
 }: {
@@ -47,6 +49,7 @@ export function BoardCard({
   showMeal: boolean;
   busy: boolean;
   onOpen: () => void;
+  onEaters: () => void;
   onToggleLock: () => void;
   onAnotherIdea: () => void;
 }) {
@@ -77,6 +80,7 @@ export function BoardCard({
         showMeal={showMeal}
         busy={busy}
         onOpen={onOpen}
+        onEaters={onEaters}
         onToggleLock={onToggleLock}
         onAnotherIdea={onAnotherIdea}
         className={locked ? undefined : "cursor-grab"}
@@ -90,18 +94,27 @@ export function DroppableSlot({
   label,
   compact,
   dropState,
+  variant,
   onClick,
 }: {
   id: string;
   label: string;
   compact: boolean;
   dropState?: "target" | "refused";
+  variant?: "choose" | "add";
   onClick: () => void;
 }) {
   const { setNodeRef } = useDroppable({ id });
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <EmptySlot ref={setNodeRef} label={label} compact={compact} dropState={dropState} onClick={onClick} />
+      <EmptySlot
+        ref={setNodeRef}
+        label={label}
+        compact={compact}
+        dropState={dropState}
+        variant={variant}
+        onClick={onClick}
+      />
     </motion.div>
   );
 }
