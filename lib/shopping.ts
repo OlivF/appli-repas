@@ -1,7 +1,7 @@
 import { fnv1a } from "@/lib/hash";
 import { DAYS, MEAL_TYPES, type MealType } from "@/lib/meal-slots";
-import { dishFactor, type PortionMember } from "@/lib/portions";
-import { normalizeText, type GroceryAisle, type IngredientUnit } from "@/lib/recipes";
+import { courseFactor, type PortionMember } from "@/lib/portions";
+import { normalizeText, type Course, type GroceryAisle, type IngredientUnit } from "@/lib/recipes";
 
 // La liste de courses de la semaine, calculée sans Supabase : chaque plat à l'échelle de ses
 // mangeurs, cumulé par ingrédient canonique, converti dans l'unité d'achat et arrondi pour l'achat.
@@ -46,6 +46,8 @@ export type ShoppingRecipe = {
   id: string;
   title: string;
   servings: number;
+  // Sorte : un dessert, un fruit, un fromage ou un laitage se compte une portion par mangeur.
+  course?: Course;
   ingredients: {
     ingredient_id: string | null;
     name: string;
@@ -158,7 +160,7 @@ type WeekInput = {
   weekStart: string;
 };
 
-// Chaque plat à l'échelle de ses mangeurs, cumulé par ingrédient canonique : dans l'unité d'achat
+// Chaque plat à l'échelle de ses mangeurs (selon sa sorte, voir courseFactor), cumulé par ingrédient canonique : dans l'unité d'achat
 // (`main`, exact), ou dans l'unité de la recette quand la conversion manque (`residuals`). La seule
 // mise à l'échelle des courses et du bilan du frigo.
 function accumulate({ meals, recipes, members, ingredients, weekStart }: WeekInput): Accumulator[] {
@@ -173,7 +175,7 @@ function accumulate({ meals, recipes, members, ingredients, weekStart }: WeekInp
   for (const dish of ordered) {
     const recipe = recipesById.get(dish.recipe_id);
     if (!recipe) continue;
-    const factor = dishFactor(dish.member_ids, members, recipe.servings, weekStart);
+    const factor = courseFactor(recipe.course, dish.member_ids, members, recipe.servings, weekStart);
     const source: ShoppingSource = {
       recipeId: recipe.id,
       recipeTitle: recipe.title,

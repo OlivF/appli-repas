@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dishFactor, memberCoefficient, portionsFor, type PortionMember } from "./portions";
+import { UNSCALED_COURSES, courseFactor, dishFactor, memberCoefficient, portionsFor, type PortionMember } from "./portions";
 
 // Le foyer de test, pour la semaine du lundi 23 novembre 2026.
 const WEEK = "2026-11-23";
@@ -43,5 +43,23 @@ describe("dishFactor", () => {
   it("duo du lundi soir : la famille mange 3,9 portions d'une recette pour 4, Marie-Laure 1", () => {
     expect(dishFactor(["olivier", "timothe", "anna-lucia", "otis"], family, 4, WEEK)).toBeCloseTo(3.9 / 4);
     expect(dishFactor(["marie-laure"], family, 4, WEEK)).toBe(0.25);
+  });
+});
+
+describe("courseFactor", () => {
+  const all = family.map((member) => member.id);
+
+  it("un dessert, un fruit, un fromage ou un laitage : une portion par mangeur, sans coefficient", () => {
+    expect(UNSCALED_COURSES).toEqual(["dessert", "fruit", "cheese", "dairy"]);
+    // Un yaourt, c'est un yaourt, même pour Timothé : 5 mangeurs, 5 yaourts.
+    expect(courseFactor("dairy", all, family, 1, WEEK)).toBe(5);
+    // Une mousse pour 6 mangée par les 5 : 5/6 de la recette.
+    expect(courseFactor("dessert", all, family, 6, WEEK)).toBeCloseTo(5 / 6);
+  });
+
+  it("un plat ou une entrée garde les coefficients", () => {
+    expect(courseFactor("main", all, family, 1, WEEK)).toBeCloseTo(4.9);
+    expect(courseFactor("starter", all, family, 4, WEEK)).toBeCloseTo(4.9 / 4);
+    expect(courseFactor(undefined, all, family, 4, WEEK)).toBeCloseTo(4.9 / 4);
   });
 });

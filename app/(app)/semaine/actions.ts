@@ -1,10 +1,14 @@
 "use server";
 
+import { extrasToAdd, type ExtraTarget, type Unserved } from "@/lib/board";
 import { SAVE_ERROR } from "@/lib/data";
-import type { MealType } from "@/lib/meal-slots";
+import { MEAL_TYPES, type MealType } from "@/lib/meal-slots";
 import { nextIdea, proposeWeek } from "@/lib/planner";
+import { quickRecipe, type QuickRecipeInput } from "@/lib/quick-recipe";
+import { AISLES, courseOf, isExtra } from "@/lib/recipes";
+import { loadReadyHousehold } from "@/lib/recipes-data";
 import { mondayOf } from "@/lib/week";
-import { loadWeek, weekCards, type WeekCard } from "@/lib/week-data";
+import { loadWeek, weekCards, type WeekCard, type WeekRecipe } from "@/lib/week-data";
 
 // Chaque geste du planning est enregistré aussitôt. Les actions rendent ce que l'écran ne
 // peut pas deviner (cartes proposées, recette trouvée, carte créée), ou une erreur.
@@ -17,6 +21,7 @@ export type IdeaResult = { cards: WeekCard[] } | { none: true } | ActionError;
 export type DoneResult = { ok: true } | ActionError;
 
 const WRONG_MEAL = "Cette recette ne va pas à ce repas.";
+const NOT_A_DISH = "Un dessert, un fruit ou une entrée se change depuis sa puce.";
 const LOCKED = "Ce plat est verrouillé : ouvre le cadenas pour le changer.";
 
 function isWeekStart(text: string) {
@@ -70,6 +75,7 @@ export async function swapCardsAction(weekStart: string, firstId: string, second
   const first = cards.find((card) => card.id === firstId);
   const second = cards.find((card) => card.id === secondId);
   if (!first || !second) return { error: SAVE_ERROR };
+  if (isExtra(first.course) || isExtra(second.course)) return { error: NOT_A_DISH };
   if (first.locked || second.locked) return { error: LOCKED };
   const fits = (card: WeekCard, mealType: MealType) =>
     recipes.find((recipe) => recipe.id === card.recipe_id)?.meal_types.includes(mealType) ?? false;
@@ -166,6 +172,7 @@ export async function placeRecipeAction(weekStart: string, target: PlaceTarget, 
   if ("cardId" in target) {
     const card = cards.find((item) => item.id === target.cardId);
     if (!card) return { error: SAVE_ERROR };
+    if (isExtra(card.course)) return { error: NOT_A_DISH };
     if (!recipe.meal_types.includes(card.meal_type)) return { error: WRONG_MEAL };
     const { error } = await supabase
       .from("planned_meals")
@@ -219,6 +226,7 @@ export async function anotherIdeaAction(weekStart: string, cardId: string, tried
   const { supabase, members, recipes, plan, cards } = await loadWeek(weekStart);
   const card = cards.find((item) => item.id === cardId);
   if (!card) return { error: SAVE_ERROR };
+  if (isExtra(card.course)) return { error: NOT_A_DISH };
   if (card.locked) return { error: LOCKED };
 
   const idea = nextIdea({
@@ -240,4 +248,103 @@ export async function anotherIdeaAction(weekStart: string, cardId: string, tried
     if (error) return { error: SAVE_ERROR };
   }
   return { cards: changed };
+}
+
+// ─── Desserts, fruits, fromages ─────────────────────────────────────────────
+
+export type ExtrasResult = { cards: WeekCard[]; meals: number; unserved: Unserved[] } | ActionError;
+
+function isTarget(target: ExtraTarget) {
+  const day = "day" in target ? target.day : target.fromDay;
+  return Number.isInteger(day) && day >= 0 && day <= 6 && MEAL_TYPES.some((meal) => meal.value === target.meal_type);
+}
+
+// « Ajouter » dans le panneau « Dessert, fruit… » : chaque recette pour les présents cochés qui
+// peuvent la manger, sur ce repas ou sur tous les repas de ce type à partir de `fromDay` ; une
+// recette déjà au repas fusionne ses mangeurs. Rend toutes les cartes, le nombre de repas
+// touchés (pour le toast) et, par repas, les cochés qui n'ont rien pu avoir (« Et pour … ? »).
+export async function addExtrasAction(
+  weekStart: string,
+  target: ExtraTarget,
+  recipeIds: string[],
+  memberIds: string[],
+): Promise<ExtrasResult> {
+  if (!isWeekStart(weekStart) || !isTarget(target) || recipeIds.length === 0) return { error: SAVE_ERROR };
+  const { supabase, household, members, slots, extraRecipes, cards } = await loadWeek(weekStart);
+  const recipes = recipeIds.map((id) => extraRecipes.find((recipe) => recipe.id === id));
+  if (recipes.some((recipe) => recipe === undefined)) return { error: SAVE_ERROR };
+  if (recipes.some((recipe) => !recipe!.meal_types.includes(target.meal_type))) return { error: WRONG_MEAL };
+
+  const { items, unserved } = extrasToAdd({
+    recipes: recipes as WeekRecipe[],
+    eaterIds: memberIds,
+    target,
+    slots,
+    cards,
+    members,
+  });
+  if (items.length > 0) {
+    const { error } = await supabase.rpc("add_planned_extras", {
+      target_household_id: household.id,
+      target_week_start: weekStart,
+      items: items.map(({ day, meal_type, recipe_id, member_ids }) => ({ day, meal_type, recipe_id, member_ids })),
+    });
+    if (error) return { error: SAVE_ERROR };
+  }
+  return {
+    cards: await cardsOfWeek(supabase, household.id, weekStart),
+    meals: new Set(items.map((item) => `${item.day}:${item.meal_type}`)).size,
+    unserved,
+  };
+}
+
+export type QuickRecipeResult = { recipe: WeekRecipe } | ActionError;
+
+// « Créer « Clafoutis » » : une recette du foyer, légère (un ingrédient, une portion) ou avec son
+// titre seulement (dessert, entrée), prête à cocher dans le panneau.
+export async function createQuickRecipeAction(input: QuickRecipeInput): Promise<QuickRecipeResult> {
+  const { supabase, household } = await loadReadyHousehold();
+  const parsed = quickRecipe({
+    ...input,
+    title: String(input.title ?? ""),
+    course: courseOf(input.course).value,
+    aisle: AISLES.find((aisle) => aisle.value === input.aisle)?.value,
+    diets: Array.isArray(input.diets) ? input.diets : [],
+  });
+  if (!parsed.ok) return { error: parsed.error };
+
+  const { data: id, error } = await supabase.rpc("save_recipe", {
+    target_household_id: household.id,
+    recipe: parsed.recipe,
+    ingredients: parsed.ingredients,
+    excluded_member_ids: [],
+  });
+  if (error || !id) return { error: SAVE_ERROR };
+  const { data: lines, error: linesError } = await supabase
+    .from("recipe_ingredients")
+    .select("ingredient_id")
+    .eq("recipe_id", id);
+  if (linesError) return { error: SAVE_ERROR };
+
+  const { recipe, ingredients } = parsed;
+  return {
+    recipe: {
+      id,
+      title: recipe.title,
+      photo_url: null,
+      meal_types: recipe.meal_types,
+      minutes: 0,
+      diets: recipe.diets,
+      batch_friendly: false,
+      ingredientNames: ingredients.map((ingredient) => ingredient.name),
+      favorite: false,
+      excludedIds: [],
+      base: null,
+      basic: false,
+      course: recipe.course,
+      servings: recipe.servings,
+      ingredientIds: lines.flatMap((line) => (line.ingredient_id ? [line.ingredient_id] : [])),
+      protein: null,
+    },
+  };
 }

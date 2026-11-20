@@ -110,6 +110,7 @@ describe("RecipeForm", () => {
       kid_friendly: false,
       base: null,
       basic: true,
+      course: "main",
     };
     renderForm(recipe, [{ name: "Blancs de poulet", quantity: 400, unit: "g", aisle: "boucherie" }]);
     expect(baseField()).toHaveValue("");
@@ -133,5 +134,78 @@ describe("RecipeForm", () => {
     await userEvent.type(screen.getByRole("combobox", { name: "Ingrédient 1" }), "Sel");
     await userEvent.click(screen.getByRole("button", { name: "Retirer l’ingrédient 1" }));
     expect(screen.getByRole("combobox", { name: "Ingrédient 1" })).toHaveValue("");
+  });
+
+  it("« C’est… » : un plat par défaut, avec son élément principal", () => {
+    renderForm();
+    expect(screen.getByRole("radio", { name: "Plat" })).toBeChecked();
+    expect(baseField()).toBeInTheDocument();
+  });
+
+  it("un fruit : le formulaire léger, une portion, tous les repas, le titre pré-remplit l’ingrédient", async () => {
+    renderForm();
+    await userEvent.click(screen.getByRole("radio", { name: "Fruit" }));
+    expect(screen.queryByRole("combobox", { name: "Élément principal" })).toBeNull();
+    expect(screen.queryByRole("textbox", { name: "Étapes" })).toBeNull();
+    for (const meal of ["Petit-déj", "Midi", "Pique-nique", "Dîner"]) {
+      expect(screen.getByRole("checkbox", { name: meal })).toBeChecked();
+    }
+    await userEvent.type(screen.getByRole("textbox", { name: "Titre" }), "Kiwi");
+    expect(screen.getByRole("combobox", { name: "Ingrédient" })).toHaveValue("Kiwi");
+    expect(screen.getByRole("textbox", { name: "Une portion, c’est" })).toHaveValue("1");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer la recette" }));
+
+    const data = vi.mocked(saveRecipe).mock.lastCall?.[1] as FormData;
+    expect(data.get("course")).toBe("fruit");
+    expect(data.get("servings")).toBe("1");
+    expect(data.getAll("ingredient_name")).toEqual(["Kiwi"]);
+    expect(data.getAll("ingredient_quantity")).toEqual(["1"]);
+    expect(data.getAll("ingredient_unit")).toEqual(["piece"]);
+    expect(data.getAll("ingredient_aisle")).toEqual(["fruits_legumes"]);
+    expect(data.getAll("meal_types")).toEqual(["petit_dej", "midi", "pique_nique", "soir"]);
+  });
+
+  it("« Plus de détails » passe au formulaire complet", async () => {
+    renderForm();
+    await userEvent.click(screen.getByRole("radio", { name: "Laitage" }));
+    await userEvent.click(screen.getByRole("button", { name: "Plus de détails" }));
+    expect(screen.getByRole("textbox", { name: "Étapes" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Laitage" })).toBeChecked();
+    expect(screen.queryByRole("combobox", { name: "Élément principal" })).toBeNull();
+  });
+
+  it("un dessert : le formulaire complet, sans élément principal ni recette basique", async () => {
+    renderForm();
+    await userEvent.click(screen.getByRole("radio", { name: "Dessert" }));
+    expect(screen.getByRole("textbox", { name: "Étapes" })).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Élément principal" })).toBeNull();
+    expect(screen.queryByRole("switch", { name: "Recette basique" })).toBeNull();
+  });
+
+  it("un fromage à plusieurs ingrédients s’ouvre en formulaire complet", () => {
+    const recipe: FormRecipe = {
+      id: "11111111-1111-4111-8111-111111111111",
+      title: "Plateau de fromages",
+      description: null,
+      photo_url: null,
+      meal_types: ["soir"],
+      servings: 1,
+      prep_minutes: 0,
+      cook_minutes: 0,
+      diets: [],
+      steps: [],
+      batch_friendly: false,
+      batch_notes: null,
+      kid_friendly: false,
+      base: null,
+      basic: false,
+      course: "cheese",
+    };
+    renderForm(recipe, [
+      { name: "Comté", quantity: 30, unit: "g", aisle: "cremerie" },
+      { name: "Camembert", quantity: 30, unit: "g", aisle: "cremerie" },
+    ]);
+    expect(screen.getByRole("radio", { name: "Fromage" })).toBeChecked();
+    expect(screen.getByRole("textbox", { name: "Étapes" })).toBeInTheDocument();
   });
 });

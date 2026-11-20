@@ -1,3 +1,4 @@
+import { Apple, CakeSlice, Cheese, Milk, Salad, Utensils, type LucideIcon } from "lucide-react";
 import type { MealType } from "@/lib/meal-slots";
 import { MEAL_TYPES } from "@/lib/meal-slots";
 import { DIETS, type Diet } from "@/lib/members";
@@ -5,6 +6,36 @@ import type { Database } from "@/lib/supabase/database.types";
 
 export type IngredientUnit = Database["public"]["Enums"]["ingredient_unit"];
 export type GroceryAisle = Database["public"]["Enums"]["grocery_aisle"];
+export type Course = Database["public"]["Enums"]["course"];
+
+// ─── Sortes ─────────────────────────────────────────────────────────────────
+// Un plat, ou un « plat léger » (entrée, dessert, fruit, fromage, laitage) : autant qu'on veut par
+// repas, chacun pour qui en mange, jamais touché par la proposition automatique.
+export const COURSES: { value: Course; label: string; icon: LucideIcon }[] = [
+  { value: "main", label: "Plat", icon: Utensils },
+  { value: "starter", label: "Entrée", icon: Salad },
+  { value: "dessert", label: "Dessert", icon: CakeSlice },
+  { value: "fruit", label: "Fruit", icon: Apple },
+  { value: "cheese", label: "Fromage", icon: Cheese },
+  { value: "dairy", label: "Laitage", icon: Milk },
+];
+
+// La fin du repas, dans l'ordre où on la sert : sous les plats de la grille.
+export const EXTRA_COURSES: Course[] = ["dairy", "fruit", "cheese", "dessert"];
+
+export function courseOf(value: string | null | undefined): (typeof COURSES)[number] {
+  return COURSES.find((course) => course.value === value) ?? COURSES[0];
+}
+
+// Tout ce qui n'est pas un plat ; sans sorte connue, c'est un plat.
+export function isExtra(course: Course | null | undefined): boolean {
+  return course != null && course !== "main";
+}
+
+// Fruit, fromage, laitage : souvent un seul ingrédient pour une personne (formulaire léger).
+export function isLightCourse(course: Course): boolean {
+  return course === "fruit" || course === "cheese" || course === "dairy";
+}
 
 // `short` : ce qu'on écrit après la quantité (rien pour les pièces : « 3 », pas « 3 pièces »).
 export const UNITS: { value: IngredientUnit; label: string; short: string }[] = [
@@ -53,6 +84,7 @@ export type RecipeInput = {
   base: string | null;
   // Recette du panneau « Les basiques ».
   basic: boolean;
+  course: Course;
 };
 
 export type IngredientInput = {
@@ -104,7 +136,9 @@ export function parseRecipeForm(form: FormData, memberIds: string[]): RecipeForm
     errors.description = `Cette description est trop longue (${MAX_DESCRIPTION} caractères au plus).`;
   }
 
-  const base = text("base");
+  const course = courseOf(text("course")).value;
+  // Élément principal et « Les basiques » : réservés aux plats.
+  const base = isExtra(course) ? "" : text("base");
   if (base.length > MAX_BASE) errors.base = `Cet élément principal est trop long (${MAX_BASE} caractères au plus).`;
 
   const photoUrl = text("photo_url");
@@ -171,7 +205,8 @@ export function parseRecipeForm(form: FormData, memberIds: string[]): RecipeForm
       batch_notes: batchNotes || null,
       kid_friendly: form.get("kid_friendly") === "on",
       base: base || null,
-      basic: form.get("basic") === "on",
+      basic: !isExtra(course) && form.get("basic") === "on",
+      course,
     },
     ingredients,
     excludedMemberIds,
@@ -215,7 +250,7 @@ function wholeNumber(text: string): number | null {
 }
 
 // « 250 », « 1,5 », « 1.5 », « 1/2 ».
-function parseQuantity(text: string): number | null {
+export function parseQuantity(text: string): number | null {
   const fraction = /^(\d+)\s*\/\s*(\d+)$/.exec(text);
   const value = fraction
     ? Number(fraction[1]) / Number(fraction[2])
@@ -306,6 +341,13 @@ export function matchesSearch(recipe: { title: string; ingredientNames: string[]
   return words.every((word) => haystack.includes(word));
 }
 
+// « Entrées », « Desserts, fruits, fromages » (la fin du repas, laitages compris).
+export type RecipeSort = "entree" | "fin";
+export const RECIPE_SORTS: { value: RecipeSort; label: string; courses: Course[] }[] = [
+  { value: "entree", label: "Entrées", courses: ["starter"] },
+  { value: "fin", label: "Desserts, fruits, fromages", courses: EXTRA_COURSES },
+];
+
 export type RecipeFilters = {
   query: string;
   mealTypes: MealType[];
@@ -313,6 +355,7 @@ export type RecipeFilters = {
   batch: boolean;
   favorites: boolean;
   basic: boolean;
+  sorts: RecipeSort[];
 };
 
 export type FilterableRecipe = {
@@ -323,9 +366,10 @@ export type FilterableRecipe = {
   batch_friendly: boolean;
   favorite: boolean;
   basic: boolean;
+  course: Course;
 };
 
-// Repas en « ou » (midi ou dîner), régimes en « et » (céto et sans gluten).
+// Repas en « ou » (midi ou dîner), régimes en « et » (céto et sans gluten), sortes en « ou ».
 export function filterRecipes<T extends FilterableRecipe>(recipes: T[], filters: RecipeFilters): T[] {
   return recipes.filter(
     (recipe) =>
@@ -334,15 +378,18 @@ export function filterRecipes<T extends FilterableRecipe>(recipes: T[], filters:
       filters.diets.every((diet) => recipe.diets.includes(diet)) &&
       (!filters.batch || recipe.batch_friendly) &&
       (!filters.favorites || recipe.favorite) &&
-      (!filters.basic || recipe.basic),
+      (!filters.basic || recipe.basic) &&
+      (filters.sorts.length === 0 ||
+        RECIPE_SORTS.some((sort) => filters.sorts.includes(sort.value) && sort.courses.includes(recipe.course))),
   );
 }
 
-// Dans l'adresse : ?q=creme&repas=soir,midi&regime=keto&avance=1&favoris=1&basiques=1
+// Dans l'adresse : ?q=creme&repas=soir,midi&regime=keto&avance=1&favoris=1&basiques=1&sorte=entree,fin
 export function filtersFromSearchParams(params: URLSearchParams): RecipeFilters {
   const list = (key: string) => (params.get(key) ?? "").split(",").filter(Boolean);
   const meals = list("repas");
   const diets = list("regime");
+  const sorts = list("sorte");
   return {
     query: params.get("q") ?? "",
     mealTypes: MEAL_TYPES.map((meal) => meal.value).filter((meal) => meals.includes(meal)),
@@ -350,6 +397,7 @@ export function filtersFromSearchParams(params: URLSearchParams): RecipeFilters 
     batch: params.get("avance") === "1",
     favorites: params.get("favoris") === "1",
     basic: params.get("basiques") === "1",
+    sorts: RECIPE_SORTS.map((sort) => sort.value).filter((sort) => sorts.includes(sort)),
   };
 }
 
@@ -361,6 +409,7 @@ export function filtersToSearchParams(filters: RecipeFilters): URLSearchParams {
   if (filters.batch) params.set("avance", "1");
   if (filters.favorites) params.set("favoris", "1");
   if (filters.basic) params.set("basiques", "1");
+  if (filters.sorts.length > 0) params.set("sorte", filters.sorts.join(","));
   return params;
 }
 

@@ -1,0 +1,1015 @@
+{
+ "format": {
+  "commun": "Même format que recettes-basiques.json (ingredients [nom, quantite, unite, rayon], types, regimes, portions…).",
+  "plat": "entree | laitage | fruit | fromage | dessert  (= starter, dairy, fruit, cheese, dessert dans recipes.course ; les autres recettes sont des plats : main)",
+  "portions": "Les recettes à 1 portion sont les « recettes légères » : un seul ingrédient, la quantité pour une personne.",
+  "note": "Régimes vérifiés : en cétogène, seuls passent le yaourt grec entier, les framboises, les fromages, le chocolat noir à 85 % et plus, les framboises à la chantilly, l'avocat vinaigrette et le concombre à la crème. Comté et emmental sont affinés, donc quasiment sans lactose. Les fromages sont marqués végétariens comme on l'entend d'habitude en France (présure animale pour certains)."
+ },
+ "recettes": [
+  {
+   "titre": "Yaourt nature",
+   "description": null,
+   "plat": "laitage",
+   "types": [
+    "petit_dej",
+    "midi",
+    "soir",
+    "pique_nique"
+   ],
+   "portions": 1,
+   "prep": 0,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Yaourts nature",
+     1,
+     "piece",
+     "cremerie"
+    ]
+   ],
+   "etapes": []
+  },
+  {
+   "titre": "Yaourt grec nature",
+   "description": "Au lait entier, sans sucre : il passe en cétogène.",
+   "plat": "laitage",
+   "types": [
+    "petit_dej",
+    "midi",
+    "soir",
+    "pique_nique"
+   ],
+   "portions": 1,
+   "prep": 0,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten",
+    "keto"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Yaourt à la grecque",
+     100,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": []
+  },
+  {
+   "titre": "Yaourt aux fruits",
+   "description": null,
+   "plat": "laitage",
+   "types": [
+    "petit_dej",
+    "midi",
+    "soir",
+    "pique_nique"
+   ],
+   "portions": 1,
+   "prep": 0,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Yaourts aux fruits",
+     1,
+     "piece",
+     "cremerie"
+    ]
+   ],
+   "etapes": []
+  },
+  {
+   "titre": "Fromage blanc",
+   "description": null,
+   "plat": "laitage",
+   "types": [
+    "petit_dej",
+    "midi",
+    "soir",
+    "pique_nique"
+   ],
+   "portions": 1,
+   "prep": 0,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Fromage blanc",
+     100,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": []
+  },
+  {
+   "titre": "Petits-suisses",
+   "description": null,
+   "plat": "laitage",
+   "types": [
+    "petit_dej",
+    "midi",
+    "soir",
+    "pique_nique"
+   ],
+   "portions": 1,
+   "prep": 0,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Petits-suisses",
+     2,
+     "piece",
+     "cremerie"
+    ]
+   ],
+   "etapes": []
+  },
+  {
+   "titre": "Crème dessert",
+   "description": null,
+   "plat": "laitage",
+   "types": [
+    "midi",
+    "soir",
+    "pique_nique"
+   ],
+   "portions": 1,
+   "prep": 0,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Crèmes dessert",
+     1,
+     "piece",
+     "cremerie"
+    ]
+   ],
+   "etapes": []
+  },
+  {
+   "titre": "Pomme",
+   "description": null,
+   "plat": "fruit",
+   "types": [
+    "petit_dej",
+    "midi",
+    "soir",
+    "pique_nique"
+   ],
+   "portions": 1,
+   "prep": 0,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Pommes",
+     1,
+     "piece",
+     "fruits_legumes"
+    ]
+   ],
+   "etapes": []
+  },
+  {
+   "titre": "Poire",
+   "description": null,
+   "plat": "fruit",
+   "types": [
+    "petit_dej",
+    "midi",
+    "soir",
+    "pique_nique"
+   ],
+   "portions": 1,
+   "prep": 0,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Poires",
+     1,
+     "piece",
+     "fruits_legumes"
+    ]
+   ],
+   "etapes": []
+  },
+  {
+   "titre": "Banane",
+   "description": null,
+   "plat": "fruit",
+   "types": [
+    "petit_dej",
+    "midi",
+    "soir",
+    "pique_nique"
+   ],
+   "portions": 1,
+   "prep": 0,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Bananes",
+     1,
+     "piece",
+     "fruits_legumes"
+    ]
+   ],
+   "etapes": []
+  },
+  {
+   "titre": "Clémentines",
+   "description": null,
+   "plat": "fruit",
+   "types": [
+    "petit_dej",
+    "midi",
+    "soir",
+    "pique_nique"
+   ],
+   "portions": 1,
+   "prep": 0,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Clémentines",
+     2,
+     "piece",
+     "fruits_legumes"
+    ]
+   ],
+   "etapes": []
+  },
+  {
+   "titre": "Orange",
+   "description": null,
+   "plat": "fruit",
+   "types": [
+    "petit_dej",
+    "midi",
+    "soir",
+    "pique_nique"
+   ],
+   "portions": 1,
+   "prep": 0,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Oranges",
+     1,
+     "piece",
+     "fruits_legumes"
+    ]
+   ],
+   "etapes": []
+  },
+  {
+   "titre": "Kiwi",
+   "description": null,
+   "plat": "fruit",
+   "types": [
+    "petit_dej",
+    "midi",
+    "soir",
+    "pique_nique"
+   ],
+   "portions": 1,
+   "prep": 0,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Kiwis",
+     1,
+     "piece",
+     "fruits_legumes"
+    ]
+   ],
+   "etapes": []
+  },
+  {
+   "titre": "Raisin",
+   "description": null,
+   "plat": "fruit",
+   "types": [
+    "petit_dej",
+    "midi",
+    "soir",
+    "pique_nique"
+   ],
+   "portions": 1,
+   "prep": 0,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Raisin",
+     125,
+     "g",
+     "fruits_legumes"
+    ]
+   ],
+   "etapes": []
+  },
+  {
+   "titre": "Fraises",
+   "description": null,
+   "plat": "fruit",
+   "types": [
+    "petit_dej",
+    "midi",
+    "soir",
+    "pique_nique"
+   ],
+   "portions": 1,
+   "prep": 0,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Fraises",
+     125,
+     "g",
+     "fruits_legumes"
+    ]
+   ],
+   "etapes": []
+  },
+  {
+   "titre": "Framboises",
+   "description": "Une petite poignée : le fruit qui passe en cétogène.",
+   "plat": "fruit",
+   "types": [
+    "petit_dej",
+    "midi",
+    "soir",
+    "pique_nique"
+   ],
+   "portions": 1,
+   "prep": 0,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten",
+    "sans_lactose",
+    "keto"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Framboises",
+     60,
+     "g",
+     "fruits_legumes"
+    ]
+   ],
+   "etapes": []
+  },
+  {
+   "titre": "Compote en gourde",
+   "description": null,
+   "plat": "fruit",
+   "types": [
+    "petit_dej",
+    "midi",
+    "soir",
+    "pique_nique"
+   ],
+   "portions": 1,
+   "prep": 0,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Compotes en gourde",
+     1,
+     "piece",
+     "epicerie"
+    ]
+   ],
+   "etapes": []
+  },
+  {
+   "titre": "Comté",
+   "description": "Fromage affiné : quasiment sans lactose.",
+   "plat": "fromage",
+   "types": [
+    "midi",
+    "soir",
+    "pique_nique"
+   ],
+   "portions": 1,
+   "prep": 0,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten",
+    "sans_lactose",
+    "keto"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Comté",
+     30,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": []
+  },
+  {
+   "titre": "Emmental",
+   "description": "Fromage affiné : quasiment sans lactose.",
+   "plat": "fromage",
+   "types": [
+    "midi",
+    "soir",
+    "pique_nique"
+   ],
+   "portions": 1,
+   "prep": 0,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten",
+    "sans_lactose",
+    "keto"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Emmental",
+     30,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": []
+  },
+  {
+   "titre": "Camembert",
+   "description": null,
+   "plat": "fromage",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 1,
+   "prep": 0,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten",
+    "keto"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Camembert",
+     30,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": []
+  },
+  {
+   "titre": "Chèvre",
+   "description": null,
+   "plat": "fromage",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 1,
+   "prep": 0,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten",
+    "keto"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Fromage de chèvre",
+     30,
+     "g",
+     "cremerie"
+    ]
+   ],
+   "etapes": []
+  },
+  {
+   "titre": "Carré de chocolat noir",
+   "description": "Un carré à 85 % ou plus : ça passe en cétogène.",
+   "plat": "dessert",
+   "types": [
+    "midi",
+    "soir",
+    "pique_nique"
+   ],
+   "portions": 1,
+   "prep": 0,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten",
+    "keto"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Chocolat noir",
+     10,
+     "g",
+     "epicerie"
+    ]
+   ],
+   "etapes": []
+  },
+  {
+   "titre": "Framboises à la chantilly",
+   "description": "Le dessert cétogène qui plaît aussi aux enfants.",
+   "plat": "dessert",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 10,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten",
+    "keto"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Framboises",
+     250,
+     "g",
+     "fruits_legumes"
+    ],
+    [
+     "Crème liquide",
+     200,
+     "ml",
+     "cremerie"
+    ]
+   ],
+   "etapes": [
+    "Fouette la crème bien froide en chantilly, sans sucre (ou avec un peu d'édulcorant pour Marie-Laure).",
+    "Sers les framboises avec une cuillère de chantilly."
+   ]
+  },
+  {
+   "titre": "Salade de fruits",
+   "description": null,
+   "plat": "dessert",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 15,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Pommes",
+     2,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Bananes",
+     2,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Oranges",
+     2,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Kiwis",
+     2,
+     "piece",
+     "fruits_legumes"
+    ]
+   ],
+   "etapes": [
+    "Pèle les oranges à vif et coupe-les en morceaux au-dessus d'un saladier pour garder le jus.",
+    "Coupe les pommes, les bananes et les kiwis en dés, mélange avec les oranges.",
+    "Garde au frais jusqu'au repas."
+   ]
+  },
+  {
+   "titre": "Mousse au chocolat",
+   "description": null,
+   "plat": "dessert",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 6,
+   "prep": 20,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten"
+   ],
+   "batch": true,
+   "batch_notes": "Se prépare le dimanche, se garde 2 jours au frigo.",
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Chocolat noir",
+     200,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Œufs",
+     6,
+     "piece",
+     "cremerie"
+    ],
+    [
+     "Sel",
+     null,
+     null,
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Fais fondre le chocolat au bain-marie ou au micro-ondes par petites touches.",
+    "Sépare les blancs des jaunes ; mélange les jaunes au chocolat tiède.",
+    "Monte les blancs en neige ferme avec une pincée de sel, puis incorpore-les délicatement en trois fois.",
+    "Au frais au moins 3 heures."
+   ]
+  },
+  {
+   "titre": "Gâteau au yaourt",
+   "description": null,
+   "plat": "dessert",
+   "types": [
+    "midi",
+    "soir",
+    "pique_nique",
+    "petit_dej"
+   ],
+   "portions": 8,
+   "prep": 10,
+   "cuisson": 35,
+   "regimes": [
+    "vegetarien"
+   ],
+   "batch": true,
+   "batch_notes": "Se fait le dimanche, tient 4 jours sous cloche : goûters et desserts de la semaine.",
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Yaourts nature",
+     1,
+     "piece",
+     "cremerie"
+    ],
+    [
+     "Farine",
+     250,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Sucre",
+     150,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Œufs",
+     3,
+     "piece",
+     "cremerie"
+    ],
+    [
+     "Huile de tournesol",
+     80,
+     "ml",
+     "epicerie"
+    ],
+    [
+     "Levure chimique",
+     11,
+     "g",
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Préchauffe le four à 180 °C et beurre un moule.",
+    "Verse le yaourt dans un saladier, puis ajoute dans l'ordre le sucre, les œufs, la farine, la levure et l'huile en mélangeant entre chaque.",
+    "Verse dans le moule et fais cuire 35 minutes : la lame d'un couteau doit ressortir sèche."
+   ]
+  },
+  {
+   "titre": "Carottes râpées",
+   "description": null,
+   "plat": "entree",
+   "types": [
+    "midi",
+    "soir",
+    "pique_nique"
+   ],
+   "portions": 4,
+   "prep": 10,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Carottes",
+     400,
+     "g",
+     "fruits_legumes"
+    ],
+    [
+     "Citrons",
+     1,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Huile d'olive",
+     2,
+     "cas",
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Râpe les carottes.",
+    "Arrose de jus de citron et d'huile d'olive, sale, poivre, mélange."
+   ]
+  },
+  {
+   "titre": "Avocat vinaigrette",
+   "description": null,
+   "plat": "entree",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 2,
+   "prep": 5,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten",
+    "sans_lactose",
+    "keto"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Avocats",
+     1,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Vinaigre de cidre",
+     1,
+     "cac",
+     "epicerie"
+    ],
+    [
+     "Moutarde",
+     1,
+     "cac",
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Coupe l'avocat en deux et retire le noyau.",
+    "Mélange moutarde, vinaigre et huile, sale, poivre, verse dans le creux."
+   ]
+  },
+  {
+   "titre": "Concombre à la crème",
+   "description": null,
+   "plat": "entree",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 10,
+   "cuisson": 0,
+   "regimes": [
+    "vegetarien",
+    "sans_gluten",
+    "keto"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Concombres",
+     1,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Crème fraîche épaisse",
+     100,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Ciboulette",
+     null,
+     null,
+     "fruits_legumes"
+    ]
+   ],
+   "etapes": [
+    "Coupe le concombre en fines rondelles.",
+    "Mélange avec la crème, la ciboulette ciselée, sel et poivre."
+   ]
+  }
+ ]
+}

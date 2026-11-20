@@ -205,3 +205,32 @@ export function fridgeForMenu(items: readonly FridgeItem[], today: string): Menu
         a.name.localeCompare(b.name, "fr"),
     );
 }
+
+// ─── Dans le panneau « Dessert, fruit… » ────────────────────────────────────
+
+export type FridgeHint = "fridge" | "soon";
+
+// Les plats légers qu'on a déjà à la maison (stock libre, pas périmé) : une recette légère (une
+// portion, un ingrédient) dont l'ingrédient est au frigo, ou un dessert ou une entrée dont il
+// reste des parts. « soon » (« À finir ») quand une date limite approche. Rien d'autre.
+export function extraFridgeHints({
+  recipes,
+  items,
+  today,
+}: {
+  recipes: readonly { id: string; servings: number; ingredientIds: readonly string[] }[];
+  items: readonly FridgeItem[];
+  today: string;
+}): Record<string, FridgeHint> {
+  const free = items.filter((item) => item.reserved_list_id === null && fridgeStatus(item, today) !== "expired");
+  const hints: Record<string, FridgeHint> = {};
+  for (const recipe of recipes) {
+    const light = recipe.servings === 1 && recipe.ingredientIds.length === 1;
+    const found = free.filter((item) =>
+      light ? item.ingredient_id === recipe.ingredientIds[0] : item.origin === "leftover" && item.recipe_id === recipe.id,
+    );
+    if (found.length === 0) continue;
+    hints[recipe.id] = found.some((item) => fridgeStatus(item, today) === "soon") ? "soon" : "fridge";
+  }
+  return hints;
+}

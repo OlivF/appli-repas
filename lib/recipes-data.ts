@@ -5,7 +5,7 @@ import type { MealType } from "@/lib/meal-slots";
 import { recipePartners, uniqueBases } from "@/lib/bases";
 import { avatarInitials, type Diet } from "@/lib/members";
 import { mainProtein, type Protein } from "@/lib/planner";
-import { hideCopiedOriginals, type GroceryAisle, type IngredientUnit } from "@/lib/recipes";
+import { hideCopiedOriginals, type Course, type GroceryAisle, type IngredientUnit } from "@/lib/recipes";
 
 export type RecipeMember = AvatarMember & { diets: Diet[] };
 
@@ -23,6 +23,10 @@ export type ListRecipe = {
   // Élément principal (recettes associées) et panneau « Les basiques ».
   base: string | null;
   basic: boolean;
+  // Sorte (plat, entrée, dessert…), portions de base, ingrédients canoniques (frigo).
+  course: Course;
+  servings: number;
+  ingredientIds: string[];
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -52,7 +56,7 @@ export async function householdRecipes(supabase: Client, householdId: string): P
     supabase
       .from("recipes")
       .select(
-        "id, household_id, source_recipe_id, title, photo_url, meal_types, prep_minutes, cook_minutes, diets, batch_friendly, base, basic, recipe_ingredients(name, aisle, position)",
+        "id, household_id, source_recipe_id, title, photo_url, meal_types, servings, prep_minutes, cook_minutes, diets, batch_friendly, base, basic, course, recipe_ingredients(name, aisle, position, ingredient_id)",
       )
       .or(`household_id.is.null,household_id.eq.${householdId}`),
     supabase.from("recipe_favorites").select("recipe_id").eq("household_id", householdId),
@@ -83,6 +87,9 @@ export async function householdRecipes(supabase: Client, householdId: string): P
         protein: mainProtein(ingredients),
         base: recipe.base,
         basic: recipe.basic,
+        course: recipe.course,
+        servings: recipe.servings,
+        ingredientIds: ingredients.map((ingredient) => ingredient.ingredient_id).filter((id) => id !== null),
       };
     })
     .sort((a, b) => a.title.localeCompare(b.title, "fr"));

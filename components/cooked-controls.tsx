@@ -10,15 +10,18 @@ const MAX_PARTS = 50;
 
 // Sous « Voir la recette », pour un plat d'aujourd'hui ou d'un jour passé de la semaine :
 // « Pas cuisiné » (ses ingrédients restent au frigo au bilan) et « Il en reste » (un reste de
-// plat au frigo, 1 part par défaut). `onLeftover` rend un message d'erreur, ou null.
+// plat au frigo, 1 part par défaut). `onLeftover` rend un message d'erreur, ou null ; sans lui,
+// pas de « Il en reste » (un yaourt, une pomme). `eaten` : un plat léger, « Pas mangé ».
 export function CookedControls({
   skipped,
   onSkippedChange,
   onLeftover,
+  eaten = false,
 }: {
   skipped: boolean;
   onSkippedChange: (skipped: boolean) => void;
-  onLeftover: (parts: number) => Promise<string | null>;
+  onLeftover?: (parts: number) => Promise<string | null>;
+  eaten?: boolean;
 }) {
   const switchId = useId();
   const [open, setOpen] = useState(false);
@@ -27,7 +30,7 @@ export function CookedControls({
   const [error, setError] = useState<string | null>(null);
 
   async function store() {
-    if (saving) return;
+    if (saving || !onLeftover) return;
     setSaving(true);
     const message = await onLeftover(parts);
     setSaving(false);
@@ -38,12 +41,12 @@ export function CookedControls({
     <div className="space-y-3 rounded-2xl bg-muted/70 px-4 py-3">
       <SwitchField
         id={switchId}
-        label="Pas cuisiné"
-        description="Ses ingrédients restent au frigo."
+        label={eaten ? "Pas mangé" : "Pas cuisiné"}
+        description={eaten ? "Il reste au frigo." : "Ses ingrédients restent au frigo."}
         checked={skipped}
         onCheckedChange={onSkippedChange}
       />
-      {open ? (
+      {!onLeftover ? null : open ? (
         <div className="space-y-3 border-t border-border/70 pt-3">
           <p className="font-semibold">Il en reste combien ?</p>
           <div className="flex items-center gap-3">

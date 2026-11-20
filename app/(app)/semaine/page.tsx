@@ -4,10 +4,12 @@ import { Suspense } from "react";
 import { AppPage } from "@/components/app-page";
 import { FridgeStrip } from "@/components/fridge-strip";
 import { Loading } from "@/components/screen";
-import { fridgeUrgentLabels } from "@/lib/fridge-data";
+import { extraFridgeHints } from "@/lib/fridge";
+import { fridgeItems, fridgeUrgentLabels } from "@/lib/fridge-data";
 import { settleFinishedWeeks } from "@/lib/fridge-settlement";
 import { urgentStripText } from "@/lib/shopping-items";
 import { addDays, dayLabel, parseWeekParam, todayInParis, weekLabel, weekRelation } from "@/lib/week";
+import { knownIngredients } from "@/lib/recipes-data";
 import { loadWeek } from "@/lib/week-data";
 import { WeekBoard } from "./week-board";
 
@@ -29,12 +31,15 @@ async function Week({ searchParams }: Pick<PageProps<"/semaine">, "searchParams"
   const { semaine } = await searchParams;
   const today = todayInParis();
   const weekStart = parseWeekParam(typeof semaine === "string" ? semaine : undefined, today);
-  const { supabase, household, members, slots, recipes, cards } = await loadWeek(weekStart);
+  const { supabase, household, members, slots, recipes, extraRecipes, cards } = await loadWeek(weekStart);
   const relation = weekRelation(weekStart, today);
   const todayDay = relation === "current" ? ([0, 1, 2, 3, 4, 5, 6].find((day) => addDays(weekStart, day) === today) ?? null) : null;
   // Le bilan des semaines finies d'abord (silencieux), puis ce qu'il faut finir vite.
   await settleFinishedWeeks(supabase, household.id, today);
   const strip = urgentStripText(await fridgeUrgentLabels());
+  // Le panneau « Dessert, fruit… » signale ce qu'on a déjà à la maison.
+  const [items, known] = await Promise.all([fridgeItems(supabase, household.id), knownIngredients(supabase)]);
+  const fridgeHints = extraFridgeHints({ recipes: extraRecipes, items, today });
 
   return (
     <>
@@ -57,6 +62,9 @@ async function Week({ searchParams }: Pick<PageProps<"/semaine">, "searchParams"
         members={members}
         slots={slots}
         recipes={recipes}
+        extraRecipes={extraRecipes}
+        fridgeHints={fridgeHints}
+        known={known}
         initialCards={cards}
       />
     </>

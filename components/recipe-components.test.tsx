@@ -138,6 +138,15 @@ describe("RecipeCard", () => {
     expect(within(link).getByRole("img", { name: "Favori" })).toBeInTheDocument();
   });
 
+  it("porte l'étiquette de sa sorte quand ce n'est pas un plat", () => {
+    const { rerender } = render(
+      <RecipeCard href="/recettes/1" title="Yaourt nature" mealTypes={["soir"]} minutes={0} diets={[]} members={family} course="dairy" />,
+    );
+    expect(screen.getByRole("link")).toHaveTextContent("Laitage");
+    rerender(<RecipeCard href="/recettes/1" title="Lasagnes" mealTypes={["soir"]} minutes={75} diets={[]} members={family} course="main" />);
+    expect(screen.getByRole("link")).not.toHaveTextContent("Plat");
+  });
+
   it("ne met pas d'article dans le lien : Chromium lui ôterait son nom", () => {
     render(<RecipeCard href="/recettes/1" title="Lasagnes" mealTypes={["soir"]} minutes={75} diets={[]} members={family} />);
     expect(within(screen.getByRole("link")).queryByRole("article")).not.toBeInTheDocument();

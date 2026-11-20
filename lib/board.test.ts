@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildBoard, menuBase, moveEaters } from "@/lib/board";
+import { buildBoard, extrasToAdd, menuBase, moveEaters } from "@/lib/board";
 import type { SlotInput } from "@/lib/meal-slots";
+import type { PlannerMember } from "@/lib/planner";
+import type { Course } from "@/lib/recipes";
 import { LEA, PAUL, TOM } from "@/test/helpers";
 
 function card(id: string, day: number, meal_type: SlotInput["meal_type"], position: number, member_ids: string[]) {
@@ -106,5 +108,164 @@ describe("moveEaters", () => {
   it("ne touche pas aux autres repas", () => {
     const result = moveEaters(cards, "famille", [PAUL]);
     expect(eatersOf(result).mardi).toEqual([PAUL, TOM]);
+  });
+});
+
+// ─── Desserts, fruits, fromages : le foyer de test ──────────────────────────
+const OLIVIER = "o";
+const ML = "ml";
+const TIMOTHE = "t";
+const ANNA = "a";
+const OTIS = "x";
+const ALL = [OLIVIER, ML, TIMOTHE, ANNA, OTIS];
+const HOUSEHOLD: PlannerMember[] = [
+  { id: OLIVIER, diets: [] },
+  { id: ML, diets: ["keto"] },
+  { id: TIMOTHE, diets: [] },
+  { id: ANNA, diets: [] },
+  { id: OTIS, diets: [] },
+];
+// Petit-déj et dîner pour tous ; midi Marie-Laure lun/mar/jeu/ven ; mercredi pique-nique Otis + Anna-Lucia.
+const SLOTS: SlotInput[] = [
+  ...[0, 1, 2, 3, 4, 5, 6].flatMap((day) => [
+    { day, meal_type: "petit_dej" as const, member_ids: ALL },
+    { day, meal_type: "soir" as const, member_ids: ALL },
+  ]),
+  ...[0, 1, 3, 4].map((day) => ({ day, meal_type: "midi" as const, member_ids: [ML] })),
+  { day: 2, meal_type: "pique_nique", member_ids: [ANNA, OTIS] },
+];
+
+function dish(id: string, course: Course, position: number, member_ids: string[], day = 0) {
+  return { ...card(id, day, "soir", position, member_ids), course };
+}
+
+describe("buildBoard : desserts, fruits, fromages", () => {
+  const dinner = (cards: ReturnType<typeof dish>[]) => buildBoard([{ day: 0, meal_type: "soir", member_ids: ALL }], cards)[0].days[0].slots[0];
+
+  it("un plat pour tous, un yaourt pour tous, du comté pour Marie-Laure : personne n'est oublié", () => {
+    const slot = dinner([dish("gratin", "main", 0, ALL), dish("yaourt", "dairy", 1, ALL), dish("comte", "cheese", 2, [ML])]);
+    expect(slot.cards.map((item) => item.id)).toEqual(["gratin"]);
+    expect(slot.extras.map((item) => item.id)).toEqual(["yaourt", "comte"]);
+    expect(slot.starters).toEqual([]);
+    expect(slot.unfed).toEqual([]);
+  });
+
+  it("un repas qui n'a qu'un yaourt est toujours à remplir", () => {
+    const slot = dinner([dish("yaourt", "dairy", 0, ALL)]);
+    expect(slot.cards).toEqual([]);
+    expect(slot.unfed).toEqual([]);
+    expect(slot.extras.map((item) => item.id)).toEqual(["yaourt"]);
+  });
+
+  it("seuls les plats nourrissent : du comté ne remplace pas un plat", () => {
+    const slot = dinner([dish("gratin", "main", 0, [OLIVIER, TIMOTHE, ANNA, OTIS]), dish("comte", "cheese", 1, [ML])]);
+    expect(slot.unfed).toEqual([ML]);
+  });
+
+  it("les entrées à part ; la fin du repas dans l'ordre laitage, fruit, fromage, dessert, puis par position", () => {
+    const slot = dinner([
+      dish("mousse", "dessert", 1, ALL),
+      dish("comte", "cheese", 2, [ML]),
+      dish("pomme", "fruit", 3, ALL),
+      dish("yaourt", "dairy", 4, ALL),
+      dish("petits-suisses", "dairy", 0, [OTIS]),
+      dish("carottes", "starter", 5, ALL),
+      dish("gratin", "main", 6, ALL),
+    ]);
+    expect(slot.starters.map((item) => item.id)).toEqual(["carottes"]);
+    expect(slot.cards.map((item) => item.id)).toEqual(["gratin"]);
+    expect(slot.extras.map((item) => item.id)).toEqual(["petits-suisses", "yaourt", "pomme", "comte", "mousse"]);
+  });
+});
+
+describe("moveEaters : desserts, fruits, fromages", () => {
+  const cards = [
+    { ...dish("gratin", "main", 0, [OLIVIER, TIMOTHE, ANNA, OTIS]), locked: false },
+    { ...dish("poulet", "main", 1, [ML]), locked: false },
+    { ...dish("yaourt", "dairy", 2, ALL), locked: false },
+  ];
+  const eatersOf = (list: typeof cards) => Object.fromEntries(list.map((item) => [item.id, item.member_ids]));
+
+  it("mettre Otis sur le second plat ne lui retire pas son yaourt", () => {
+    const result = moveEaters(cards, "poulet", [ML, OTIS]);
+    expect(eatersOf(result)).toEqual({ gratin: [OLIVIER, TIMOTHE, ANNA], poulet: [ML, OTIS], yaourt: ALL });
+  });
+
+  it("changer qui mange le yaourt ne touche ni aux plats ni à son verrou", () => {
+    const result = moveEaters(cards, "yaourt", [OTIS]);
+    expect(eatersOf(result)).toEqual({ gratin: [OLIVIER, TIMOTHE, ANNA, OTIS], poulet: [ML], yaourt: [OTIS] });
+    expect(result.find((item) => item.id === "yaourt")?.locked).toBe(false);
+  });
+});
+
+describe("menuBase : desserts, fruits, fromages", () => {
+  it("ne regarde que les plats", () => {
+    const cards = [dish("yaourt", "dairy", 0, ALL), dish("gratin", "main", 1, ALL)];
+    const bases: Record<string, string> = { "r-yaourt": "Yaourt", "r-gratin": "Courgettes" };
+    expect(menuBase(cards, (recipeId) => bases[recipeId], { day: 0, meal_type: "soir" })).toBe("Courgettes");
+  });
+});
+
+describe("extrasToAdd", () => {
+  const yaourt = { id: "yaourt", diets: ["vegetarian", "gluten_free"] as const, excludedIds: [] };
+  const pomme = { id: "pomme", diets: ["vegetarian", "gluten_free", "lactose_free"] as const, excludedIds: [] };
+  const comte = { id: "comte", diets: ["vegetarian", "gluten_free", "lactose_free", "keto"] as const, excludedIds: [] };
+  const add = (input: Partial<Parameters<typeof extrasToAdd>[0]> & Pick<Parameters<typeof extrasToAdd>[0], "recipes" | "target">) =>
+    extrasToAdd({ eaterIds: ALL, slots: SLOTS, cards: [], members: HOUSEHOLD, ...input });
+
+  it("« Yaourt nature » et « Pomme » pour toute la famille à tous les dîners", () => {
+    const { items, unserved } = add({ recipes: [yaourt, pomme], target: { meal_type: "soir", fromDay: 0 } });
+    const yaourts = items.filter((item) => item.recipe_id === "yaourt");
+    const pommes = items.filter((item) => item.recipe_id === "pomme");
+    const family = [OLIVIER, TIMOTHE, ANNA, OTIS];
+    expect(yaourts.map((item) => item.day)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    // Marie-Laure (céto) n'a d'office ni le yaourt nature ni la pomme (régimes de recettes-legeres.json).
+    expect(yaourts.every((item) => item.meal_type === "soir" && item.member_ids.join() === family.join())).toBe(true);
+    expect(yaourts.reduce((sum, item) => sum + item.member_ids.length, 0)).toBe(28);
+    expect(pommes).toHaveLength(7);
+    expect(pommes.every((item) => item.member_ids.join() === family.join())).toBe(true);
+    expect(unserved).toEqual([0, 1, 2, 3, 4, 5, 6].map((day) => ({ day, meal_type: "soir", member_ids: [ML] })));
+  });
+
+  it("« Tous les midis » ne vise pas le pique-nique du mercredi", () => {
+    const { items } = add({ recipes: [comte], target: { meal_type: "midi", fromDay: 0 } });
+    expect(items.map((item) => [item.day, item.meal_type, item.member_ids])).toEqual([
+      [0, "midi", [ML]],
+      [1, "midi", [ML]],
+      [3, "midi", [ML]],
+      [4, "midi", [ML]],
+    ]);
+  });
+
+  it("semaine en cours, ouvert un mercredi : à partir d'aujourd'hui", () => {
+    const { items } = add({ recipes: [yaourt], target: { meal_type: "soir", fromDay: 2 } });
+    expect(items.map((item) => item.day)).toEqual([2, 3, 4, 5, 6]);
+  });
+
+  it("seulement les choisis présents au repas", () => {
+    const { items, unserved } = add({ recipes: [pomme], target: { day: 2, meal_type: "pique_nique" } });
+    expect(items).toEqual([{ day: 2, meal_type: "pique_nique", recipe_id: "pomme", member_ids: [ANNA, OTIS] }]);
+    expect(unserved).toEqual([]);
+  });
+
+  it("fusionne sur un yaourt déjà là pour Otis seul", () => {
+    const cards = [{ id: "c-yaourt", day: 0, meal_type: "soir" as const, recipe_id: "yaourt", member_ids: [OTIS] }];
+    const { items } = add({ recipes: [yaourt], target: { day: 0, meal_type: "soir" }, cards });
+    expect(items).toEqual([
+      { day: 0, meal_type: "soir", recipe_id: "yaourt", member_ids: [OTIS, OLIVIER, TIMOTHE, ANNA], cardId: "c-yaourt" },
+    ]);
+  });
+
+  it("rien à envoyer pour un yaourt qui a déjà tout le monde, ni pour une recette que personne ne peut manger", () => {
+    const cards = [{ id: "c-yaourt", day: 0, meal_type: "soir" as const, recipe_id: "yaourt", member_ids: ALL }];
+    expect(add({ recipes: [yaourt], target: { day: 0, meal_type: "soir" }, cards }).items).toEqual([]);
+    const { items, unserved } = add({ recipes: [pomme], eaterIds: [ML], target: { day: 0, meal_type: "soir" } });
+    expect(items).toEqual([]);
+    expect(unserved).toEqual([{ day: 0, meal_type: "soir", member_ids: [ML] }]);
+  });
+
+  it("respecte les membres exclus d'une recette", () => {
+    const { items } = add({ recipes: [{ ...comte, excludedIds: [TIMOTHE] }], target: { day: 0, meal_type: "soir" } });
+    expect(items[0].member_ids).toEqual([OLIVIER, ML, ANNA, OTIS]);
   });
 });

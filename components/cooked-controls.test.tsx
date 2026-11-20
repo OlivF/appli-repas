@@ -22,4 +22,12 @@ describe("CookedControls", () => {
     await userEvent.click(screen.getByRole("button", { name: "Ranger au frigo" }));
     expect(onLeftover).toHaveBeenCalledWith(2);
   });
+
+  it("un yaourt : « Pas mangé », sans « Il en reste »", async () => {
+    const onSkippedChange = vi.fn();
+    render(<CookedControls eaten skipped={false} onSkippedChange={onSkippedChange} />);
+    await userEvent.click(screen.getByRole("switch", { name: "Pas mangé" }));
+    expect(onSkippedChange).toHaveBeenCalledWith(true);
+    expect(screen.queryByRole("button", { name: "Il en reste" })).toBeNull();
+  });
 });

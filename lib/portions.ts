@@ -1,5 +1,5 @@
 import { ageFromBirthYear, type Appetite } from "@/lib/members";
-import { scaleQuantity } from "@/lib/recipes";
+import { scaleQuantity, type Course } from "@/lib/recipes";
 
 // Combien chaque convive mange, en portions d'adulte : de quoi mettre une recette à l'échelle
 // des mangeurs d'un plat (liste de courses).
@@ -36,4 +36,22 @@ export function dishFactor(
   weekStart: string,
 ): number {
   return scaleQuantity(1, servings, portionsFor(memberIds, members, weekStart));
+}
+
+// Un dessert, un fruit, un fromage ou un laitage : un mangeur = une portion, sans coefficient
+// d'appétit ni d'âge (un yaourt, c'est un yaourt, même pour un grand appétit ; une mousse pour 6,
+// ce sont 6 parts). Entrées et plats gardent les coefficients.
+export const UNSCALED_COURSES: readonly Course[] = ["dessert", "fruit", "cheese", "dairy"];
+
+// Le facteur d'une recette de cette sorte : la seule mise à l'échelle des courses et du bilan du
+// frigo (sans sorte connue, c'est un plat).
+export function courseFactor(
+  course: Course | null | undefined,
+  memberIds: readonly string[],
+  members: readonly PortionMember[],
+  servings: number,
+  weekStart: string,
+): number {
+  if (course && UNSCALED_COURSES.includes(course)) return scaleQuantity(1, servings, memberIds.length);
+  return dishFactor(memberIds, members, servings, weekStart);
 }

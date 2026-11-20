@@ -4,20 +4,21 @@ import * as React from "react"
 import { cn } from "cn"
 import { Avatar as AvatarPrimitive } from "radix-ui"
 
-// Avatar rond. Les tailles suivent la hiérarchie : sm dans les listes serrées, xl sur les cartes.
+// Avatar rond. Les tailles suivent la hiérarchie : xs dans les puces de la grille, sm dans les
+// listes serrées, xl sur les cartes.
 function Avatar({
   className,
   size = "default",
   ...props
 }: React.ComponentProps<typeof AvatarPrimitive.Root> & {
-  size?: "sm" | "default" | "lg" | "xl"
+  size?: "xs" | "sm" | "default" | "lg" | "xl"
 }) {
   return (
     <AvatarPrimitive.Root
       data-slot="avatar"
       data-size={size}
       className={cn(
-        "group/avatar relative flex size-10 shrink-0 overflow-hidden rounded-full select-none data-[size=lg]:size-14 data-[size=sm]:size-8 data-[size=xl]:size-18",
+        "group/avatar relative flex size-10 shrink-0 overflow-hidden rounded-full select-none data-[size=lg]:size-14 data-[size=sm]:size-8 data-[size=xl]:size-18 data-[size=xs]:size-6",
         className
       )}
       {...props}

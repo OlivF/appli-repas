@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -22,6 +23,8 @@ import { cn } from "cn";
 import { CookedControls } from "@/components/cooked-controls";
 import { DayStrip } from "@/components/day-strip";
 import { EatersPicker } from "@/components/eaters-picker";
+import { AddExtraChip, ExtraChip } from "@/components/extra-chip";
+import { ExtrasPanel, mealCount, type AddExtrasResult, type ExtrasScope } from "@/components/extras-panel";
 import { FieldError } from "@/components/field";
 import { MealLabel } from "@/components/meal-label";
 import { PageHeader } from "@/components/page-header";
@@ -40,15 +43,19 @@ import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "@/components/use-media-query";
 import { WeekPicker } from "@/components/week-picker";
 import { baseKey } from "@/lib/bases";
-import { buildBoard, menuBase, moveEaters, type BoardSlot } from "@/lib/board";
+import { buildBoard, extrasToAdd, menuBase, moveEaters, type BoardSlot, type ExtraItem, type ExtraTarget } from "@/lib/board";
+import type { FridgeHint } from "@/lib/fridge";
 import type { MealType, SlotInput } from "@/lib/meal-slots";
 import { canEat } from "@/lib/planner";
-import type { RecipeMember } from "@/lib/recipes-data";
-import { describeEaters } from "@/lib/recipes";
+import type { QuickRecipeInput } from "@/lib/quick-recipe";
+import type { KnownIngredient, RecipeMember } from "@/lib/recipes-data";
+import { courseOf, describeEaters, isExtra, type Course } from "@/lib/recipes";
 import type { WeekCard, WeekRecipe } from "@/lib/week-data";
 import {
   addDishAction,
+  addExtrasAction,
   anotherIdeaAction,
+  createQuickRecipeAction,
   placeRecipeAction,
   removeCardAction,
   setEatersAction,
@@ -65,12 +72,15 @@ type Card = WeekCard & { vid: string };
 type Day = { short: string; long: string; date: string };
 type Drag = { kind: "card"; card: Card } | { kind: "recipe"; recipe: WeekRecipe };
 // Le panneau du bas : changer un plat, choisir pour un repas (ou ses présents sans plat),
-// ajouter un plat (« Pour qui ? », recette déjà choisie après un dépôt), dire qui mange un plat.
+// ajouter un plat (« Pour qui ? », recette déjà choisie après un dépôt), dire qui mange un plat,
+// ajouter des desserts, fruits… (« extras »), ou en ouvrir un (« extra »).
 type SheetTarget =
   | { kind: "card"; cardId: string }
   | { kind: "slot"; day: number; meal_type: MealType; member_ids: string[] }
   | { kind: "add"; day: number; meal_type: MealType; recipeId?: string }
-  | { kind: "eaters"; cardId: string };
+  | { kind: "eaters"; cardId: string }
+  | { kind: "extras"; day: number; meal_type: MealType }
+  | { kind: "extra"; cardId: string };
 type PlaceSheet = Extract<SheetTarget, { kind: "card" | "slot" }>;
 
 // « le dîner de mardi », « le pique-nique de mercredi ».
@@ -108,6 +118,9 @@ export function WeekBoard({
   members,
   slots,
   recipes,
+  extraRecipes,
+  fridgeHints,
+  known,
   initialCards,
 }: {
   weekStart: string;
@@ -123,7 +136,14 @@ export function WeekBoard({
   todayDay?: number | null;
   members: RecipeMember[];
   slots: SlotInput[];
+  // Les plats (planificateur, Bibliothèque).
   recipes: WeekRecipe[];
+  // Entrées, desserts, fruits, fromages, laitages (puces, panneau d'ajout).
+  extraRecipes: WeekRecipe[];
+  // Ce qu'on a déjà au frigo, parmi eux (« Au frigo », « À finir »).
+  fridgeHints: Record<string, FridgeHint>;
+  // Le référentiel, pour deviner la sorte d'une recette créée à la volée.
+  known: KnownIngredient[];
   initialCards: WeekCard[];
 }) {
   const [cards, setCards] = useState<Card[]>(() => initialCards.map((card) => ({ ...card, vid: card.id })));
@@ -145,9 +165,21 @@ export function WeekBoard({
   const [proposing, startProposing] = useTransition();
   const scroller = useRef<HTMLDivElement>(null);
   const wide = useMediaQuery("(min-width: 1280px)");
+  const router = useRouter();
+  // Les plats légers créés à la volée pendant la visite, en plus de ceux du serveur ; la
+  // dernière sorte ouverte dans le panneau d'ajout.
+  const [createdExtras, setCreatedExtras] = useState<WeekRecipe[]>([]);
+  const [extraCourse, setExtraCourse] = useState<Course>("dairy");
+  const extraList = useMemo(
+    () => [...extraRecipes, ...createdExtras.filter((recipe) => !extraRecipes.some((other) => other.id === recipe.id))],
+    [extraRecipes, createdExtras],
+  );
 
   const board = useMemo(() => buildBoard(slots, cards), [slots, cards]);
-  const recipeById = useMemo(() => new Map(recipes.map((recipe) => [recipe.id, recipe])), [recipes]);
+  const recipeById = useMemo(
+    () => new Map([...recipes, ...extraList].map((recipe) => [recipe.id, recipe])),
+    [recipes, extraList],
+  );
   const memberById = useMemo(() => new Map(members.map((member) => [member.id, member])), [members]);
 
   const sensors = useSensors(
@@ -271,6 +303,7 @@ export function WeekBoard({
       recipe_id: recipe.id,
       member_ids: target.member_ids,
       locked: true,
+      course: "main",
     };
     const placeTarget: PlaceTarget = { day: target.day, meal_type: target.meal_type, member_ids: target.member_ids };
     setCards((current) => [...current, temp]);
@@ -347,7 +380,10 @@ export function WeekBoard({
     setDelays({});
     setCards((current) =>
       moveEaters(
-        [...current, { id: tempId, vid: tempId, day, meal_type: mealType, position, recipe_id: recipeId, member_ids: memberIds, locked: true }],
+        [
+          ...current,
+          { id: tempId, vid: tempId, day, meal_type: mealType, position, recipe_id: recipeId, member_ids: memberIds, locked: true, course: "main" },
+        ],
         tempId,
         memberIds,
       ),
@@ -375,6 +411,74 @@ export function WeekBoard({
       return;
     }
     syncCards(result.cards, before);
+  }
+
+  // ─── Desserts, fruits, fromages ───────────────────────────────────────────
+  function openExtra(card: Card) {
+    setPicked(card.member_ids);
+    setPickHint(false);
+    setSheet({ kind: "extra", cardId: card.id });
+  }
+
+  // Le premier jour visé par « Tous les dîners de la semaine » : aujourd'hui dans la semaine en
+  // cours, lundi sinon.
+  const fromDay = todayDay ?? 0;
+
+  // Les ajouts tout de suite à l'écran (fusion ou nouvelle puce), puis les cartes du serveur.
+  function withExtras(current: Card[], items: readonly ExtraItem[]) {
+    let next = [...current];
+    for (const item of items) {
+      if (item.cardId) {
+        next = next.map((card) => (card.id === item.cardId ? { ...card, member_ids: item.member_ids } : card));
+        continue;
+      }
+      const tempId = `nouvelle-${item.day}-${item.meal_type}-${item.recipe_id}`;
+      const position = next
+        .filter((card) => card.day === item.day && card.meal_type === item.meal_type)
+        .reduce((max, card) => Math.max(max, card.position + 1), 0);
+      next.push({ ...item, id: tempId, vid: tempId, position, locked: false, course: recipeById.get(item.recipe_id)?.course });
+    }
+    return next;
+  }
+
+  async function addExtras(
+    day: number,
+    mealType: MealType,
+    scope: ExtrasScope,
+    recipeIds: string[],
+    memberIds: string[],
+  ): Promise<AddExtrasResult> {
+    const target: ExtraTarget = scope === "meal" ? { day, meal_type: mealType } : { meal_type: mealType, fromDay };
+    const chosen = recipeIds.map((id) => recipeById.get(id)).filter((recipe) => recipe !== undefined);
+    const before = cards;
+    setError(null);
+    setDelays({});
+    setCards((current) =>
+      withExtras(current, extrasToAdd({ recipes: chosen, eaterIds: memberIds, target, slots, cards: current, members }).items),
+    );
+    const result = await addExtrasAction(weekStart, target, recipeIds, memberIds).catch(() => ({ error: SAVE_ERROR }));
+    if ("error" in result) {
+      setCards(before);
+      return { error: result.error };
+    }
+    syncCards(result.cards, before);
+    if (result.meals > 0) {
+      // Un dessert créé avec son titre seulement : on propose de le compléter.
+      const incomplete = chosen.find((recipe) => recipe.ingredientNames.length === 0);
+      toast(
+        scope === "week" ? `Ajouté à ${mealCount(mealType, result.meals)}` : `Ajouté ${toMeal(mealType)} de ${days[day].long}`,
+        incomplete
+          ? { action: { label: "Compléter la recette", onClick: () => router.push(`/recettes/${incomplete.id}/modifier`) } }
+          : undefined,
+      );
+    }
+    return { unserved: result.unserved };
+  }
+
+  async function createQuick(input: QuickRecipeInput) {
+    const result = await createQuickRecipeAction(input).catch(() => ({ error: SAVE_ERROR }));
+    if ("recipe" in result) setCreatedExtras((current) => [...current, result.recipe]);
+    return result;
   }
 
   function removeCard(cardId: string) {
@@ -508,10 +612,9 @@ export function WeekBoard({
   }
 
   // ─── Panneau « Changer » ──────────────────────────────────────────────────
-  const sheetCard =
-    sheet?.kind === "card" || sheet?.kind === "eaters" ? cards.find((card) => card.id === sheet.cardId) : undefined;
-  const sheetMeal = sheet ? (sheet.kind === "card" || sheet.kind === "eaters" ? sheetCard?.meal_type : sheet.meal_type) : undefined;
-  const sheetDay = sheet ? (sheet.kind === "card" || sheet.kind === "eaters" ? sheetCard?.day : sheet.day) : undefined;
+  const sheetCard = sheet && "cardId" in sheet ? cards.find((card) => card.id === sheet.cardId) : undefined;
+  const sheetMeal = sheet ? ("cardId" in sheet ? sheetCard?.meal_type : sheet.meal_type) : undefined;
+  const sheetDay = sheet ? ("cardId" in sheet ? sheetCard?.day : sheet.day) : undefined;
   const sheetEaterIds = !sheet
     ? []
     : sheet.kind === "slot"
@@ -537,6 +640,88 @@ export function WeekBoard({
 
   function sheetBody(target: SheetTarget, mealType: MealType, day: number) {
     const mealOfDay = `${MEAL_NOUN[mealType]} de ${days[day].long}`;
+
+    if (target.kind === "extras") {
+      return (
+        <ExtrasPanel
+          mealType={mealType}
+          dayLabel={days[day].long}
+          present={sheetPresent}
+          recipes={extraList}
+          already={cards
+            .filter((card) => card.day === day && card.meal_type === mealType && isExtra(card.course))
+            .map((card) => card.recipe_id)}
+          weekMeals={slots.filter((slot) => slot.meal_type === mealType && slot.day >= fromDay).length}
+          fridgeHints={fridgeHints}
+          known={known}
+          course={extraCourse}
+          onCourseChange={setExtraCourse}
+          onAdd={(scope, recipeIds, memberIds) => addExtras(day, mealType, scope, recipeIds, memberIds)}
+          onCreate={createQuick}
+          onClose={() => setSheet(null)}
+        />
+      );
+    }
+
+    if (target.kind === "extra") {
+      if (!sheetCard) return null;
+      const recipe = recipeById.get(sheetCard.recipe_id);
+      // Un dessert complet ou une entrée : sa fiche, et « Il en reste ». Un yaourt, une pomme : non.
+      const light = !recipe || (recipe.servings === 1 && recipe.ingredientNames.length <= 1);
+      return (
+        <>
+          <SheetHeader>
+            <SheetTitle>{recipe?.title ?? "Recette"}</SheetTitle>
+            <SheetDescription>
+              {courseOf(sheetCard.course).label} · {mealOfDay}
+              {!light && (
+                <>
+                  {" · "}
+                  <Link href={`/recettes/${sheetCard.recipe_id}`} className="text-link">
+                    Voir la recette
+                  </Link>
+                </>
+              )}
+            </SheetDescription>
+          </SheetHeader>
+          {todayDay !== null && sheetCard.day <= todayDay && (
+            <div className="mb-4">
+              <CookedControls
+                eaten
+                skipped={Boolean(sheetCard.skipped)}
+                onSkippedChange={(skipped) => setSkipped(sheetCard, skipped)}
+                onLeftover={light ? undefined : (parts) => storeLeftover(sheetCard, parts)}
+              />
+            </div>
+          )}
+          <EatersPicker label="Qui en mange ?" members={sheetPresent} selected={picked} onChange={setPicked} recipe={recipe} />
+          <Button
+            block
+            size="lg"
+            className="mt-5"
+            disabled={picked.length === 0}
+            onClick={() => {
+              setSheet(null);
+              void changeEaters(sheetCard.id, picked);
+            }}
+          >
+            Valider
+          </Button>
+          <Button
+            variant="ghost"
+            block
+            className="mt-2 text-muted-foreground"
+            onClick={() => {
+              setSheet(null);
+              removeCard(sheetCard.id);
+            }}
+          >
+            <Trash2 aria-hidden="true" />
+            Retirer
+          </Button>
+        </>
+      );
+    }
 
     if (target.kind === "eaters") {
       const recipe = sheetCard ? recipeById.get(sheetCard.recipe_id) : undefined;
@@ -700,7 +885,8 @@ export function WeekBoard({
     );
   }
 
-  const hasCards = cards.length > 0;
+  // « Relancer » quand il y a des plats ; un yaourt seul ne compte pas.
+  const hasCards = cards.some((card) => !isExtra(card.course));
   const proposeButton = (block: boolean) => (
     <Button size="lg" block={block} onClick={propose} disabled={proposing}>
       <Sparkles aria-hidden="true" />
@@ -708,10 +894,46 @@ export function WeekBoard({
     </Button>
   );
 
+  // Les puces d'un repas : avatars seulement quand ce n'est pas pour tous les présents (ou que
+  // quelqu'un en mange sans le pouvoir).
+  const extraChips = (slot: BoardSlot<Card>, list: Card[], trailing?: ReactNode) =>
+    (list.length > 0 || trailing) && (
+      <ul className="flex min-w-0 flex-wrap gap-1.5">
+        <AnimatePresence initial={false}>
+          {list.map((card) => {
+            const recipe = recipeById.get(card.recipe_id);
+            const eaters = members.filter((member) => card.member_ids.includes(member.id));
+            const out = recipe ? eaters.filter((member) => !canEat(recipe, member)).map((member) => member.id) : [];
+            const forAll = slot.member_ids.every((id) => card.member_ids.includes(id));
+            return (
+              <motion.li
+                key={card.vid}
+                layout="position"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
+                className="min-w-0 max-w-full"
+              >
+                <ExtraChip
+                  course={card.course ?? "dessert"}
+                  title={recipe?.title ?? "Recette"}
+                  eaters={forAll && out.length === 0 ? undefined : eaters}
+                  outIds={out}
+                  skipped={Boolean(card.skipped)}
+                  onOpen={() => openExtra(card)}
+                />
+              </motion.li>
+            );
+          })}
+        </AnimatePresence>
+        {trailing && <li className="min-w-0 max-w-full">{trailing}</li>}
+      </ul>
+    );
+
   const renderSlot = (slot: BoardSlot<Card>) => {
     const slotLabel = `${MEAL_NOUN[slot.meal_type]} de ${days[slot.day].long}`;
     return (
-      <div key={slot.meal_type} className="flex flex-col gap-2">
+      <div key={slot.meal_type} className="flex min-w-0 flex-col gap-2">
         <h3
           className={cn(
             "text-[0.9375rem] font-semibold text-muted-foreground",
@@ -721,6 +943,7 @@ export function WeekBoard({
         >
           <MealLabel type={slot.meal_type} />
         </h3>
+        {extraChips(slot, slot.starters)}
         {slot.cards.length === 0 ? (
           <DroppableSlot
             id={`slot:${slot.day}:${slot.meal_type}`}
@@ -791,6 +1014,14 @@ export function WeekBoard({
             onClick={() => openAdd(slot.day, slot.meal_type)}
           />
         )}
+        {extraChips(
+          slot,
+          slot.extras,
+          <AddExtraChip
+            label={`Ajouter un dessert, un fruit… ${toMeal(slot.meal_type)} de ${days[slot.day].long}`}
+            onClick={() => setSheet({ kind: "extras", day: slot.day, meal_type: slot.meal_type })}
+          />,
+        )}
       </div>
     );
   };
@@ -840,11 +1071,11 @@ export function WeekBoard({
         <div className="w-full max-w-md">
           <WeekPicker label={label} relation={relation} prevHref={prevHref} nextHref={nextHref} />
         </div>
-        {hasCards && <ShoppingLink className="hidden sm:inline-flex" weekStart={weekStart} />}
+        {cards.length > 0 && <ShoppingLink className="hidden sm:inline-flex" weekStart={weekStart} />}
       </div>
       <div className="mt-5 flex flex-col gap-3 sm:hidden">
         {proposeButton(true)}
-        {hasCards && <ShoppingLink block weekStart={weekStart} />}
+        {cards.length > 0 && <ShoppingLink block weekStart={weekStart} />}
       </div>
 
       <div className="mt-4 min-h-6" aria-live="polite">
@@ -895,7 +1126,7 @@ export function WeekBoard({
                 row.days[index].slots.length === 0 ? (
                   <div key={row.row} aria-hidden="true" className="hidden xl:block" />
                 ) : (
-                  <div key={row.row} className="flex flex-col gap-4">
+                  <div key={row.row} className="flex min-w-0 flex-col gap-4">
                     {row.days[index].slots.map(renderSlot)}
                   </div>
                 ),

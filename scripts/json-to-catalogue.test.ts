@@ -78,6 +78,27 @@ describe("catalogueSql", () => {
     expect(() => catalogueSql({ recettes: [bad] }, "x.json")).toThrow(/Steak haché et frites.*rayon_x/);
   });
 
+  it("écrit la sorte d'un plat léger, et « main » quand elle manque", () => {
+    const yaourt: JsonRecipe = {
+      ...steakFrites,
+      titre: "Fromage du jour",
+      base: null,
+      basique: false,
+      plat: "fromage",
+      portions: 1,
+      ingredients: [["Comté", 30, "g", "cremerie"]],
+      etapes: [],
+    };
+    expect(catalogueSql({ recettes: [yaourt] }, "x.json")).toContain("'cheese'::public.course");
+    expect(sql).toContain("'main'::public.course");
+  });
+
+  it("refuse une sorte inconnue en nommant la recette", () => {
+    expect(() => catalogueSql({ recettes: [{ ...steakFrites, plat: "gouter" }] }, "x.json")).toThrow(
+      /Steak haché et frites.*gouter/,
+    );
+  });
+
   it("refuse deux recettes de même titre", () => {
     expect(() => catalogueSql({ recettes: [steakFrites, steakFrites] }, "x.json")).toThrow(/en double/);
   });

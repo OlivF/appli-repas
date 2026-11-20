@@ -4,6 +4,7 @@ import {
   availableStock,
   daysLeft,
   defaultBestBefore,
+  extraFridgeHints,
   fridgeForMenu,
   fridgeSignature,
   fridgeStatus,
@@ -248,5 +249,40 @@ describe("fridgeForMenu", () => {
     });
     expect(eggs).toMatchObject({ status: "soon", daysLeft: 1, reserved: true });
     expect(leftover).toMatchObject({ recipeId: "lasagnes", status: "none", daysLeft: null, unit: null });
+  });
+});
+
+describe("extraFridgeHints", () => {
+  const yaourt = { id: "yaourt", servings: 1, ingredientIds: ["yaourts"] };
+  const comte = { id: "comte", servings: 1, ingredientIds: ["comte"] };
+  const mousse = { id: "mousse", servings: 6, ingredientIds: ["chocolat", "oeufs"] };
+  const hints = (items: FridgeItem[]) => extraFridgeHints({ recipes: [yaourt, comte, mousse], items, today: TODAY });
+
+  it("une recette légère dont l'ingrédient est au frigo (stock libre) : « Au frigo »", () => {
+    expect(hints([fridge("y", { ingredient_id: "yaourts", quantity: 8, unit: "piece", best_before: "2026-12-01" })])).toEqual({
+      yaourt: "fridge",
+    });
+  });
+
+  it("« À finir » quand sa date limite est proche", () => {
+    expect(hints([fridge("c", { ingredient_id: "comte", quantity: 1, unit: "piece", best_before: "2026-11-20" })])).toEqual({
+      comte: "soon",
+    });
+  });
+
+  it("un dessert complet : seulement s'il en reste au frigo, pas pour un de ses ingrédients", () => {
+    expect(hints([oeufs("o", 6)])).toEqual({});
+    expect(
+      hints([fridge("reste", { label: "Reste : Mousse au chocolat", quantity: 2, origin: "leftover", recipe_id: "mousse", best_before: "2026-11-21" })]),
+    ).toEqual({ mousse: "soon" });
+  });
+
+  it("ni ce qui est réservé à une liste, ni ce qui est périmé", () => {
+    expect(
+      hints([
+        fridge("y", { ingredient_id: "yaourts", quantity: 8, unit: "piece", reserved_list_id: L }),
+        fridge("c", { ingredient_id: "comte", quantity: 1, unit: "piece", best_before: "2026-11-18" }),
+      ]),
+    ).toEqual({});
   });
 });

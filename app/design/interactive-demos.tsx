@@ -12,6 +12,9 @@ import { FavoriteButton } from "@/components/favorite-button";
 import { DayStrip } from "@/components/day-strip";
 import { EatersPicker } from "@/components/eaters-picker";
 import { EmptySlot } from "@/components/empty-slot";
+import { AddExtraChip, ExtraChip } from "@/components/extra-chip";
+import { ExtraTile, type TileRecipe } from "@/components/extra-tile";
+import { ExtraSuggestions } from "@/components/extras-panel";
 import { ChoiceGroup, Field } from "@/components/field";
 import { BestBeforeChips, type BestBeforeValue } from "@/components/best-before-chips";
 import { FridgeAddField } from "@/components/fridge-add-field";
@@ -791,6 +794,90 @@ export function WhoAmIDemo({ members }: { members: CardMember[] }) {
   return (
     <div className="max-w-md">
       <WhoAmICard members={members} onChoose={setChosen} />
+    </div>
+  );
+}
+
+// ─── Desserts et compagnie ──────────────────────────────────────────────────
+
+const DEMO_EXTRAS: TileRecipe[] = [
+  { id: "yaourt", title: "Yaourt nature", course: "dairy", diets: ["vegetarian", "gluten_free"], favorite: true },
+  { id: "pomme", title: "Pomme", course: "fruit", diets: ["vegetarian", "gluten_free", "lactose_free"], favorite: false },
+  { id: "comte", title: "Comté", course: "cheese", diets: ["vegetarian", "gluten_free", "lactose_free", "keto"], favorite: false },
+  { id: "framboises", title: "Framboises", course: "fruit", diets: ["vegetarian", "gluten_free", "lactose_free", "keto"], favorite: false },
+];
+
+// Les puces d'un repas, les tuiles du panneau d'ajout, et « Et pour Marie-Laure ? ».
+export function ExtrasDemo({ keto }: { keto: CardMember }) {
+  const [checked, setChecked] = useState<string[]>(["yaourt"]);
+  const [asked, setAsked] = useState(true);
+  return (
+    <div className="space-y-8">
+      <div>
+        <h3 className="text-xl">Sous les plats d’un repas</h3>
+        <p className="mt-1 max-w-[60ch] text-muted-foreground">
+          De petites puces : la sorte, le titre, et les avatars seulement quand ce n’est pas pour tout le monde. « Pas
+          mangé » les grise, comme un plat « Pas cuisiné ». La dernière ouvre le panneau d’ajout.
+        </p>
+        <ul className="mt-3 flex max-w-md flex-wrap gap-1.5">
+          <li>
+            <ExtraChip course="dairy" title="Yaourt nature" onOpen={() => toast("Yaourt nature")} />
+          </li>
+          <li>
+            <ExtraChip course="cheese" title="Comté" eaters={[keto]} onOpen={() => toast("Comté")} />
+          </li>
+          <li>
+            <ExtraChip course="fruit" title="Pomme" skipped onOpen={() => toast("Pomme")} />
+          </li>
+          <li>
+            <AddExtraChip label="Ajouter un dessert, un fruit… au dîner de lundi" onClick={() => toast("Pour finir le dîner de lundi")} />
+          </li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 className="text-xl">Le panneau d’ajout</h3>
+        <p className="mt-1 max-w-[60ch] text-muted-foreground">
+          De grosses tuiles à cocher, plusieurs à la fois. « Au frigo » (« À finir » si la date approche) les met
+          en tête de leur sorte ; la pastille Céto comme partout.
+        </p>
+        <ul className="mt-3 grid max-w-md grid-cols-2 gap-2">
+          {DEMO_EXTRAS.map((recipe) => (
+            <li key={recipe.id}>
+              <ExtraTile
+                recipe={recipe}
+                checked={checked.includes(recipe.id)}
+                hint={recipe.id === "comte" ? "fridge" : undefined}
+                onChange={(on) => setChecked((current) => (on ? [...current, recipe.id] : current.filter((id) => id !== recipe.id)))}
+              />
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="max-w-md">
+        <h3 className="text-xl">Personne n’est oublié</h3>
+        <p className="mt-1 max-w-[60ch] text-muted-foreground">
+          Rien n’est servi d’office à qui ne peut pas en manger. Après l’ajout, une ligne propose ce qui lui va.
+        </p>
+        <div className="mt-3">
+          {asked ? (
+            <ExtraSuggestions
+              name={keto.first_name}
+              suggestions={DEMO_EXTRAS.filter((recipe) => recipe.diets.includes("keto"))}
+              onPick={(recipe) => {
+                toast(`${recipe.title} pour ${keto.first_name}`);
+                setAsked(false);
+              }}
+              onSkip={() => setAsked(false)}
+            />
+          ) : (
+            <Button variant="secondary" onClick={() => setAsked(true)}>
+              Revoir la ligne
+            </Button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

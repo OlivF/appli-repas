@@ -562,3 +562,47 @@ describe("nextIdea", () => {
     });
   });
 });
+
+describe("proposeWeek et nextIdea : desserts, fruits, fromages", () => {
+  const yaourt = recipe("yaourt", { course: "dairy", favorite: true, minutes: 0, meal_types: ["petit_dej", "midi", "soir", "pique_nique"] });
+  const mousse = recipe("mousse", { course: "dessert", favorite: true, minutes: 0, diets: ["keto", "vegetarian"] });
+  const mains = [recipe("a"), recipe("b"), recipe("k", { diets: ["keto"] }), recipe("v", { diets: ["vegetarian"] })];
+  const slots = [0, 1, 2].map((day) => slot(day, "soir", [PAUL, LEA, TOM, ZOE]));
+  const extraCard = (recipeId: string, course: PlannerCard["course"], locked: boolean): PlannerCard => ({
+    day: 0,
+    meal_type: "soir",
+    position: 5,
+    recipe_id: recipeId,
+    member_ids: [PAUL, LEA, TOM, ZOE],
+    locked,
+    course,
+  });
+
+  it("des plats légers dans locked ne servent personne et ne changent pas la proposition", () => {
+    const without = propose(slots, [...mains, yaourt, mousse]);
+    const withExtras = propose(slots, [...mains, yaourt, mousse], {
+      locked: [extraCard("yaourt", "dairy", true), extraCard("mousse", "dessert", false)],
+    });
+    expect(withExtras).toEqual(without);
+    expect(withExtras.cards.filter((card) => card.day === 0).flatMap((card) => card.member_ids).sort()).toEqual(
+      [PAUL, LEA, TOM, ZOE].sort(),
+    );
+  });
+
+  it("ne propose jamais un dessert ni un laitage, même favori et rapide", () => {
+    for (const seed of SEEDS) {
+      const { cards } = propose(slots, [...mains, yaourt, mousse], { seed });
+      expect(cards.map((card) => card.recipe_id)).not.toContain("yaourt");
+      expect(cards.map((card) => card.recipe_id)).not.toContain("mousse");
+    }
+    expect(propose([slot(0, "soir", [PAUL])], [yaourt, mousse]).unfed).toEqual([{ day: 0, meal_type: "soir", member_ids: [PAUL] }]);
+  });
+
+  it("« Autre idée » ignore les plats légers du repas et n'en propose jamais", () => {
+    const card: PlannerCard = { day: 0, meal_type: "soir", position: 0, recipe_id: "a", member_ids: [PAUL], locked: false };
+    const idea = (tried: string[]) =>
+      nextIdea({ card, cards: [extraCard("mousse", "dessert", false)], members: MEMBERS, recipes: [recipe("a"), recipe("b"), yaourt], tried, seed: 1 });
+    expect(idea([])).toEqual({ recipe_id: "b" });
+    expect(idea(["b"])).toBeNull();
+  });
+});
