@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { Clock, Copy, CookingPot, Pencil } from "lucide-react";
 import { cn } from "cn";
 import { AppPage } from "@/components/app-page";
-import { DietBadge, KidBadge } from "@/components/diet-badge";
+import { CourseBadge, DietBadge, KidBadge } from "@/components/diet-badge";
 import { FormSubmit } from "@/components/form-submit";
 import { MEAL_TINT, MealPill } from "@/components/meal-label";
 import { PageHeader, SectionHeader } from "@/components/page-header";
@@ -15,7 +15,7 @@ import { Loading } from "@/components/screen";
 import { ServingsIngredients } from "@/components/servings-ingredients";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { formatDuration } from "@/lib/recipes";
+import { formatDuration, isExtra } from "@/lib/recipes";
 import { loadRecipe } from "@/lib/recipes-data";
 import { copyRecipe } from "../actions";
 import { BackToList } from "../back-to-list";
@@ -47,6 +47,8 @@ async function RecipeDetail({ params }: { params: Promise<{ id: string }> }) {
   const { recipe, ingredients, members, isCatalog, favorite, excludedIds, partners } = await loadRecipe(id);
   const [mainMeal = "soir"] = recipe.meal_types;
   const time = timeLine(recipe.prep_minutes, recipe.cook_minutes);
+  // Une recette légère (un yaourt, 30 g de comté) : pas de section « Étapes » vide.
+  const light = isExtra(recipe.course) && recipe.servings === 1 && ingredients.length <= 1 && recipe.steps.length === 0;
 
   return (
     <article className="mt-2">
@@ -82,8 +84,9 @@ async function RecipeDetail({ params }: { params: Promise<{ id: string }> }) {
         )}
       </div>
 
-      {(recipe.diets.length > 0 || recipe.batch_friendly || recipe.kid_friendly) && (
+      {(recipe.diets.length > 0 || recipe.batch_friendly || recipe.kid_friendly || isExtra(recipe.course)) && (
         <div className="mt-4 flex flex-wrap gap-1.5">
+          <CourseBadge course={recipe.course} />
           {recipe.diets.map((diet) => (
             <DietBadge key={diet} diet={diet} />
           ))}
@@ -156,16 +159,18 @@ async function RecipeDetail({ params }: { params: Promise<{ id: string }> }) {
         </div>
 
         <div className="space-y-10">
-          <section aria-labelledby="steps-title">
-            <SectionHeader id="steps-title" title="Étapes" />
-            <div className="mt-4">
-              {recipe.steps.length > 0 ? (
-                <RecipeSteps steps={recipe.steps} />
-              ) : (
-                <p className="text-muted-foreground">Pas encore d’étape.</p>
-              )}
-            </div>
-          </section>
+          {!light && (
+            <section aria-labelledby="steps-title">
+              <SectionHeader id="steps-title" title="Étapes" />
+              <div className="mt-4">
+                {recipe.steps.length > 0 ? (
+                  <RecipeSteps steps={recipe.steps} />
+                ) : (
+                  <p className="text-muted-foreground">Pas encore d’étape.</p>
+                )}
+              </div>
+            </section>
+          )}
 
           {recipe.batch_friendly && recipe.batch_notes && (
             <section aria-labelledby="batch-title">

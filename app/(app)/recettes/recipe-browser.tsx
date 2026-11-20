@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { CookingPot, Heart, UtensilsCrossed } from "lucide-react";
+import { CakeSlice, CookingPot, Heart, Salad, UtensilsCrossed } from "lucide-react";
 import { ChoiceChip } from "@/components/choice-chip";
 import { EmptyState } from "@/components/empty-state";
 import { ChoiceRow } from "@/components/field";
@@ -14,6 +14,7 @@ import { MEAL_TYPES } from "@/lib/meal-slots";
 import { DIETS } from "@/lib/members";
 import type { ListRecipe, RecipeMember } from "@/lib/recipes-data";
 import {
+  RECIPE_SORTS,
   filterRecipes,
   filtersFromSearchParams,
   filtersToSearchParams,
@@ -22,7 +23,16 @@ import {
 } from "@/lib/recipes";
 import { LIST_HREF_KEY } from "./back-to-list";
 
-const NO_FILTERS: RecipeFilters = { query: "", mealTypes: [], diets: [], batch: false, favorites: false, basic: false };
+const NO_FILTERS: RecipeFilters = {
+  query: "",
+  mealTypes: [],
+  diets: [],
+  batch: false,
+  favorites: false,
+  basic: false,
+  sorts: [],
+};
+const SORT_ICONS = { entree: <Salad />, fin: <CakeSlice /> };
 
 function toggle<T>(list: T[], value: T, on: boolean) {
   return on ? [...list, value] : list.filter((item) => item !== value);
@@ -79,6 +89,19 @@ export function RecipeBrowser({ recipes, members }: { recipes: ListRecipe[]; mem
               onChange={(event) => update({ diets: toggle(filters.diets, diet.value, event.target.checked) })}
             >
               {diet.label}
+            </ChoiceChip>
+          ))}
+        </ChoiceRow>
+        <ChoiceRow legend="Sorte">
+          {RECIPE_SORTS.map((sort) => (
+            <ChoiceChip
+              key={sort.value}
+              type="checkbox"
+              checked={filters.sorts.includes(sort.value)}
+              onChange={(event) => update({ sorts: toggle(filters.sorts, sort.value, event.target.checked) })}
+              icon={SORT_ICONS[sort.value]}
+            >
+              {sort.label}
             </ChoiceChip>
           ))}
         </ChoiceRow>
@@ -145,6 +168,7 @@ export function RecipeBrowser({ recipes, members }: { recipes: ListRecipe[]; mem
                 minutes={recipe.minutes}
                 batch={recipe.batch_friendly}
                 diets={recipe.diets}
+                course={recipe.course}
                 favorite={recipe.favorite}
                 image={recipe.photo_url ? { src: recipe.photo_url, alt: "" } : undefined}
                 members={members.map((member) => ({

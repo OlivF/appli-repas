@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { Clock, CookingPot, Heart } from "lucide-react";
 import { cn } from "cn";
-import { DietBadge } from "@/components/diet-badge";
+import { CourseBadge, DietBadge } from "@/components/diet-badge";
 import { MEAL_TINT, MealLabel } from "@/components/meal-label";
 import { MemberAvatars, type AvatarMember } from "@/components/member-avatar";
 import { RecipeCover } from "@/components/recipe-cover";
 import { Badge } from "@/components/ui/badge";
 import type { MealType } from "@/lib/meal-slots";
 import type { Diet } from "@/lib/members";
-import { describeEaters, formatDuration } from "@/lib/recipes";
+import { describeEaters, formatDuration, isExtra, type Course } from "@/lib/recipes";
 
 // `out` : ce membre ne la mange pas (exclu, ou écarté par son régime) ; son avatar est barré.
 export type EaterMember = AvatarMember & { out?: boolean };
@@ -21,6 +21,8 @@ export type RecipeCardProps = {
   // Se prépare à l'avance (batch cooking du dimanche).
   batch?: boolean;
   diets: Diet[];
+  // Sorte : une étiquette pour ce qui n'est pas un plat (« Dessert »).
+  course?: Course;
   favorite?: boolean;
   // Tous les membres du foyer.
   members: EaterMember[];
@@ -38,6 +40,7 @@ export function RecipeCard({
   minutes,
   batch,
   diets,
+  course = "main",
   favorite = false,
   members,
   image,
@@ -86,8 +89,9 @@ export function RecipeCard({
             </span>
           )}
         </div>
-        {diets.length > 0 && (
+        {(diets.length > 0 || isExtra(course)) && (
           <div className="flex flex-wrap gap-1.5">
+            <CourseBadge course={course} />
             {diets.map((diet) => (
               <DietBadge key={diet} diet={diet} />
             ))}

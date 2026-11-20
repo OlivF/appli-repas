@@ -10,10 +10,11 @@ export type AvatarMember = {
   initials: string;
 };
 
-type Size = "sm" | "default" | "lg" | "xl";
+type Size = "xs" | "sm" | "default" | "lg" | "xl";
 
 // Taille de l'initiale selon l'avatar ; un peu plus petite quand il y a deux lettres.
 const TEXT_SIZE: Record<Size, [string, string]> = {
+  xs: ["text-[0.6875rem]", "text-[0.5rem] tracking-tighter"],
   sm: ["text-[0.9375rem]", "text-[0.75rem] tracking-tight"],
   default: ["text-lg", "text-[0.9375rem] tracking-tight"],
   lg: ["text-2xl", "text-[1.25rem] tracking-tight"],

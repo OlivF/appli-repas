@@ -39,6 +39,7 @@ import { ANNA_LUCIA, FAMILY, MARIE_LAURE, OLIVIER, OTIS, PALETTE } from "./demo-
 import {
   DayStripDemo,
   DuoDemo,
+  ExtrasDemo,
   FavoriteDemo,
   FridgeDemo,
   FridgeLinksDemo,
@@ -423,6 +424,13 @@ export default function DesignPage() {
           <div className="mt-4">
             <LibraryDemo eaters={[OLIVIER, MARIE_LAURE]} />
           </div>
+        </Section>
+
+        <Section
+          title="Desserts et compagnie"
+          lead="Entrées, desserts, fruits, fromages, laitages : autant qu’on veut par repas, chacun pour qui en mange. Ils ne nourrissent pas un repas : sans plat, il reste à remplir."
+        >
+          <ExtrasDemo keto={MARIE_LAURE} />
         </Section>
 
         <Section

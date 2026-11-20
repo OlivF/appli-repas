@@ -250,7 +250,7 @@ function wholeNumber(text: string): number | null {
 }
 
 // « 250 », « 1,5 », « 1.5 », « 1/2 ».
-function parseQuantity(text: string): number | null {
+export function parseQuantity(text: string): number | null {
   const fraction = /^(\d+)\s*\/\s*(\d+)$/.exec(text);
   const value = fraction
     ? Number(fraction[1]) / Number(fraction[2])
@@ -341,6 +341,13 @@ export function matchesSearch(recipe: { title: string; ingredientNames: string[]
   return words.every((word) => haystack.includes(word));
 }
 
+// « Entrées », « Desserts, fruits, fromages » (la fin du repas, laitages compris).
+export type RecipeSort = "entree" | "fin";
+export const RECIPE_SORTS: { value: RecipeSort; label: string; courses: Course[] }[] = [
+  { value: "entree", label: "Entrées", courses: ["starter"] },
+  { value: "fin", label: "Desserts, fruits, fromages", courses: EXTRA_COURSES },
+];
+
 export type RecipeFilters = {
   query: string;
   mealTypes: MealType[];
@@ -348,6 +355,7 @@ export type RecipeFilters = {
   batch: boolean;
   favorites: boolean;
   basic: boolean;
+  sorts: RecipeSort[];
 };
 
 export type FilterableRecipe = {
@@ -358,9 +366,10 @@ export type FilterableRecipe = {
   batch_friendly: boolean;
   favorite: boolean;
   basic: boolean;
+  course: Course;
 };
 
-// Repas en « ou » (midi ou dîner), régimes en « et » (céto et sans gluten).
+// Repas en « ou » (midi ou dîner), régimes en « et » (céto et sans gluten), sortes en « ou ».
 export function filterRecipes<T extends FilterableRecipe>(recipes: T[], filters: RecipeFilters): T[] {
   return recipes.filter(
     (recipe) =>
@@ -369,15 +378,18 @@ export function filterRecipes<T extends FilterableRecipe>(recipes: T[], filters:
       filters.diets.every((diet) => recipe.diets.includes(diet)) &&
       (!filters.batch || recipe.batch_friendly) &&
       (!filters.favorites || recipe.favorite) &&
-      (!filters.basic || recipe.basic),
+      (!filters.basic || recipe.basic) &&
+      (filters.sorts.length === 0 ||
+        RECIPE_SORTS.some((sort) => filters.sorts.includes(sort.value) && sort.courses.includes(recipe.course))),
   );
 }
 
-// Dans l'adresse : ?q=creme&repas=soir,midi&regime=keto&avance=1&favoris=1&basiques=1
+// Dans l'adresse : ?q=creme&repas=soir,midi&regime=keto&avance=1&favoris=1&basiques=1&sorte=entree,fin
 export function filtersFromSearchParams(params: URLSearchParams): RecipeFilters {
   const list = (key: string) => (params.get(key) ?? "").split(",").filter(Boolean);
   const meals = list("repas");
   const diets = list("regime");
+  const sorts = list("sorte");
   return {
     query: params.get("q") ?? "",
     mealTypes: MEAL_TYPES.map((meal) => meal.value).filter((meal) => meals.includes(meal)),
@@ -385,6 +397,7 @@ export function filtersFromSearchParams(params: URLSearchParams): RecipeFilters 
     batch: params.get("avance") === "1",
     favorites: params.get("favoris") === "1",
     basic: params.get("basiques") === "1",
+    sorts: RECIPE_SORTS.map((sort) => sort.value).filter((sort) => sorts.includes(sort)),
   };
 }
 
@@ -396,6 +409,7 @@ export function filtersToSearchParams(filters: RecipeFilters): URLSearchParams {
   if (filters.batch) params.set("avance", "1");
   if (filters.favorites) params.set("favoris", "1");
   if (filters.basic) params.set("basiques", "1");
+  if (filters.sorts.length > 0) params.set("sorte", filters.sorts.join(","));
   return params;
 }
 

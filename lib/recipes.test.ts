@@ -344,20 +344,29 @@ describe("recherche", () => {
 
 describe("filterRecipes", () => {
   const recipes = [
-    { title: "Pancakes", ingredientNames: [], meal_types: ["petit_dej"], diets: ["vegetarian"], batch_friendly: true, favorite: false, basic: false },
-    { title: "Saumon", ingredientNames: [], meal_types: ["soir"], diets: ["keto", "gluten_free"], batch_friendly: false, favorite: true, basic: true },
-    { title: "Quiche", ingredientNames: [], meal_types: ["midi", "soir"], diets: ["keto"], batch_friendly: true, favorite: false, basic: false },
+    { title: "Pancakes", ingredientNames: [], meal_types: ["petit_dej"], diets: ["vegetarian"], batch_friendly: true, favorite: false, basic: false, course: "main" },
+    { title: "Saumon", ingredientNames: [], meal_types: ["soir"], diets: ["keto", "gluten_free"], batch_friendly: false, favorite: true, basic: true, course: "main" },
+    { title: "Quiche", ingredientNames: [], meal_types: ["midi", "soir"], diets: ["keto"], batch_friendly: true, favorite: false, basic: false, course: "main" },
+    { title: "Carottes râpées", ingredientNames: [], meal_types: ["soir"], diets: ["vegetarian"], batch_friendly: false, favorite: false, basic: false, course: "starter" },
+    { title: "Yaourt nature", ingredientNames: [], meal_types: ["soir"], diets: ["vegetarian"], batch_friendly: false, favorite: false, basic: false, course: "dairy" },
+    { title: "Mousse", ingredientNames: [], meal_types: ["soir"], diets: ["vegetarian"], batch_friendly: true, favorite: false, basic: false, course: "dessert" },
   ] as const;
-  const none: RecipeFilters = { query: "", mealTypes: [], diets: [], batch: false, favorites: false, basic: false };
+  const none: RecipeFilters = { query: "", mealTypes: [], diets: [], batch: false, favorites: false, basic: false, sorts: [] };
   const titles = (filters: Partial<RecipeFilters>) =>
     filterRecipes([...recipes], { ...none, ...filters }).map((recipe) => recipe.title);
 
   it("garde tout sans filtre", () => {
-    expect(titles({})).toEqual(["Pancakes", "Saumon", "Quiche"]);
+    expect(titles({})).toEqual(["Pancakes", "Saumon", "Quiche", "Carottes râpées", "Yaourt nature", "Mousse"]);
   });
 
   it("cumule les repas en « ou »", () => {
     expect(titles({ mealTypes: ["petit_dej", "midi"] })).toEqual(["Pancakes", "Quiche"]);
+  });
+
+  it("filtre les entrées, et la fin du repas (desserts, fruits, fromages, laitages)", () => {
+    expect(titles({ sorts: ["entree"] })).toEqual(["Carottes râpées"]);
+    expect(titles({ sorts: ["fin"] })).toEqual(["Yaourt nature", "Mousse"]);
+    expect(titles({ sorts: ["entree", "fin"] })).toEqual(["Carottes râpées", "Yaourt nature", "Mousse"]);
   });
 
   it("cumule les régimes en « et »", () => {
@@ -365,7 +374,7 @@ describe("filterRecipes", () => {
   });
 
   it("filtre les recettes à l'avance et les favoris", () => {
-    expect(titles({ batch: true })).toEqual(["Pancakes", "Quiche"]);
+    expect(titles({ batch: true })).toEqual(["Pancakes", "Quiche", "Mousse"]);
     expect(titles({ favorites: true })).toEqual(["Saumon"]);
   });
 
@@ -399,25 +408,28 @@ describe("filtres dans l'adresse", () => {
       batch: true,
       favorites: true,
       basic: true,
+      sorts: ["entree", "fin"],
     };
     expect(filtersFromSearchParams(filtersToSearchParams(filters))).toEqual(filters);
     expect(filtersToSearchParams(filters).get("basiques")).toBe("1");
+    expect(filtersToSearchParams(filters).get("sorte")).toBe("entree,fin");
   });
 
   it("n'écrit rien quand il n'y a pas de filtre", () => {
     expect(
-      filtersToSearchParams({ query: " ", mealTypes: [], diets: [], batch: false, favorites: false, basic: false }).toString(),
+      filtersToSearchParams({ query: " ", mealTypes: [], diets: [], batch: false, favorites: false, basic: false, sorts: [] }).toString(),
     ).toBe("");
   });
 
   it("ignore les valeurs inconnues", () => {
-    expect(filtersFromSearchParams(new URLSearchParams("repas=soir,brunch&regime=paleo"))).toEqual({
+    expect(filtersFromSearchParams(new URLSearchParams("repas=soir,brunch&regime=paleo&sorte=fin,gouter"))).toEqual({
       query: "",
       mealTypes: ["soir"],
       diets: [],
       batch: false,
       favorites: false,
       basic: false,
+      sorts: ["fin"],
     });
   });
 });

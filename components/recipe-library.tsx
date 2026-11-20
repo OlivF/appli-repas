@@ -64,7 +64,7 @@ export function RecipeLibrary({
 
   const shown = useMemo(() => {
     const ofMeal = mealType ? recipes.filter((recipe) => recipe.meal_types.includes(mealType)) : recipes;
-    return filterRecipes(ofMeal, { ...filters, batch: false, basic: false }).filter(
+    return filterRecipes(ofMeal, { ...filters, batch: false, basic: false, sorts: [] }).filter(
       (recipe) => !filters.quick || recipe.minutes <= QUICK_MINUTES,
     );
   }, [recipes, mealType, filters]);

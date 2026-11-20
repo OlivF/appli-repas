@@ -20,11 +20,14 @@ import { MEAL_TYPES, type MealType } from "@/lib/meal-slots";
 import { DIETS, type Diet } from "@/lib/members";
 import {
   AISLES,
+  COURSES,
   UNITS,
   aisleLabel,
   dietReason,
   incompatibleDiets,
+  isLightCourse,
   normalizeText,
+  type Course,
   type GroceryAisle,
   type IngredientUnit,
 } from "@/lib/recipes";
@@ -47,6 +50,7 @@ export type FormRecipe = {
   kid_friendly: boolean;
   base: string | null;
   basic: boolean;
+  course: Course;
 };
 
 type Row = { key: string; name: string; quantity: string; unit: IngredientUnit; aisle: GroceryAisle };
@@ -61,7 +65,9 @@ function toggle<T>(list: T[], value: T, on: boolean) {
 }
 
 // Le formulaire d'ajout et de modification, en une page. Tous les champs sont pilotés :
-// après une erreur, rien de ce qui a été saisi ne se perd.
+// après une erreur, rien de ce qui a été saisi ne se perd. Un fruit, un fromage, un laitage : le
+// formulaire léger (une portion d'un ingrédient), « Plus de détails » ouvre le formulaire complet.
+// Élément principal et « Recette basique » : pour les plats seulement.
 export function RecipeForm({
   recipe,
   ingredients,
@@ -111,6 +117,17 @@ export function RecipeForm({
   });
   // La ligne à focaliser après un ajout au clavier ou au bouton.
   const [focusKey, setFocusKey] = useState<string | null>(null);
+  const [course, setCourse] = useState<Course>(recipe?.course ?? "main");
+  // Formulaire complet pour une recette légère qui n'en a pas la forme (plusieurs ingrédients,
+  // plusieurs portions, des étapes).
+  const [detailed, setDetailed] = useState(
+    () =>
+      recipe !== null &&
+      isLightCourse(recipe.course) &&
+      (recipe.servings !== 1 || ingredients.length > 1 || recipe.steps.length > 0),
+  );
+  const light = isLightCourse(course) && !detailed;
+  const isMain = course === "main";
 
   const options = useMemo<AutocompleteOption[]>(
     () => known.map((ingredient) => ({ value: ingredient.name, hint: aisleLabel(ingredient.aisle) })),
@@ -144,6 +161,37 @@ export function RecipeForm({
     });
   }
 
+  // Une sorte légère sur une recette d'un seul ingrédient : le formulaire léger, une portion pour
+  // une personne, tous les repas si aucun n'est coché.
+  function chooseCourse(value: Course) {
+    setCourse(value);
+    if (!isLightCourse(value)) return;
+    const filled = rows.filter((row) => row.name.trim() || row.quantity.trim());
+    if (filled.length > 1 || steps.trim()) {
+      setDetailed(true);
+      return;
+    }
+    setDetailed(false);
+    setServings("1");
+    if (mealTypes.length === 0) setMealTypes(MEAL_TYPES.map((meal) => meal.value));
+    const first = filled[0] ?? rows[0];
+    setRows([first.quantity ? first : { ...first, quantity: "1", unit: "piece" }]);
+  }
+
+  // Formulaire léger : le titre et l'ingrédient se remplissent l'un l'autre tant qu'ils sont égaux.
+  const first = rows[0];
+  const withKnown = (name: string) => {
+    const match = knownByName.get(normalizeText(name));
+    return { name, ...(match ? { aisle: match.aisle } : {}) };
+  };
+  function changeTitle(value: string) {
+    if (light && (!first.name.trim() || first.name === title)) updateRow(first.key, withKnown(value));
+    setTitle(value);
+  }
+  const lightAisle: GroceryAisle =
+    knownByName.get(normalizeText(first.name))?.aisle ??
+    (first.aisle !== "autre" ? first.aisle : course === "fruit" ? "fruits_legumes" : "cremerie");
+
   // Entrée dans une ligne d'ingrédient : passer à la suivante (ou en créer une), sans envoyer.
   function nextRowOnEnter(event: KeyboardEvent<HTMLInputElement>, index: number) {
     if (event.key !== "Enter" || event.defaultPrevented) return;
@@ -152,6 +200,73 @@ export function RecipeForm({
     if (next) setFocusKey(next.key);
     else addRow();
   }
+
+  const courseChoice = (
+    <ChoiceGroup legend="C’est…">
+      {COURSES.map(({ value, label, icon: Icon }) => (
+        <ChoiceChip
+          key={value}
+          type="radio"
+          name="course"
+          value={value}
+          checked={course === value}
+          onChange={() => chooseCourse(value)}
+          icon={<Icon />}
+        >
+          {label}
+        </ChoiceChip>
+      ))}
+    </ChoiceGroup>
+  );
+  const titleField = (
+    <Field id={`${id}-title`} label="Titre" error={errors.title}>
+      {({ describedBy, invalid }) => (
+        <Input
+          id={`${id}-title`}
+          name="title"
+          value={title}
+          onChange={(event) => changeTitle(event.target.value)}
+          placeholder={light ? "Yaourt nature" : "Gratin de courgettes"}
+          autoComplete="off"
+          aria-describedby={describedBy}
+          aria-invalid={invalid}
+        />
+      )}
+    </Field>
+  );
+  const mealChoice = (
+    <ChoiceGroup legend="Pour quels repas ?">
+      {MEAL_TYPES.map((meal) => (
+        <ChoiceChip
+          key={meal.value}
+          type="checkbox"
+          name="meal_types"
+          value={meal.value}
+          checked={mealTypes.includes(meal.value)}
+          onChange={(event) => setMealTypes(toggle(mealTypes, meal.value, event.target.checked))}
+          icon={<span className="text-[1.1em] leading-none">{meal.emoji}</span>}
+        >
+          {meal.label}
+        </ChoiceChip>
+      ))}
+    </ChoiceGroup>
+  );
+  const dietChoice = (
+    <ChoiceGroup legend="Régimes compatibles">
+      {DIETS.map((diet) => (
+        <ChoiceChip
+          key={diet.value}
+          type="checkbox"
+          name="diets"
+          value={diet.value}
+          checked={diets.includes(diet.value)}
+          onChange={(event) => setDiets(toggle(diets, diet.value, event.target.checked))}
+        >
+          {diet.label}
+        </ChoiceChip>
+      ))}
+    </ChoiceGroup>
+  );
 
   return (
     <form
@@ -168,271 +283,35 @@ export function RecipeForm({
     >
       {recipe && <input type="hidden" name="id" value={recipe.id} />}
 
-      <Card className="gap-6 p-5 sm:p-6">
-        <SectionHeader title="L’essentiel" />
-        <Field id={`${id}-title`} label="Titre" error={errors.title}>
-          {({ describedBy, invalid }) => (
-            <Input
-              id={`${id}-title`}
-              name="title"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="Gratin de courgettes"
-              autoComplete="off"
-              aria-describedby={describedBy}
-              aria-invalid={invalid}
-            />
-          )}
-        </Field>
-        <Field
-          id={`${id}-base`}
-          label="Élément principal"
-          help="Deux recettes avec le même élément principal se cuisinent ensemble."
-          error={errors.base}
-        >
-          {({ describedBy, invalid }) => (
-            <Autocomplete
-              id={`${id}-base`}
-              name="base"
-              value={shownBase}
-              options={baseOptions}
-              placeholder="Steak haché"
-              onValueChange={(value) => {
-                setBaseTouched(true);
-                setBase(value);
-              }}
-              aria-describedby={describedBy}
-              aria-invalid={invalid}
-            />
-          )}
-        </Field>
-        <Field
-          id={`${id}-description`}
-          label="En une phrase"
-          help="Facultatif : ce qui donne envie."
-          error={errors.description}
-        >
-          {({ describedBy, invalid }) => (
-            <Input
-              id={`${id}-description`}
-              name="description"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              placeholder="Fondant, gratiné, prêt en 30 minutes."
-              aria-describedby={describedBy}
-              aria-invalid={invalid}
-            />
-          )}
-        </Field>
-        <Field
-          id={`${id}-photo`}
-          label="Photo"
-          help="Facultatif : l’adresse d’une image en ligne, qui commence par https://."
-          error={errors.photo_url}
-        >
-          {({ describedBy, invalid }) => (
-            <Input
-              id={`${id}-photo`}
-              name="photo_url"
-              type="url"
-              inputMode="url"
-              value={photoUrl}
-              onChange={(event) => setPhotoUrl(event.target.value)}
-              placeholder="https://"
-              aria-describedby={describedBy}
-              aria-invalid={invalid}
-            />
-          )}
-        </Field>
-      </Card>
-
-      <Card className="gap-6 p-5 sm:p-6">
-        <SectionHeader title="Quand et pour combien" />
-        <div className="space-y-2">
-          <ChoiceGroup legend="Pour quels repas ?">
-            {MEAL_TYPES.map((meal) => (
-              <ChoiceChip
-                key={meal.value}
-                type="checkbox"
-                name="meal_types"
-                value={meal.value}
-                checked={mealTypes.includes(meal.value)}
-                onChange={(event) => setMealTypes(toggle(mealTypes, meal.value, event.target.checked))}
-                icon={<span className="text-[1.1em] leading-none">{meal.emoji}</span>}
-              >
-                {meal.label}
-              </ChoiceChip>
-            ))}
-          </ChoiceGroup>
-          {errors.meal_types && <FieldError>{errors.meal_types}</FieldError>}
-        </div>
-        <Field
-          id={`${id}-servings`}
-          label="Pour combien de personnes ?"
-          help="Les quantités que tu saisis sont pour ce nombre de personnes."
-          error={errors.servings}
-        >
-          {({ describedBy, invalid }) => (
-            <div className="flex items-center gap-3">
-              <Input
-                id={`${id}-servings`}
-                name="servings"
-                inputMode="numeric"
-                value={servings}
-                onChange={(event) => setServings(event.target.value)}
-                className="w-24 text-center"
-                aria-describedby={describedBy}
-                aria-invalid={invalid}
-              />
-              <span className="font-semibold text-muted-foreground">personnes</span>
-            </div>
-          )}
-        </Field>
-        <div className="grid grid-cols-2 gap-4">
-          {(
-            [
-              ["prep_minutes", "Préparation", prep, setPrep, errors.prep_minutes],
-              ["cook_minutes", "Cuisson", cook, setCook, errors.cook_minutes],
-            ] as const
-          ).map(([name, label, value, setValue, error]) => (
-            <Field key={name} id={`${id}-${name}`} label={label} error={error}>
+      {light ? (
+        <>
+          <Card className="gap-6 p-5 sm:p-6">
+            <SectionHeader title="L’essentiel" />
+            {courseChoice}
+            {titleField}
+            <Field
+              id={`${id}-portion`}
+              label="Une portion, c’est"
+              help="Pour une personne : 1 yaourt, 2 clémentines, 30 g de comté."
+              error={errors.ingredients}
+            >
               {({ describedBy, invalid }) => (
-                <div className="flex items-center gap-3">
+                <div className="grid grid-cols-[5rem_minmax(0,1fr)] gap-2 sm:grid-cols-[5rem_9rem_minmax(0,1fr)]">
                   <Input
-                    id={`${id}-${name}`}
-                    name={name}
-                    inputMode="numeric"
-                    value={value}
-                    onChange={(event) => setValue(event.target.value)}
-                    placeholder="0"
-                    className="w-20 text-center"
+                    id={`${id}-portion`}
+                    name="ingredient_quantity"
+                    inputMode="decimal"
+                    value={first.quantity}
+                    onChange={(event) => updateRow(first.key, { quantity: event.target.value })}
+                    className="px-3 text-center"
                     aria-describedby={describedBy}
                     aria-invalid={invalid}
                   />
-                  <span className="font-semibold text-muted-foreground">min</span>
-                </div>
-              )}
-            </Field>
-          ))}
-        </div>
-      </Card>
-
-      <Card className="gap-6 p-5 sm:p-6">
-        <SectionHeader title="Régimes et préparation" />
-        <ChoiceGroup legend="Régimes compatibles">
-          {DIETS.map((diet) => (
-            <ChoiceChip
-              key={diet.value}
-              type="checkbox"
-              name="diets"
-              value={diet.value}
-              checked={diets.includes(diet.value)}
-              onChange={(event) => setDiets(toggle(diets, diet.value, event.target.checked))}
-            >
-              {diet.label}
-            </ChoiceChip>
-          ))}
-        </ChoiceGroup>
-        <SwitchField
-          id={`${id}-batch`}
-          name="batch_friendly"
-          label="Se prépare à l’avance"
-          description="Pour le batch cooking du dimanche."
-          checked={batch}
-          onCheckedChange={setBatch}
-        />
-        {batch && (
-          <Field
-            id={`${id}-batch-notes`}
-            label="Ce qu’on fait le dimanche"
-            help="Ce qui se prépare d’avance, et combien de temps ça se garde."
-            error={errors.batch_notes}
-          >
-            {({ describedBy, invalid }) => (
-              <Textarea
-                id={`${id}-batch-notes`}
-                name="batch_notes"
-                value={batchNotes}
-                onChange={(event) => setBatchNotes(event.target.value)}
-                className="min-h-24"
-                aria-describedby={describedBy}
-                aria-invalid={invalid}
-              />
-            )}
-          </Field>
-        )}
-        <SwitchField
-          id={`${id}-kid`}
-          name="kid_friendly"
-          label="Plaît aux enfants"
-          checked={kid}
-          onCheckedChange={setKid}
-        />
-        <SwitchField
-          id={`${id}-basic`}
-          name="basic"
-          label="Recette basique"
-          description="Elle apparaît dans « Les basiques » de la semaine."
-          checked={basic}
-          onCheckedChange={setBasic}
-        />
-      </Card>
-
-      <Card className="gap-4 p-5 sm:p-6">
-        <SectionHeader title="Ingrédients" />
-        <p className="-mt-2 text-[0.9375rem] text-muted-foreground">
-          Commence à taper : les ingrédients déjà connus arrivent avec leur rayon.
-        </p>
-        <ul className="space-y-3">
-          {rows.map((row, index) => {
-            const position = index + 1;
-            return (
-              <li
-                key={row.key}
-                className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 rounded-2xl border border-border/70 bg-background p-2.5"
-              >
-                <Autocomplete
-                  id={`${id}-name-${row.key}`}
-                  name="ingredient_name"
-                  aria-label={`Ingrédient ${position}`}
-                  value={row.name}
-                  options={options}
-                  placeholder="Courgettes"
-                  onValueChange={(name) => {
-                    const match = knownByName.get(normalizeText(name));
-                    updateRow(row.key, { name, ...(match && row.aisle === "autre" ? { aisle: match.aisle } : {}) });
-                  }}
-                  onPick={(option) => {
-                    const match = knownByName.get(normalizeText(option.value));
-                    if (match) updateRow(row.key, { aisle: match.aisle, ...(match.unit ? { unit: match.unit } : {}) });
-                  }}
-                  onKeyDown={(event) => nextRowOnEnter(event, index)}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Retirer l’ingrédient ${position}`}
-                  onClick={() => removeRow(row.key)}
-                >
-                  <Trash2 aria-hidden="true" />
-                </Button>
-                <div className="col-span-2 grid grid-cols-[4.5rem_minmax(0,1fr)_minmax(0,1.3fr)] gap-2 sm:grid-cols-[6rem_minmax(0,1fr)_minmax(0,1.3fr)]">
-                  <Input
-                    name="ingredient_quantity"
-                    aria-label={`Quantité de l’ingrédient ${position}`}
-                    inputMode="decimal"
-                    value={row.quantity}
-                    onChange={(event) => updateRow(row.key, { quantity: event.target.value })}
-                    onKeyDown={(event) => nextRowOnEnter(event, index)}
-                    placeholder="250"
-                    className="px-3 text-center"
-                  />
                   <NativeSelect
                     name="ingredient_unit"
-                    aria-label={`Unité de l’ingrédient ${position}`}
-                    value={row.unit}
-                    onChange={(event) => updateRow(row.key, { unit: event.target.value as IngredientUnit })}
+                    aria-label="Unité"
+                    value={first.unit}
+                    onChange={(event) => updateRow(first.key, { unit: event.target.value as IngredientUnit })}
                   >
                     {UNITS.map((unit) => (
                       <option key={unit.value} value={unit.value}>
@@ -440,45 +319,327 @@ export function RecipeForm({
                       </option>
                     ))}
                   </NativeSelect>
-                  <NativeSelect
-                    name="ingredient_aisle"
-                    aria-label={`Rayon de l’ingrédient ${position}`}
-                    value={row.aisle}
-                    onChange={(event) => updateRow(row.key, { aisle: event.target.value as GroceryAisle })}
-                  >
-                    {AISLES.map((aisle) => (
-                      <option key={aisle.value} value={aisle.value}>
-                        {aisle.label}
-                      </option>
-                    ))}
-                  </NativeSelect>
+                  <div className="col-span-2 sm:col-span-1">
+                    <Autocomplete
+                      id={`${id}-light-ingredient`}
+                      name="ingredient_name"
+                      aria-label="Ingrédient"
+                      value={first.name}
+                      options={options}
+                      placeholder="Yaourts nature"
+                      onValueChange={(name) => {
+                        if (!title.trim() || title === first.name) setTitle(name);
+                        updateRow(first.key, withKnown(name));
+                      }}
+                    />
+                  </div>
                 </div>
-              </li>
-            );
-          })}
-        </ul>
-        {errors.ingredients && <FieldError>{errors.ingredients}</FieldError>}
-        <Button type="button" variant="secondary" className="self-start" onClick={addRow}>
-          <Plus aria-hidden="true" />
-          Ajouter un ingrédient
-        </Button>
-      </Card>
+              )}
+            </Field>
+            <input type="hidden" name="ingredient_aisle" value={lightAisle} />
+            {dietChoice}
+            <div className="space-y-2">
+              {mealChoice}
+              {errors.meal_types && <FieldError>{errors.meal_types}</FieldError>}
+            </div>
+            <div>
+              <Button type="button" variant="link" className="min-h-0 px-0" onClick={() => setDetailed(true)}>
+                Plus de détails
+              </Button>
+            </div>
+            {/* Ce que le formulaire léger ne montre pas reste tel quel. */}
+            <input type="hidden" name="servings" value={servings} />
+            <input type="hidden" name="description" value={description} />
+            <input type="hidden" name="photo_url" value={photoUrl} />
+            <input type="hidden" name="prep_minutes" value={prep} />
+            <input type="hidden" name="cook_minutes" value={cook} />
+            <input type="hidden" name="steps" value={steps} />
+            {batch && <input type="hidden" name="batch_friendly" value="on" />}
+            <input type="hidden" name="batch_notes" value={batchNotes} />
+            {kid && <input type="hidden" name="kid_friendly" value="on" />}
+          </Card>
+        </>
+      ) : (
+        <>
+          <Card className="gap-6 p-5 sm:p-6">
+            <SectionHeader title="L’essentiel" />
+            {courseChoice}
+            {titleField}
+            {isMain && (
+              <Field
+                id={`${id}-base`}
+                label="Élément principal"
+                help="Deux recettes avec le même élément principal se cuisinent ensemble."
+                error={errors.base}
+              >
+                {({ describedBy, invalid }) => (
+                  <Autocomplete
+                    id={`${id}-base`}
+                    name="base"
+                    value={shownBase}
+                    options={baseOptions}
+                    placeholder="Steak haché"
+                    onValueChange={(value) => {
+                      setBaseTouched(true);
+                      setBase(value);
+                    }}
+                    aria-describedby={describedBy}
+                    aria-invalid={invalid}
+                  />
+                )}
+              </Field>
+            )}
+            <Field
+              id={`${id}-description`}
+              label="En une phrase"
+              help="Facultatif : ce qui donne envie."
+              error={errors.description}
+            >
+              {({ describedBy, invalid }) => (
+                <Input
+                  id={`${id}-description`}
+                  name="description"
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  placeholder="Fondant, gratiné, prêt en 30 minutes."
+                  aria-describedby={describedBy}
+                  aria-invalid={invalid}
+                />
+              )}
+            </Field>
+            <Field
+              id={`${id}-photo`}
+              label="Photo"
+              help="Facultatif : l’adresse d’une image en ligne, qui commence par https://."
+              error={errors.photo_url}
+            >
+              {({ describedBy, invalid }) => (
+                <Input
+                  id={`${id}-photo`}
+                  name="photo_url"
+                  type="url"
+                  inputMode="url"
+                  value={photoUrl}
+                  onChange={(event) => setPhotoUrl(event.target.value)}
+                  placeholder="https://"
+                  aria-describedby={describedBy}
+                  aria-invalid={invalid}
+                />
+              )}
+            </Field>
+          </Card>
 
-      <Card className="gap-4 p-5 sm:p-6">
-        <SectionHeader id={`${id}-steps-title`} title="Étapes" />
-        <p id={`${id}-steps-help`} className="-mt-2 text-[0.9375rem] text-muted-foreground">
-          Une étape par ligne : on les numérote pour toi.
-        </p>
-        <Textarea
-          name="steps"
-          value={steps}
-          onChange={(event) => setSteps(event.target.value)}
-          placeholder={"Fais revenir l’oignon dans l’huile.\nAjoute la viande et laisse dorer."}
-          className="min-h-40"
-          aria-labelledby={`${id}-steps-title`}
-          aria-describedby={`${id}-steps-help`}
-        />
-      </Card>
+          <Card className="gap-6 p-5 sm:p-6">
+            <SectionHeader title="Quand et pour combien" />
+            <div className="space-y-2">
+              {mealChoice}
+              {errors.meal_types && <FieldError>{errors.meal_types}</FieldError>}
+            </div>
+            <Field
+              id={`${id}-servings`}
+              label="Pour combien de personnes ?"
+              help="Les quantités que tu saisis sont pour ce nombre de personnes."
+              error={errors.servings}
+            >
+              {({ describedBy, invalid }) => (
+                <div className="flex items-center gap-3">
+                  <Input
+                    id={`${id}-servings`}
+                    name="servings"
+                    inputMode="numeric"
+                    value={servings}
+                    onChange={(event) => setServings(event.target.value)}
+                    className="w-24 text-center"
+                    aria-describedby={describedBy}
+                    aria-invalid={invalid}
+                  />
+                  <span className="font-semibold text-muted-foreground">personnes</span>
+                </div>
+              )}
+            </Field>
+            <div className="grid grid-cols-2 gap-4">
+              {(
+                [
+                  ["prep_minutes", "Préparation", prep, setPrep, errors.prep_minutes],
+                  ["cook_minutes", "Cuisson", cook, setCook, errors.cook_minutes],
+                ] as const
+              ).map(([name, label, value, setValue, error]) => (
+                <Field key={name} id={`${id}-${name}`} label={label} error={error}>
+                  {({ describedBy, invalid }) => (
+                    <div className="flex items-center gap-3">
+                      <Input
+                        id={`${id}-${name}`}
+                        name={name}
+                        inputMode="numeric"
+                        value={value}
+                        onChange={(event) => setValue(event.target.value)}
+                        placeholder="0"
+                        className="w-20 text-center"
+                        aria-describedby={describedBy}
+                        aria-invalid={invalid}
+                      />
+                      <span className="font-semibold text-muted-foreground">min</span>
+                    </div>
+                  )}
+                </Field>
+              ))}
+            </div>
+          </Card>
+
+          <Card className="gap-6 p-5 sm:p-6">
+            <SectionHeader title="Régimes et préparation" />
+            {dietChoice}
+            <SwitchField
+              id={`${id}-batch`}
+              name="batch_friendly"
+              label="Se prépare à l’avance"
+              description="Pour le batch cooking du dimanche."
+              checked={batch}
+              onCheckedChange={setBatch}
+            />
+            {batch && (
+              <Field
+                id={`${id}-batch-notes`}
+                label="Ce qu’on fait le dimanche"
+                help="Ce qui se prépare d’avance, et combien de temps ça se garde."
+                error={errors.batch_notes}
+              >
+                {({ describedBy, invalid }) => (
+                  <Textarea
+                    id={`${id}-batch-notes`}
+                    name="batch_notes"
+                    value={batchNotes}
+                    onChange={(event) => setBatchNotes(event.target.value)}
+                    className="min-h-24"
+                    aria-describedby={describedBy}
+                    aria-invalid={invalid}
+                  />
+                )}
+              </Field>
+            )}
+            <SwitchField
+              id={`${id}-kid`}
+              name="kid_friendly"
+              label="Plaît aux enfants"
+              checked={kid}
+              onCheckedChange={setKid}
+            />
+            {isMain && (
+              <SwitchField
+                id={`${id}-basic`}
+                name="basic"
+                label="Recette basique"
+                description="Elle apparaît dans « Les basiques » de la semaine."
+                checked={basic}
+                onCheckedChange={setBasic}
+              />
+            )}
+          </Card>
+
+          <Card className="gap-4 p-5 sm:p-6">
+            <SectionHeader title="Ingrédients" />
+            <p className="-mt-2 text-[0.9375rem] text-muted-foreground">
+              Commence à taper : les ingrédients déjà connus arrivent avec leur rayon.
+            </p>
+            <ul className="space-y-3">
+              {rows.map((row, index) => {
+                const position = index + 1;
+                return (
+                  <li
+                    key={row.key}
+                    className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 rounded-2xl border border-border/70 bg-background p-2.5"
+                  >
+                    <Autocomplete
+                      id={`${id}-name-${row.key}`}
+                      name="ingredient_name"
+                      aria-label={`Ingrédient ${position}`}
+                      value={row.name}
+                      options={options}
+                      placeholder="Courgettes"
+                      onValueChange={(name) => {
+                        const match = knownByName.get(normalizeText(name));
+                        updateRow(row.key, { name, ...(match && row.aisle === "autre" ? { aisle: match.aisle } : {}) });
+                      }}
+                      onPick={(option) => {
+                        const match = knownByName.get(normalizeText(option.value));
+                        if (match) updateRow(row.key, { aisle: match.aisle, ...(match.unit ? { unit: match.unit } : {}) });
+                      }}
+                      onKeyDown={(event) => nextRowOnEnter(event, index)}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Retirer l’ingrédient ${position}`}
+                      onClick={() => removeRow(row.key)}
+                    >
+                      <Trash2 aria-hidden="true" />
+                    </Button>
+                    <div className="col-span-2 grid grid-cols-[4.5rem_minmax(0,1fr)_minmax(0,1.3fr)] gap-2 sm:grid-cols-[6rem_minmax(0,1fr)_minmax(0,1.3fr)]">
+                      <Input
+                        name="ingredient_quantity"
+                        aria-label={`Quantité de l’ingrédient ${position}`}
+                        inputMode="decimal"
+                        value={row.quantity}
+                        onChange={(event) => updateRow(row.key, { quantity: event.target.value })}
+                        onKeyDown={(event) => nextRowOnEnter(event, index)}
+                        placeholder="250"
+                        className="px-3 text-center"
+                      />
+                      <NativeSelect
+                        name="ingredient_unit"
+                        aria-label={`Unité de l’ingrédient ${position}`}
+                        value={row.unit}
+                        onChange={(event) => updateRow(row.key, { unit: event.target.value as IngredientUnit })}
+                      >
+                        {UNITS.map((unit) => (
+                          <option key={unit.value} value={unit.value}>
+                            {unit.label}
+                          </option>
+                        ))}
+                      </NativeSelect>
+                      <NativeSelect
+                        name="ingredient_aisle"
+                        aria-label={`Rayon de l’ingrédient ${position}`}
+                        value={row.aisle}
+                        onChange={(event) => updateRow(row.key, { aisle: event.target.value as GroceryAisle })}
+                      >
+                        {AISLES.map((aisle) => (
+                          <option key={aisle.value} value={aisle.value}>
+                            {aisle.label}
+                          </option>
+                        ))}
+                      </NativeSelect>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            {errors.ingredients && <FieldError>{errors.ingredients}</FieldError>}
+            <Button type="button" variant="secondary" className="self-start" onClick={addRow}>
+              <Plus aria-hidden="true" />
+              Ajouter un ingrédient
+            </Button>
+          </Card>
+
+          <Card className="gap-4 p-5 sm:p-6">
+            <SectionHeader id={`${id}-steps-title`} title="Étapes" />
+            <p id={`${id}-steps-help`} className="-mt-2 text-[0.9375rem] text-muted-foreground">
+              Une étape par ligne : on les numérote pour toi.
+            </p>
+            <Textarea
+              name="steps"
+              value={steps}
+              onChange={(event) => setSteps(event.target.value)}
+              placeholder={"Fais revenir l’oignon dans l’huile.\nAjoute la viande et laisse dorer."}
+              className="min-h-40"
+              aria-labelledby={`${id}-steps-title`}
+              aria-describedby={`${id}-steps-help`}
+            />
+          </Card>
+
+        </>
+      )}
 
       <Card className="gap-3 p-5 sm:p-6">
         <SectionHeader title="Qui n’en mange pas ?" />

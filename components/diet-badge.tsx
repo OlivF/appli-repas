@@ -1,6 +1,7 @@
 import { Egg, Leaf, MilkOff, Smile, Utensils, WheatOff, type LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DIETS, type Appetite, type Diet } from "@/lib/members";
+import { courseOf, isExtra, type Course } from "@/lib/recipes";
 
 type Variant = "plum" | "sage" | "mustard" | "oat" | "tomato";
 
@@ -54,5 +55,17 @@ export function MemberBadges({ diets, appetite }: { diets: Diet[]; appetite: App
       ))}
       <AppetiteBadge appetite={appetite} />
     </div>
+  );
+}
+
+// La sorte d'une recette qui n'est pas un plat : « Dessert », « Fromage »… Rien pour un plat.
+export function CourseBadge({ course }: { course: Course }) {
+  if (!isExtra(course)) return null;
+  const { label, icon: Icon } = courseOf(course);
+  return (
+    <Badge variant="outline">
+      <Icon aria-hidden="true" />
+      {label}
+    </Badge>
   );
 }
