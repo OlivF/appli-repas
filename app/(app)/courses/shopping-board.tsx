@@ -8,10 +8,10 @@ import { FieldError } from "@/components/field";
 import { ShoppingAddBar } from "@/components/shopping-add-bar";
 import { ShoppingAisle, ShoppingFold } from "@/components/shopping-aisle";
 import { ShoppingItemSheet } from "@/components/shopping-item-sheet";
+import { ShoppingProgress } from "@/components/shopping-progress";
 import { HomeItemRow, PantryItemRow, ShoppingItemRow } from "@/components/shopping-item-row";
 import { StoreGroceriesCard, StoreGroceriesSheet, type StoredEntry, type StoreRow } from "@/components/store-groceries";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { useStoredFlag } from "@/components/use-stored-flag";
 import { defaultBestBefore } from "@/lib/fridge";
 import type { KnownIngredient } from "@/lib/recipes-data";
@@ -25,7 +25,7 @@ import {
   shoppingSections,
   usageLabel,
 } from "@/lib/shopping";
-import type { ListIngredient, ListItem, Outdated } from "@/lib/shopping-data";
+import type { ListIngredient, ListItem, LiveList, Outdated } from "@/lib/shopping-data";
 import {
   fridgeNote,
   fridgeSourceLine,
@@ -48,13 +48,15 @@ import {
   updateListAction,
   type DoneResult,
 } from "./actions";
+import { useLiveShoppingList } from "./use-live-shopping-list";
 
 type ItemChange = Partial<Pick<ListItem, "checked" | "removed" | "needed" | "quantity_changed">>;
 
 // La liste de la semaine, telle qu'on la suit au drive : chaque geste s'affiche tout de suite et
 // s'enregistre ; s'il ne s'enregistre pas, l'article revient comme avant et un message le dit.
 // Le frigo : ce qu'il donne à la liste (« + 200 g au frigo », « Déjà à la maison »), et, les
-// courses faites, « Range-les au frigo ».
+// courses faites, « Range-les au frigo ». En direct : ce que l'autre compte coche au drive se
+// coche ici (useLiveShoppingList) ; « En direct » le dit quand le foyer a plusieurs comptes.
 export function ShoppingBoard({
   today,
   weekStart,
@@ -63,10 +65,11 @@ export function ShoppingBoard({
   outdated: initialOutdated,
   initialItems,
   known,
-  ingredients = {},
-  fridgeDates = {},
+  ingredients: initialIngredients = {},
+  fridgeDates: initialFridgeDates = {},
   storedAt: initialStoredAt = null,
-  settledAt = null,
+  settledAt: initialSettledAt = null,
+  shared = false,
 }: {
   today: string;
   weekStart: string;
@@ -79,10 +82,21 @@ export function ShoppingBoard({
   fridgeDates?: Record<string, string>;
   storedAt?: string | null;
   settledAt?: string | null;
+  // Plusieurs comptes dans le foyer.
+  shared?: boolean;
 }) {
-  const [items, setItems] = useState(initialItems);
   const [outdated, setOutdated] = useState(initialOutdated);
   const [storedAt, setStoredAt] = useState(initialStoredAt);
+  const [settledAt, setSettledAt] = useState(initialSettledAt);
+  const [ingredients, setIngredients] = useState(initialIngredients);
+  const [fridgeDates, setFridgeDates] = useState(initialFridgeDates);
+  const { items, setItems, saving, status } = useLiveShoppingList(listId, initialItems, (list: LiveList) => {
+    setOutdated(list.outdated);
+    setStoredAt(list.storedAt);
+    setSettledAt(list.settledAt);
+    setIngredients(list.ingredients);
+    setFridgeDates(list.fridgeDates);
+  });
   const [storing, setStoring] = useState(false);
   const [later, setLater] = useStoredFlag("session", `popote:ranger-plus-tard:${listId}`, false);
   const [updating, setUpdating] = useState(false);
@@ -123,14 +137,14 @@ export function ShoppingBoard({
   );
 
   // Optimiste : l'article change tout de suite ; en cas d'échec, il revient (s'il n'a pas changé
-  // entre-temps) et le message s'affiche.
+  // entre-temps) et le message s'affiche. Pendant l'enregistrement, le direct ne le touche pas.
   async function change(id: string, next: ItemChange, action: () => Promise<DoneResult>) {
     const before = items.find((item) => item.id === id);
     if (!before) return;
     const previous = Object.fromEntries(Object.keys(next).map((key) => [key, before[key as keyof ItemChange]])) as ItemChange;
     setError(null);
     setItems((current) => current.map((item) => (item.id === id ? { ...item, ...next } : item)));
-    const result = await action();
+    const result = await saving([id], action);
     if ("error" in result) {
       setItems((current) =>
         current.map((item) =>
@@ -163,7 +177,10 @@ export function ShoppingBoard({
     setConfirming(false);
     setError(null);
     setItems((current) => current.map((item) => ({ ...item, checked: false })));
-    const result = await uncheckAllAction(listId);
+    const result = await saving(
+      before.map((item) => item.id),
+      () => uncheckAllAction(listId),
+    );
     if ("error" in result) {
       setItems(before);
       setError(result.error);
@@ -173,14 +190,15 @@ export function ShoppingBoard({
   async function add(text: string, quantity: string) {
     const result = await addItemAction(listId, text, quantity);
     if ("error" in result) return result.error;
-    setItems((current) => [...current, result.item]);
+    // Déjà là si la liste a été relue entre-temps (le direct a vu l'ajout).
+    setItems((current) => (current.some((item) => item.id === result.item.id) ? current : [...current, result.item]));
     return null;
   }
 
   async function edit(text: string, quantity: string) {
     if (!openItem) return null;
     const id = openItem.id;
-    const result = await editItemAction(id, text, quantity);
+    const result = await saving([id], () => editItemAction(id, text, quantity));
     if ("error" in result) return result.error;
     const parsed = parseManualItem(text, quantity);
     if (parsed.ok) {
@@ -195,7 +213,7 @@ export function ShoppingBoard({
     setOpenId(null);
     setError(null);
     setItems((current) => current.filter((entry) => entry.id !== item.id));
-    const result = await deleteItemAction(item.id);
+    const result = await saving([item.id], () => deleteItemAction(item.id));
     if ("error" in result) {
       setItems((current) => [...current, item]);
       setError(result.error);
@@ -258,15 +276,7 @@ export function ShoppingBoard({
       )}
 
       <div className="mt-6">
-        <p className="font-heading text-[1.625rem] leading-tight tabular-nums">
-          {`${progress.done} sur ${progress.total}`}
-          <span className="sr-only"> articles pris</span>
-        </p>
-        <Progress
-          value={progress.total === 0 ? 0 : (progress.done / progress.total) * 100}
-          aria-label="Articles pris"
-          className="mt-2 h-1.5"
-        />
+        <ShoppingProgress done={progress.done} total={progress.total} live={shared ? status : null} />
       </div>
 
       {outdated && (

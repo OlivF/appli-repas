@@ -45,11 +45,11 @@ import { AisleIcon } from "@/components/aisle-icon";
 import { ShoppingAddBar } from "@/components/shopping-add-bar";
 import { ShoppingAisle, ShoppingFold } from "@/components/shopping-aisle";
 import { ShoppingItemSheet } from "@/components/shopping-item-sheet";
+import { ShoppingProgress } from "@/components/shopping-progress";
 import { PantryItemRow, ShoppingItemRow, type RowItem } from "@/components/shopping-item-row";
 import { SwitchField } from "@/components/switch-field";
 import { StepProgress } from "@/components/step-progress";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import {
@@ -471,10 +471,7 @@ export function ShoppingDemo() {
 
   return (
     <div className="max-w-md space-y-4">
-      <div>
-        <p className="font-heading text-[1.625rem] leading-tight tabular-nums">{`${done} sur 34`}</p>
-        <Progress value={(done / 34) * 100} aria-label="Articles pris" className="mt-2 h-1.5" />
-      </div>
+      <ShoppingProgress done={done} total={34} />
 
       <ShoppingAisle aisle="cremerie" label="Crèmerie" remaining={items.filter((item) => !item.checked).length}>
         {sorted.map((item) => (

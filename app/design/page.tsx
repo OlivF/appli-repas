@@ -25,6 +25,7 @@ import { BatchBadge, RecipeCard } from "@/components/recipe-card";
 import { RecipeChip, RecipeChipRow } from "@/components/recipe-chip";
 import { RecipeSteps } from "@/components/recipe-steps";
 import { ServingsIngredients } from "@/components/servings-ingredients";
+import { ShoppingProgress } from "@/components/shopping-progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -484,6 +485,21 @@ export default function DesignPage() {
           </p>
           <div className="mt-4">
             <WhoAmIDemo members={FAMILY.filter((member) => member.id !== OLIVIER.id)} />
+          </div>
+
+          <h3 className="mt-10 text-xl">La liste de courses en direct</h3>
+          <p className="mt-1 max-w-[60ch] text-muted-foreground">
+            Au drive, l’un coche, l’autre le voit aussitôt, avec la même petite animation. À droite du compteur, quand
+            le foyer a plusieurs comptes : « En direct », ou « Hors ligne » si la connexion tombe ; la liste se
+            rattrape toute seule au retour. Jamais de message quand l’autre coche.
+          </p>
+          <div className="mt-4 grid max-w-3xl gap-5 sm:grid-cols-2">
+            <Card className="p-5">
+              <ShoppingProgress done={12} total={30} live="live" />
+            </Card>
+            <Card className="p-5">
+              <ShoppingProgress done={12} total={30} live="offline" />
+            </Card>
           </div>
 
           <h3 className="mt-10 text-xl">Le lien d’invitation</h3>

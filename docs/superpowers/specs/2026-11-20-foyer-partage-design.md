@@ -210,7 +210,33 @@ Le prompt fait foi ; s'y ajoutent *(choix)* : `e2e/realtime-rls.spec.ts` (deux c
 différents abonnés au même `list_id` ; on attend l'événement chez le propriétaire, puis 2 s chez
 l'intrus) ; dans `e2e/foyer-partage.spec.ts`, « Olivier » est un compte neuf avec son foyer
 « Famille F » (dans le seed, Marie-Laure est déjà le « C'est moi » de `marie-laure@popote.test`) ;
-si `invite@popote.test` a gardé un foyer d'un passage raté, l'e2e le lui fait quitter d'abord.
+si `invite@popote.test` a gardé un foyer d'un passage raté, l'e2e le garde : « Tu as déjà le foyer… » le lui fait quitter en rejoignant.
+
+Questions du 2026-11-20 (C) :
+
+| Sujet | Choix |
+| --- | --- |
+| Le navigateur des e2e ne joignait pas Supabase (`127.0.0.1:54321` fermé dans le réseau de `web`) | Service `e2e` en `network_mode: host`, comme le navigateur du poste |
+| Quand afficher « En direct » / « Hors ligne » | Seulement si le foyer a plusieurs comptes (la liste est en direct dans tous les cas) |
+| Où | À droite du compteur « 12 sur 30 » |
+
+Choix faits en codant (C) :
+
+- Supabase ne livre pas les suppressions à un abonnement filtré (`list_id=eq.…`), et sans filtre il
+  les envoie à tous les comptes abonnés à la table, sans RLS (l'id seul). Migration 0014 : un
+  trigger « touche » la liste (`updated_at`) quand ses articles sont supprimés ; ce changement-là
+  passe par la RLS et fait relire la liste. Aucun abonnement aux suppressions.
+- `applyLiveChange` applique aussi le nom et la quantité d'un article ajouté à la main (renommé sur
+  l'autre téléphone) ; un ajout déjà présent ici (ajouté ici) ou une suppression inconnue ne
+  relisent rien ; une modification d'un article inconnu ici relit tout.
+- `loadListItemsAction` rend aussi l'état de la liste (à jour ou non, rangée, soldée, unités et
+  dates du frigo) : les bandeaux suivent ce que l'autre a fait. Les changements reçus pendant une
+  relecture sont réappliqués après elle ; un article dont un geste est en cours ici garde sa version.
+- Le hook attend la session (`getSession`) et passe le jeton au temps réel avant de s'abonner (sinon
+  l'abonnement part en anonyme, refusé, réessayé 5 s plus tard) ; `postgres_changes_options.wait`
+  : « En direct » quand les changements arrivent vraiment. Un nom de canal neuf à chaque abonnement.
+- Le compteur et sa barre deviennent `ShoppingProgress` (liste de courses et /design).
+- `household_users` compté par `loadShopping` (`shared`).
 
 ## Laissé à l'implémentation
 
