@@ -6,6 +6,7 @@ import type { FridgeItem } from "@/lib/fridge";
 import { FRIDGE_COLUMNS, toFridgeItem } from "@/lib/fridge-data";
 import { parseFridgeInput } from "@/lib/fridge-items";
 import { createClient } from "@/lib/supabase/server";
+import { addDays, todayInParis } from "@/lib/week";
 
 // Chaque geste du frigo est enregistré aussitôt ; l'écran l'a déjà affiché (optimiste) et revient
 // en arrière si l'action rend une erreur. La RLS garde chaque foyer chez lui. Après chaque
@@ -125,4 +126,27 @@ export async function freeFridgeItemAction(itemId: string): Promise<DoneResult> 
   if (error || data.length !== 1) return { error: SAVE_ERROR };
   refresh();
   return { ok: true };
+}
+
+// Un reste se garde trois jours.
+const LEFTOVER_DAYS = 3;
+const MAX_PARTS = 50;
+
+// « Il en reste » sur un plat : « Reste : Lasagnes », N parts, libre, à finir dans 3 jours.
+export async function addLeftoverAction(recipeId: string, parts: number): Promise<DoneResult> {
+  if (!UUID.test(recipeId) || !Number.isInteger(parts) || parts < 1 || parts > MAX_PARTS) return { error: SAVE_ERROR };
+  const supabase = await createClient();
+  const household = await householdId(supabase);
+  if (!household) return { error: SAVE_ERROR };
+  const { data: recipe } = await supabase.from("recipes").select("title").eq("id", recipeId).maybeSingle();
+  if (!recipe) return { error: SAVE_ERROR };
+  const { error } = await supabase.from("fridge_items").insert({
+    household_id: household,
+    label: `Reste : ${recipe.title}`.slice(0, 80),
+    quantity: parts,
+    best_before: addDays(todayInParis(), LEFTOVER_DAYS),
+    origin: "leftover",
+    recipe_id: recipeId,
+  });
+  return error ? { error: SAVE_ERROR } : { ok: true };
 }

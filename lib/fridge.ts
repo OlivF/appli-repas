@@ -69,20 +69,24 @@ export function defaultBestBefore(ingredient: { shelf_life_days: number | null }
 
 // Pour la liste `listId` : par ingrédient, les articles libres moins ce que réservent les autres
 // listes pas encore soldées (jamais négatif) ; à part, les ingrédients libres sans quantité.
-// `reservations` ne doit contenir que des listes pas soldées.
+// `reservations` ne doit contenir que des listes pas soldées. `weekStart` (le lundi de la liste) :
+// ce qui périme avant ne compte pas (un poulet périmé ne remplace pas celui du menu).
 export function availableStock({
   items,
   reservations,
   listId,
+  weekStart,
 }: {
   items: readonly FridgeItem[];
   reservations: readonly Reservation[];
   listId: string | null;
+  weekStart?: string;
 }): FridgeStock {
   const totals = new Map<string, number>();
   const maybe = new Set<string>();
   for (const item of items) {
     if (item.reserved_list_id !== null || item.ingredient_id === null) continue;
+    if (weekStart && item.best_before !== null && item.best_before < weekStart) continue;
     if (item.quantity === null) maybe.add(item.ingredient_id);
     else totals.set(item.ingredient_id, (totals.get(item.ingredient_id) ?? 0) + item.quantity);
   }

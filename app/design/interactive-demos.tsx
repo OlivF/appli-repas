@@ -18,6 +18,9 @@ import { FridgeAddField } from "@/components/fridge-add-field";
 import { FridgeItemRow, type FridgeRowItem } from "@/components/fridge-item-row";
 import { FridgeItemSheet, type FridgeSheetTarget } from "@/components/fridge-item-sheet";
 import { FridgeGroup, FridgeSection } from "@/components/fridge-section";
+import { CookedControls } from "@/components/cooked-controls";
+import { FridgeStrip } from "@/components/fridge-strip";
+import { StoreGroceriesCard } from "@/components/store-groceries";
 import { AccountAvatar } from "@/components/layout/account-menu";
 import { MemberAvatar } from "@/components/member-avatar";
 import type { CardMember } from "@/components/member-card";
@@ -599,6 +602,54 @@ export function FridgeDemo() {
           return null;
         }}
         onFinish={() => setTarget(null)}
+      />
+    </div>
+  );
+}
+
+// Le frigo ailleurs : la bande de /semaine, la carte « Range-les au frigo » des courses, une ligne
+// en partie au frigo, et, dans le panneau d'un plat du jour, « Pas cuisiné » et « Il en reste ».
+export function FridgeLinksDemo({ family }: { family: CardMember[] }) {
+  const [checked, setChecked] = useState(false);
+  const [skipped, setSkipped] = useState(true);
+  const [stored, setStored] = useState(false);
+  return (
+    <div className="max-w-md space-y-4">
+      <FridgeStrip text="À finir : blancs de poulet, crème fraîche épaisse, courgettes" />
+      {!stored && <StoreGroceriesCard onStore={() => setStored(true)} onLater={() => setStored(true)} />}
+      <ShoppingAisle aisle="cremerie" label="Crèmerie" remaining={checked ? 1 : 2}>
+        <ShoppingItemRow
+          item={{
+            id: "creme",
+            label: "Crème fraîche épaisse",
+            quantity: "150 g",
+            checked,
+            quantityChanged: false,
+            note: "+ 200 g au frigo",
+          }}
+          onToggle={() => setChecked((value) => !value)}
+          onMore={() => {}}
+        />
+        <ShoppingItemRow
+          item={{ id: "lait", label: "Lait", quantity: "1,8 l", checked: false, quantityChanged: false, note: "Tu en as peut-être au frigo" }}
+          onToggle={() => {}}
+          onMore={() => {}}
+        />
+      </ShoppingAisle>
+      <PlannedMealCard
+        recipe={{ title: "Lasagnes à la bolognaise", minutes: 75, photo_url: null, mealType: "soir" }}
+        eaters={family}
+        household={family}
+        locked={false}
+        skipped={skipped}
+      />
+      <CookedControls
+        skipped={skipped}
+        onSkippedChange={setSkipped}
+        onLeftover={async () => {
+          toast("Rangé au frigo");
+          return null;
+        }}
       />
     </div>
   );

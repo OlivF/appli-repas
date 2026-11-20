@@ -54,6 +54,15 @@ export async function toggleLockAction(weekStart: string, cardId: string, locked
   return error ? { error: SAVE_ERROR } : { ok: true };
 }
 
+// « Pas cuisiné » : au bilan de la semaine, ses ingrédients ne sont pas retirés du frigo.
+export async function setSkippedAction(weekStart: string, cardId: string, skipped: boolean): Promise<DoneResult> {
+  if (!isWeekStart(weekStart)) return { error: SAVE_ERROR };
+  const { supabase, cards } = await loadWeek(weekStart);
+  if (!cards.some((card) => card.id === cardId)) return { error: SAVE_ERROR };
+  const { error } = await supabase.from("planned_meals").update({ skipped }).eq("id", cardId);
+  return error ? { error: SAVE_ERROR } : { ok: true };
+}
+
 // Échange les recettes de deux cartes ; chacune doit aller au repas de l'autre.
 export async function swapCardsAction(weekStart: string, firstId: string, secondId: string): Promise<DoneResult> {
   if (!isWeekStart(weekStart)) return { error: SAVE_ERROR };

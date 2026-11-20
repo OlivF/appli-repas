@@ -98,6 +98,21 @@ describe("availableStock", () => {
     expect([...result.maybe]).toEqual(["creme"]);
   });
 
+  it("ignore ce qui périme avant le lundi de la semaine de la liste", () => {
+    const items = [
+      fridge("poulet", { ingredient_id: "poulet", quantity: 300, unit: "g", best_before: "2026-11-18" }),
+      fridge("poulet-2", { ingredient_id: "poulet", quantity: 200, unit: "g", best_before: "2026-11-23" }),
+      creme("fond", null, { best_before: "2026-11-21" }),
+      oeufs("o1", 6),
+    ];
+    const next = availableStock({ items, reservations: [], listId: L, weekStart: "2026-11-23" });
+    expect(next.stock).toEqual({ poulet: 200, oeufs: 6 });
+    expect(next.maybe.size).toBe(0);
+    // La semaine en cours : ce qui périme aujourd'hui compte encore.
+    const current = availableStock({ items, reservations: [], listId: L0, weekStart: "2026-11-16" });
+    expect(current.stock).toEqual({ poulet: 500, oeufs: 6 });
+  });
+
   it("un article réservé n'est ni du stock ni un « peut-être »", () => {
     const result = availableStock({ items: [oeufs("o1", null, { reserved_list_id: L0 })], reservations: [], listId: L });
     expect(result.maybe.size).toBe(0);

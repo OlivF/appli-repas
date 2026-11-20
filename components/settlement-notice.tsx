@@ -1,48 +1,14 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import { CircleCheck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-const STORAGE_PREFIX = "popote:bilan-ferme:";
-
-// La fermeture est retenue sur ce téléphone, par liste (et pour la visite, sans stockage).
-const listeners = new Set<() => void>();
-const closedThisVisit = new Set<string>();
-function subscribe(onChange: () => void) {
-  listeners.add(onChange);
-  window.addEventListener("storage", onChange);
-  return () => {
-    listeners.delete(onChange);
-    window.removeEventListener("storage", onChange);
-  };
-}
-
-function isClosed(listId: string) {
-  if (closedThisVisit.has(listId)) return true;
-  try {
-    return window.localStorage.getItem(STORAGE_PREFIX + listId) === "1";
-  } catch {
-    return false;
-  }
-}
+import { useStoredFlag } from "@/components/use-stored-flag";
 
 // Le bilan d'une semaine finie : « Semaine du 16 nov. terminée : on a retiré ce qui a été
-// cuisiné. Il te reste 6 articles. » Il reste là tant qu'on ne l'a pas fermé.
+// cuisiné. Il te reste 6 articles. » Il reste là tant qu'on ne l'a pas fermé (sur ce téléphone).
 export function SettlementNotice({ listId, text }: { listId: string; text: string }) {
-  // Côté serveur, fermé : rien ne clignote si on l'avait déjà fermé.
-  const closed = useSyncExternalStore(subscribe, () => isClosed(listId), () => true);
+  const [closed, close] = useStoredFlag("local", `popote:bilan-ferme:${listId}`, true);
   if (closed) return null;
-
-  function close() {
-    closedThisVisit.add(listId);
-    try {
-      window.localStorage.setItem(STORAGE_PREFIX + listId, "1");
-    } catch {
-      // Navigation privée : l'encart se ferme pour cette visite seulement.
-    }
-    listeners.forEach((listener) => listener());
-  }
 
   return (
     <div role="status" className="flex items-start gap-3 rounded-2xl bg-sage-soft py-2 pr-1 pl-4 text-sage-deep">

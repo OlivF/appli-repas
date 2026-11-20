@@ -401,6 +401,9 @@ isOneToOne: false
 "set_planned_meal_eaters":
 { Args: { "eater_ids": (string)[],"target_card_id": string }; Returns: undefined
                            },
+"store_groceries":
+{ Args: { "entries": Json,"target_list_id": string }; Returns: number
+                           },
 "swap_planned_meals":
 { Args: { "first_id": string,"second_id": string }; Returns: undefined
                            },

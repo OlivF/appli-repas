@@ -38,6 +38,7 @@ import {
   DuoDemo,
   FavoriteDemo,
   FridgeDemo,
+  FridgeLinksDemo,
   GridCardsDemo,
   IngredientRowDemo,
   LibraryDemo,
@@ -445,6 +446,16 @@ export default function DesignPage() {
           </p>
           <div className="mt-5">
             <FridgeDemo />
+          </div>
+
+          <h3 className="mt-10 text-xl">Dans la semaine et les courses</h3>
+          <p className="mt-1 max-w-[60ch] text-muted-foreground">
+            En haut de la semaine, ce qu’il faut finir. Dans la liste, ce que le frigo donne déjà ; les
+            courses faites, on les range. Sur un plat du jour : « Pas cuisiné » (la carte grisée) et
+            « Il en reste ».
+          </p>
+          <div className="mt-4">
+            <FridgeLinksDemo family={FAMILY} />
           </div>
         </Section>
 

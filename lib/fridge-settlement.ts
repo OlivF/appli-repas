@@ -1,6 +1,6 @@
 import { settleWeek, type FridgeItem } from "@/lib/fridge";
+import { loadMenuRecipes } from "@/lib/menu-recipes";
 import type { PortionMember } from "@/lib/portions";
-import { loadMenuRecipes } from "@/lib/shopping-data";
 import { weekNeeds, type ShoppingMeal } from "@/lib/shopping";
 import type { createClient } from "@/lib/supabase/server";
 import { addDays } from "@/lib/week";
@@ -12,12 +12,7 @@ type Client = Awaited<ReturnType<typeof createClient>>;
 // qui restait réservé redevient libre (apply_fridge_settlement, une seule fois même si deux
 // téléphones ouvrent l'appli en même temps). Appelé au chargement de /frigo, /courses et
 // /semaine ; silencieux : une erreur n'empêche pas la page de s'afficher.
-export async function settleFinishedWeeks(
-  supabase: Client,
-  householdId: string,
-  members: readonly PortionMember[],
-  today: string,
-): Promise<number> {
+export async function settleFinishedWeeks(supabase: Client, householdId: string, today: string): Promise<number> {
   try {
     const { data: lists, error } = await supabase
       .from("shopping_lists")
@@ -33,6 +28,13 @@ export async function settleFinishedWeeks(
       })
       .sort((a, b) => (a.weekStart < b.weekStart ? -1 : 1));
     if (finished.length === 0) return 0;
+
+    // Les portions de chacun : de quoi mettre les plats à l'échelle comme la liste de courses.
+    const { data: members, error: membersError } = await supabase
+      .from("members")
+      .select("id, birth_year, appetite")
+      .eq("household_id", householdId);
+    if (membersError) throw new Error(membersError.message);
 
     let settled = 0;
     for (const week of finished) {

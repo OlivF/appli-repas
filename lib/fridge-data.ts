@@ -2,10 +2,9 @@ import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { loadHousehold } from "@/lib/data";
-import { SOON_DAYS, fridgeForMenu, type FridgeItem, type MenuFridgeEntry } from "@/lib/fridge";
+import { SOON_DAYS, fridgeForMenu, type FridgeItem, type MenuFridgeEntry, type Reservation } from "@/lib/fridge";
 import { isUrgent, type FridgeIngredient } from "@/lib/fridge-items";
 import { settleFinishedWeeks } from "@/lib/fridge-settlement";
-import type { PortionMember } from "@/lib/portions";
 import type { GroceryAisle } from "@/lib/recipes";
 import type { Database } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
@@ -80,19 +79,24 @@ async function recentSettlement(supabase: Client, householdId: string, today: st
   return data && plan ? { listId: data.id, weekStart: plan.week_start } : null;
 }
 
-// Foyer terminé, avec ce qu'il faut pour les portions (le bilan met les plats à l'échelle).
-export async function loadFridgeHousehold() {
-  const { supabase, household, members, step } = await loadHousehold();
-  if (step !== null || !household) redirect(step ?? "/bienvenue");
-  const portionMembers: PortionMember[] = members.map(({ id, birth_year, appetite }) => ({ id, birth_year, appetite }));
-  return { supabase, household, members: portionMembers };
+// Ce que les listes pas encore soldées du foyer ont pris au frigo (shopping_items.from_fridge).
+export async function openReservations(supabase: Client, householdId: string): Promise<Reservation[]> {
+  const { data, error } = await supabase
+    .from("shopping_items")
+    .select("list_id, ingredient_id, from_fridge, shopping_lists!inner(settled_at)")
+    .eq("household_id", householdId)
+    .gt("from_fridge", 0)
+    .is("shopping_lists.settled_at", null);
+  if (error) throw new Error(error.message);
+  return data.map(({ list_id, ingredient_id, from_fridge }) => ({ list_id, ingredient_id, from_fridge: Number(from_fridge) }));
 }
 
 // Tout ce que l'écran /frigo affiche. D'abord le bilan des semaines finies.
 export async function loadFridge() {
-  const { supabase, household, members } = await loadFridgeHousehold();
+  const { supabase, household, step } = await loadHousehold();
+  if (step !== null || !household) redirect(step ?? "/bienvenue");
   const today = todayInParis();
-  await settleFinishedWeeks(supabase, household.id, members, today);
+  await settleFinishedWeeks(supabase, household.id, today);
 
   const [items, { ingredients, aisles }, settlement] = await Promise.all([
     fridgeItems(supabase, household.id),
@@ -109,27 +113,36 @@ export async function loadFridge() {
   };
 }
 
-// La pastille de l'onglet : le nombre d'articles « À finir vite ». Une fois par requête (barre du
-// bas et header) ; 0 sans compte, sans foyer, ou si la lecture échoue.
-export const fridgeUrgentCount = cache(async (): Promise<number> => {
+// Les articles « À finir vite » (leurs noms, date la plus proche d'abord), une fois par requête :
+// la pastille de l'onglet (barre du bas et header) et la bande de /semaine. Rien sans compte,
+// sans foyer, ou si la lecture échoue.
+export const fridgeUrgentLabels = cache(async (): Promise<string[]> => {
   await connection();
   try {
     const supabase = await createClient();
     const { data: household } = await supabase.from("households").select("id").order("created_at").limit(1).maybeSingle();
-    if (!household) return 0;
+    if (!household) return [];
     const today = todayInParis();
     const { data, error } = await supabase
       .from("fridge_items")
-      .select("best_before, reserved_list_id")
+      .select("label, best_before, reserved_list_id")
       .eq("household_id", household.id)
-      .lte("best_before", addDays(today, SOON_DAYS));
-    if (error) return 0;
+      .lte("best_before", addDays(today, SOON_DAYS))
+      .order("best_before")
+      .order("label");
+    if (error) return [];
     const weeks = await listWeeks(supabase, data.flatMap((item) => (item.reserved_list_id ? [item.reserved_list_id] : [])));
-    return data.filter((item) => isUrgent(item, item.reserved_list_id ? (weeks[item.reserved_list_id] ?? null) : null, today)).length;
+    return data
+      .filter((item) => isUrgent(item, item.reserved_list_id ? (weeks[item.reserved_list_id] ?? null) : null, today))
+      .map((item) => item.label);
   } catch {
-    return 0;
+    return [];
   }
 });
+
+export async function fridgeUrgentCount(): Promise<number> {
+  return (await fridgeUrgentLabels()).length;
+}
 
 // Le frigo du foyer pour la génération du menu par IA : la forme stable de fridgeForMenu.
 export async function loadFridgeForMenu(

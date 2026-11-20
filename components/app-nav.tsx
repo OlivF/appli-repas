@@ -46,9 +46,10 @@ function FridgeBadge({ count, className }: { count: number; className?: string }
   );
 }
 
-function badgeLabel(href: string, count: number) {
-  if (href !== FRIDGE_HREF || count <= 0) return null;
-  return <span className="sr-only">{`, ${count} ${count > 1 ? "articles" : "article"} à finir vite`}</span>;
+// Le nom lu de l'onglet Frigo quand il a une pastille : « Frigo, 2 articles à finir vite ».
+function tabLabel(href: string, label: string, count: number) {
+  if (href !== FRIDGE_HREF || count <= 0) return undefined;
+  return `${label}, ${count} ${count > 1 ? "articles" : "article"} à finir vite`;
 }
 
 // La barre d'onglets de l'appli, en bas sur téléphone ; sur ordinateur, la navigation est dans
@@ -111,6 +112,7 @@ function BottomNavBar({ active, demo = false, onSelect, fridgeCount = 0 }: Omit<
               <Link
                 href={href}
                 aria-current={on ? "page" : undefined}
+                aria-label={tabLabel(href, label, fridgeCount)}
                 onClick={onSelect && ((event) => (event.preventDefault(), onSelect(href)))}
                 className={cn(
                   "press flex min-h-15 flex-col items-center justify-center gap-1 rounded-3xl text-[0.8125rem] font-semibold",
@@ -129,7 +131,6 @@ function BottomNavBar({ active, demo = false, onSelect, fridgeCount = 0 }: Omit<
                   {href === FRIDGE_HREF && <FridgeBadge count={fridgeCount} className="absolute -top-1 right-0.5" />}
                 </span>
                 {label}
-                {badgeLabel(href, fridgeCount)}
               </Link>
             </li>
           );
@@ -152,6 +153,7 @@ function TopNavBar({ active, demo = false, onSelect, fridgeCount = 0 }: Omit<Nav
               <Link
                 href={href}
                 aria-current={on ? "page" : undefined}
+                aria-label={tabLabel(href, label, fridgeCount)}
                 onClick={onSelect && ((event) => (event.preventDefault(), onSelect(href)))}
                 className={cn(
                   "press relative flex min-h-11 items-center gap-2 rounded-full px-4 text-base font-semibold",
@@ -168,7 +170,6 @@ function TopNavBar({ active, demo = false, onSelect, fridgeCount = 0 }: Omit<Nav
                 <Icon aria-hidden="true" className="relative size-5" strokeWidth={on ? 2.4 : 2} />
                 <span className="relative">{label}</span>
                 {href === FRIDGE_HREF && <FridgeBadge count={fridgeCount} className="relative" />}
-                {badgeLabel(href, fridgeCount)}
               </Link>
             </li>
           );

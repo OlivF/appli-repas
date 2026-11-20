@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentProps } from "react";
-import { Clock, Lock, LockOpen, Shuffle, TriangleAlert } from "lucide-react";
+import { CircleSlash, Clock, Lock, LockOpen, Shuffle, TriangleAlert } from "lucide-react";
 import { cn } from "cn";
 import { MEAL_TINT, mealType } from "@/components/meal-label";
 import { MemberAvatars, type AvatarMember } from "@/components/member-avatar";
@@ -42,6 +42,7 @@ export function PlannedMealCard({
   busy = false,
   dragState,
   showMeal = false,
+  skipped = false,
   className,
   ...frame
 }: {
@@ -62,6 +63,8 @@ export function PlannedMealCard({
   dragState?: CardDragState;
   // Dans la grille : rappelle le repas sur la photo (le pique-nique partage la ligne du midi).
   showMeal?: boolean;
+  // « Pas cuisiné » : la carte passe en grisé, avec la mention.
+  skipped?: boolean;
   className?: string;
 } & Omit<ComponentProps<"div">, "children">) {
   const out = eaters.filter((eater) => eater.out);
@@ -84,6 +87,7 @@ export function PlannedMealCard({
         "relative block shrink-0 overflow-hidden",
         MEAL_TINT[recipe.mealType],
         column ? "aspect-[16/10] w-full" : "size-18 rounded-xl",
+        skipped && "opacity-50 grayscale",
       )}
     >
       <RecipeCover
@@ -110,10 +114,17 @@ export function PlannedMealCard({
       >
         {recipe.title}
       </span>
-      <span className="inline-flex items-center gap-1.5 text-[0.875rem] text-muted-foreground">
-        <Clock aria-hidden="true" className="size-3.5" />
-        {formatDuration(recipe.minutes)}
-      </span>
+      {skipped ? (
+        <span className="inline-flex items-center gap-1.5 text-[0.875rem] font-semibold text-muted-foreground">
+          <CircleSlash aria-hidden="true" className="size-3.5" />
+          Pas cuisiné
+        </span>
+      ) : (
+        <span className="inline-flex items-center gap-1.5 text-[0.875rem] text-muted-foreground">
+          <Clock aria-hidden="true" className="size-3.5" />
+          {formatDuration(recipe.minutes)}
+        </span>
+      )}
     </>
   );
   const eatersLine = (
@@ -153,6 +164,7 @@ export function PlannedMealCard({
         "relative touch-manipulation rounded-2xl border bg-card shadow-soft transition-[opacity,box-shadow,border-color] duration-200 select-none",
         column ? "flex flex-col overflow-hidden" : "flex items-stretch gap-1 p-2",
         locked ? "border-primary/45" : "border-border/70",
+        skipped && "bg-muted/60 shadow-none",
         dragState === "target" && "border-primary ring-4 ring-primary/25",
         dragState === "refused" && "opacity-35",
         dragState === "placeholder" && "border-dashed opacity-40 shadow-none",

@@ -27,6 +27,7 @@ export function BoardCard({
   layout,
   dragState,
   showMeal,
+  skipped = false,
   busy,
   onOpen,
   onEaters,
@@ -47,6 +48,7 @@ export function BoardCard({
   layout: "row" | "column";
   dragState?: CardDragState;
   showMeal: boolean;
+  skipped?: boolean;
   busy: boolean;
   onOpen: () => void;
   onEaters: () => void;
@@ -78,6 +80,7 @@ export function BoardCard({
         layout={layout}
         dragState={dragState}
         showMeal={showMeal}
+        skipped={skipped}
         busy={busy}
         onOpen={onOpen}
         onEaters={onEaters}

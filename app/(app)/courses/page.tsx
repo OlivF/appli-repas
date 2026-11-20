@@ -48,13 +48,18 @@ async function Courses({ searchParams }: Pick<PageProps<"/courses">, "searchPara
       {shopping.listId ? (
         <ShoppingBoard
           // Une autre semaine, ou une liste changée ailleurs (l'autre téléphone), repart d'un état neuf.
-          key={`${weekStart}:${shopping.outdated}:${JSON.stringify(shopping.items)}`}
+          key={`${weekStart}:${shopping.outdated}:${shopping.storedAt}:${JSON.stringify(shopping.items)}`}
+          today={shopping.today}
           weekStart={weekStart}
           label={shopping.label}
           listId={shopping.listId}
           outdated={shopping.outdated}
           initialItems={shopping.items}
           known={shopping.known}
+          ingredients={shopping.ingredients}
+          fridgeDates={shopping.fridgeDates}
+          storedAt={shopping.storedAt}
+          settledAt={shopping.settledAt}
         />
       ) : (
         <EmptyState

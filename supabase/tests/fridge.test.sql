@@ -5,7 +5,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(21);
+select plan(27);
 
 create schema tests;
 grant usage on schema tests to authenticated;
@@ -68,7 +68,8 @@ insert into public.household_users (household_id, user_id) values
 
 insert into public.week_plans (id, household_id, week_start) values
   ('a4000000-0000-4000-8000-000000000001', 'a1000000-0000-4000-8000-000000000001', '2026-11-23'),
-  ('a4000000-0000-4000-8000-000000000002', 'a1000000-0000-4000-8000-000000000001', '2026-11-30');
+  ('a4000000-0000-4000-8000-000000000002', 'a1000000-0000-4000-8000-000000000001', '2026-11-30'),
+  ('a4000000-0000-4000-8000-000000000003', 'a1000000-0000-4000-8000-000000000001', '2026-12-07');
 
 insert into public.recipes (id, household_id, title, meal_types, servings) values
   ('a2000000-0000-4000-8000-000000000001', 'a1000000-0000-4000-8000-000000000001', 'Lasagnes', '{soir}', 4);
@@ -225,6 +226,58 @@ select results_eq(
   $$select reserved_list_id, household_id from public.fridge_items where id = 'af000000-0000-4000-8000-000000000005'$$,
   $$values (null::uuid, 'a1000000-0000-4000-8000-000000000001'::uuid)$$,
   'Supprimer la semaine rend libre ce qui lui était réservé');
+
+-- ── Ranger les courses (migration 0012) ─────────────────────────────────────
+insert into tests.ids
+select 'liste-3', public.sync_shopping_list(
+  'a4000000-0000-4000-8000-000000000003', 'menu-3', '',
+  $$[
+    {"ingredient_id": "1d9e0000-0000-4000-8000-000000000041", "label": "Beurre", "aisle": "cremerie",
+     "amounts": [{"quantity": 250, "unit": "g"}], "sources": [], "checked": true, "position": 0},
+    {"ingredient_id": "1d9e0000-0000-4000-8000-000000000049", "label": "Lait", "aisle": "cremerie",
+     "amounts": [{"quantity": 1000, "unit": "ml"}], "sources": [], "checked": true, "position": 1}
+  ]$$::jsonb);
+
+insert into tests.ids
+select 'beurre', id from public.shopping_items where list_id = tests.id('liste-3') and label = 'Beurre';
+
+select is(
+  public.store_groceries(tests.id('liste-3'),
+    jsonb_build_array(jsonb_build_object('item_id', tests.id('beurre'), 'quantity', 250, 'best_before', '2026-12-30'))),
+  1,
+  'Ranger les courses met un article au frigo');
+
+select results_eq(
+  format($$select label, quantity, unit::text, best_before, origin::text from public.fridge_items
+    where reserved_list_id = %L$$, tests.id('liste-3')),
+  $$values ('Beurre', 250::numeric, 'g', '2026-12-30'::date, 'shopping')$$,
+  'L''article rangé est réservé à la liste, avec sa quantité, son unité d''achat et sa date');
+
+select results_eq(
+  format($$select label, stored from public.shopping_items where list_id = %L order by position$$, tests.id('liste-3')),
+  $$values ('Beurre', true), ('Lait', false)$$,
+  'Seul l''article rangé passe « déjà rangé »');
+
+select is(
+  public.store_groceries(tests.id('liste-3'),
+    jsonb_build_array(jsonb_build_object('item_id', tests.id('beurre'), 'quantity', 250, 'best_before', null))),
+  0,
+  'Un article déjà rangé ne l''est pas deux fois (double touche, autre téléphone)');
+
+select isnt(
+  (select stored_at from public.shopping_lists where id = tests.id('liste-3')),
+  null,
+  'La proposition « Ranger les courses » est traitée');
+
+-- La liste de la semaine du 23 est soldée (plus haut) : ce qu'on y range est libre.
+select public.store_groceries(tests.id('liste'),
+  (select jsonb_agg(jsonb_build_object('item_id', id, 'quantity', null, 'best_before', null))
+   from public.shopping_items where list_id = tests.id('liste') and label = 'Beurre'));
+
+select results_eq(
+  $$select origin::text, reserved_list_id from public.fridge_items where label = 'Beurre' and quantity is null$$,
+  $$values ('shopping', null::uuid)$$,
+  'Rangé depuis une liste déjà soldée, un article est libre');
 
 -- ── Plats et référentiel ────────────────────────────────────────────────────
 select col_default_is('public', 'planned_meals', 'skipped', 'false', 'Un plat est cuisiné par défaut');
