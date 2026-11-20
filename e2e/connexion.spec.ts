@@ -30,7 +30,7 @@ test("le compte de test retrouve le foyer de CLAUDE.md", async ({ page }) => {
   await page.getByRole("link", { name: "Foyer" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Foyer de test");
 
-  const household = page.getByRole("region", { name: "Le foyer" });
+  const household = page.getByRole("region", { name: "À table" });
   await expect(household.getByRole("listitem")).toHaveText([
     /Olivier\s*40 ans/,
     /Marie-Laure\s*40 ans, cétogène/,

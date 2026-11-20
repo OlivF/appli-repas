@@ -120,3 +120,29 @@ export function FridgeIllustration({ className }: { className?: string }) {
     </Frame>
   );
 }
+
+// Une table pour deux : deux assiettes côte à côte, un cœur entre elles. Pour l'invitation à
+// rejoindre un foyer (« on prépare les menus à deux »).
+export function TableForTwoIllustration({ className }: { className?: string }) {
+  return (
+    <Frame className={className}>
+      <Sparkles />
+      <path d="M30 124h140" className="fill-none stroke-border [stroke-linecap:round]" strokeWidth="4" />
+      <circle cx="73" cy="88" r="25" className="fill-card stroke-foreground" strokeWidth="3" />
+      <circle cx="73" cy="88" r="16" className="fill-tomato-soft stroke-foreground" strokeWidth="2" strokeDasharray="1 6" strokeLinecap="round" />
+      <circle cx="127" cy="88" r="25" className="fill-card stroke-foreground" strokeWidth="3" />
+      <circle cx="127" cy="88" r="16" className="fill-sage-soft stroke-foreground" strokeWidth="2" strokeDasharray="1 6" strokeLinecap="round" />
+      <g className="fill-sage">
+        <ellipse cx="69" cy="86" rx="5.5" ry="3" transform="rotate(-30 69 86)" />
+        <ellipse cx="77" cy="91" rx="5.5" ry="3" transform="rotate(25 77 91)" />
+      </g>
+      <g className="fill-tomato">
+        <circle cx="123" cy="85" r="4" />
+        <circle cx="132" cy="91" r="3.5" />
+      </g>
+      <path className={LINE} strokeWidth="3" d="M34 64v12a5 5 0 0 0 10 0V64M39 64v14M39 82v36" />
+      <path className={LINE} strokeWidth="3" d="M162 118V64c7 5 9 16 7 26l-7 2" />
+      <path d="M100 52c-5-7 3-14 9-8 6-6 14 1 9 8l-9 9Z" transform="translate(-9 -8)" className="fill-tomato stroke-tomato-deep" strokeWidth="2" strokeLinejoin="round" />
+    </Frame>
+  );
+}

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { SAVE_ERROR, loadHousehold } from "@/lib/data";
 import { parseHouseholdName } from "@/lib/household";
+import { accountErrorMessage } from "@/lib/household-accounts";
 
 export type HouseholdFormState = { error: string; name: string } | null;
 
@@ -27,6 +28,7 @@ export async function saveHousehold(
   }
 
   const { error } = await supabase.rpc("create_household", { household_name: parsed.name });
-  if (error) return { error: SAVE_ERROR, name: submitted };
+  // « Tu fais déjà partie d'un foyer » : un double envoi, par exemple.
+  if (error) return { error: accountErrorMessage(error.code, SAVE_ERROR), name: submitted };
   redirect("/bienvenue/membres");
 }

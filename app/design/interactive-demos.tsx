@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { AlarmClock, CookingPot, Refrigerator, Trash2 } from "lucide-react";
+import { AlarmClock, CookingPot, Refrigerator, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { BottomNav, TopNav } from "@/components/app-nav";
 import { Autocomplete } from "@/components/autocomplete";
@@ -20,6 +20,18 @@ import { FridgeItemSheet, type FridgeSheetTarget } from "@/components/fridge-ite
 import { FridgeGroup, FridgeSection } from "@/components/fridge-section";
 import { CookedControls } from "@/components/cooked-controls";
 import { FridgeStrip } from "@/components/fridge-strip";
+import {
+  InvitePanel,
+  MyPanel,
+  OrganizerList,
+  OrganizerPanel,
+  OrganizerRow,
+  PendingInviteList,
+  PendingInviteRow,
+  WhoAmICard,
+  type Organizer,
+  type OrganizerInvite,
+} from "@/components/household-organizers";
 import { StoreGroceriesCard } from "@/components/store-groceries";
 import { AccountAvatar } from "@/components/layout/account-menu";
 import { MemberAvatar } from "@/components/member-avatar";
@@ -651,6 +663,137 @@ export function FridgeLinksDemo({ family }: { family: CardMember[] }) {
           return null;
         }}
       />
+    </div>
+  );
+}
+
+// « Qui organise les repas » : Olivier (toi) et Marie-Laure, une invitation en attente. Touche une
+// ligne : sa propre ligne ouvre « Qui es-tu à table ? », une autre le panneau de la personne ;
+// « Inviter quelqu'un » ouvre le panneau d'invitation. Rien n'est enregistré.
+const DEMO_TODAY = "2026-11-19";
+
+export function OrganizersDemo({ olivier, marieLaure, family }: { olivier: CardMember; marieLaure: CardMember; family: CardMember[] }) {
+  const [organizers, setOrganizers] = useState<Organizer[]>([
+    { userId: "o", label: olivier.first_name, email: "olivier@example.com", member: olivier, canInvite: true, isMe: true },
+    { userId: "ml", label: marieLaure.first_name, email: "marie-laure@example.com", member: marieLaure, canInvite: true, isMe: false },
+  ]);
+  const [invites, setInvites] = useState<OrganizerInvite[]>([
+    { id: "i1", code: "7KQM3FXP", canInvite: true, expiresAt: "2026-11-26T20:15:00Z" },
+  ]);
+  const [panel, setPanel] = useState<{ kind: "invite"; id: string } | { kind: "me" } | { kind: "organizer"; id: string } | null>(null);
+  const [open, setOpen] = useState(false);
+  const [me, setMe] = useState<string | null>(olivier.id);
+
+  const invite = panel?.kind === "invite" ? invites.find((item) => item.id === panel.id) : undefined;
+  const organizer = panel?.kind === "organizer" ? organizers.find((item) => item.userId === panel.id) : undefined;
+  const show = (next: NonNullable<typeof panel>) => {
+    setPanel(next);
+    setOpen(true);
+  };
+
+  return (
+    <div className="max-w-md">
+      <OrganizerList>
+        {organizers.map((item) => (
+          <OrganizerRow
+            key={item.userId}
+            organizer={item}
+            onSelect={() => show(item.isMe ? { kind: "me" } : { kind: "organizer", id: item.userId })}
+          />
+        ))}
+      </OrganizerList>
+      {invites.length > 0 && (
+        <div className="mt-3">
+          <PendingInviteList>
+            {invites.map((item) => (
+              <PendingInviteRow
+                key={item.id}
+                invite={item}
+                today={DEMO_TODAY}
+                onOpen={() => show({ kind: "invite", id: item.id })}
+                onCancel={() => setInvites((list) => list.filter((other) => other.id !== item.id))}
+              />
+            ))}
+          </PendingInviteList>
+        </div>
+      )}
+      <p className="mt-3 text-[0.9375rem] text-muted-foreground">
+        Les personnes ici voient et modifient tout : recettes, semaine, courses et frigo.
+      </p>
+      <Button
+        type="button"
+        variant="secondary"
+        block
+        className="mt-5"
+        onClick={() => {
+          const fresh = { id: `i${Date.now()}`, code: "GKJ6XZ63", canInvite: true, expiresAt: "2026-11-26T20:15:00Z" };
+          setInvites((list) => [...list, fresh]);
+          show({ kind: "invite", id: fresh.id });
+        }}
+      >
+        <UserPlus aria-hidden="true" />
+        Inviter quelqu’un
+      </Button>
+
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent>
+          {invite && (
+            <InvitePanel
+              invite={invite}
+              today={DEMO_TODAY}
+              onShare={() => toast("Lien copié")}
+              onCanInviteChange={(canInvite) =>
+                setInvites((list) => list.map((item) => (item.id === invite.id ? { ...item, canInvite } : item)))
+              }
+            />
+          )}
+          {panel?.kind === "me" && (
+            <MyPanel
+              members={family.filter((member) => member.id !== marieLaure.id)}
+              value={me}
+              onChoose={(memberId) => {
+                setMe(memberId);
+                setOpen(false);
+              }}
+            />
+          )}
+          {organizer && (
+            <OrganizerPanel
+              key={organizer.userId}
+              organizer={organizer}
+              onCanInviteChange={(canInvite) =>
+                setOrganizers((list) => list.map((item) => (item.userId === organizer.userId ? { ...item, canInvite } : item)))
+              }
+              onRemove={() => {
+                setOpen(false);
+                toast(`${organizer.label} ne fait plus partie du foyer`);
+              }}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
+}
+
+// La carte du haut de /foyer pour un compte qui vient d'arriver : un toucher, et elle s'en va.
+export function WhoAmIDemo({ members }: { members: CardMember[] }) {
+  const [chosen, setChosen] = useState<string | null | undefined>(undefined);
+  if (chosen !== undefined) {
+    return (
+      <div className="max-w-md space-y-3">
+        <p className="text-muted-foreground">
+          Réponse : {chosen === null ? "« Je ne mange pas ici »" : members.find((member) => member.id === chosen)?.first_name}.
+        </p>
+        <Button type="button" variant="secondary" onClick={() => setChosen(undefined)}>
+          Revoir la carte
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <div className="max-w-md">
+      <WhoAmICard members={members} onChoose={setChosen} />
     </div>
   );
 }

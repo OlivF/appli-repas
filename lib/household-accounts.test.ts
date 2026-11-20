@@ -1,15 +1,31 @@
 import { describe, expect, it } from "vitest";
 import {
   accountErrorKind,
+  accountErrorMessage,
   accountLabel,
+  claimableMembers,
   canManageAccounts,
   formatInviteCode,
   inviteExpiryLabel,
   inviteShareText,
   inviteUrl,
   leaveConsequence,
+  leavePlan,
   normalizeInviteCode,
+  type HouseholdAccount,
 } from "./household-accounts";
+
+function account(overrides: Partial<HouseholdAccount> & Pick<HouseholdAccount, "user_id">): HouseholdAccount {
+  return {
+    email: `${overrides.user_id}@example.com`,
+    role: "member",
+    member_id: null,
+    member_chosen_at: null,
+    joined_at: "2026-11-01T10:00:00Z",
+    is_me: false,
+    ...overrides,
+  };
+}
 
 describe("normalizeInviteCode", () => {
   it("met en majuscules et retire espaces et tirets", () => {
@@ -131,5 +147,65 @@ describe("accountErrorKind", () => {
   it("le reste est inconnu", () => {
     expect(accountErrorKind("08006")).toBe("unknown");
     expect(accountErrorKind(undefined)).toBe("unknown");
+  });
+});
+
+describe("accountErrorMessage", () => {
+  it("dit chaque erreur en une phrase", () => {
+    expect(accountErrorMessage("HA001", "Raté")).toBe("Tu fais déjà partie d’un foyer.");
+    expect(accountErrorMessage("HA003", "Raté")).toBe("Il faut garder au moins une personne qui peut inviter.");
+    expect(accountErrorMessage("23505", "Raté")).toBe("Une autre personne du foyer a déjà choisi ce prénom.");
+  });
+
+  it("garde la phrase de l'écran pour l'introuvable et l'inconnu", () => {
+    expect(accountErrorMessage("P0002", "Cette personne ne fait plus partie du foyer.")).toBe(
+      "Cette personne ne fait plus partie du foyer.",
+    );
+    expect(accountErrorMessage(undefined, "Raté")).toBe("Raté");
+  });
+});
+
+describe("claimableMembers", () => {
+  const members = [{ id: "olivier" }, { id: "marie-laure" }, { id: "otis" }];
+
+  it("écarte les mangeurs déjà choisis par un autre compte", () => {
+    const accounts = [
+      account({ user_id: "o", member_id: "olivier" }),
+      account({ user_id: "ml", is_me: true }),
+    ];
+    expect(claimableMembers(members, accounts).map((m) => m.id)).toEqual(["marie-laure", "otis"]);
+  });
+
+  it("garde le sien", () => {
+    const accounts = [account({ user_id: "ml", is_me: true, member_id: "marie-laure" })];
+    expect(claimableMembers(members, accounts).map((m) => m.id)).toEqual(["olivier", "marie-laure", "otis"]);
+  });
+});
+
+describe("leavePlan", () => {
+  it("seul compte : le foyer sera supprimé", () => {
+    expect(leavePlan([account({ user_id: "o", role: "admin", is_me: true })])).toEqual({
+      consequence: "delete_household",
+      successor: null,
+    });
+  });
+
+  it("seul à pouvoir inviter : le plus ancien des autres le pourra", () => {
+    const timothe = account({ user_id: "t", joined_at: "2026-11-03T10:00:00Z" });
+    const marieLaure = account({ user_id: "ml", joined_at: "2026-11-02T10:00:00Z" });
+    const me = account({ user_id: "o", role: "admin", is_me: true, joined_at: "2026-11-01T10:00:00Z" });
+    expect(leavePlan([me, timothe, marieLaure])).toEqual({ consequence: "promote_oldest", successor: marieLaure });
+  });
+
+  it("un autre peut inviter : on part, simplement", () => {
+    const me = account({ user_id: "o", role: "admin", is_me: true });
+    const other = account({ user_id: "ml", role: "admin" });
+    expect(leavePlan([me, other])).toEqual({ consequence: "leave", successor: null });
+  });
+
+  it("sans droit d'inviter : on part, simplement", () => {
+    const me = account({ user_id: "ml", is_me: true });
+    const other = account({ user_id: "o", role: "admin" });
+    expect(leavePlan([other, me])).toEqual({ consequence: "leave", successor: null });
   });
 });

@@ -8,11 +8,12 @@ describe("routeAccess", () => {
     expect(routeAccess("/connexion/inscription")).toBe("guest");
   });
 
-  it("ouvre à tous la référence visuelle, les pages légales et l'image de partage", () => {
+  it("ouvre à tous la référence visuelle, les pages légales, l'image de partage et les invitations", () => {
     expect(routeAccess("/design")).toBe("open");
     expect(routeAccess("/mentions-legales")).toBe("open");
     expect(routeAccess("/confidentialite")).toBe("open");
     expect(routeAccess("/opengraph-image")).toBe("open");
+    expect(routeAccess("/rejoindre/7KQM3FXP")).toBe("open");
   });
 
   it("garde le reste pour les comptes connectés", () => {
@@ -22,5 +23,6 @@ describe("routeAccess", () => {
     // Un préfixe qui ressemble ne suffit pas.
     expect(routeAccess("/connexionx")).toBe("private");
     expect(routeAccess("/designer")).toBe("private");
+    expect(routeAccess("/rejoindrex")).toBe("private");
   });
 });

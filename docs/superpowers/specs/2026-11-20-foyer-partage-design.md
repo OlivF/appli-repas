@@ -187,6 +187,23 @@ code, et toucher une invitation en attente rouvre le panneau avec son code ; le 
 `popote_invite` est posé par une Server Action derrière « Créer mon compte » / « J'ai déjà un
 compte » ; nouvelle illustration « table pour deux ».
 
+Décisions de l'utilisateur pour B (2026-11-20) : toute la page `/foyer` passe à la charte
+(PageHeader, SectionHeader, Card, Button variant link) ; la carte « Qui es-tu à table ? » est en
+haut de `/foyer`.
+
+Choix faits en construisant B *(choix)* :
+- Interrupteurs (droit d'inviter d'un compte, d'une invitation) enregistrés au toucher, revenus en
+  place en cas d'erreur ; confirmations en deux touches, comme « Supprimer la recette ».
+- Les invitations en attente sont dans une carte en retrait sous les personnes (à 375 px, une
+  ligne avec avatar et « Annuler » coupait le texte en deux).
+- Sans partage natif : copie du message entier (phrase + lien), toast « Lien copié ».
+- `/bienvenue` ne renvoie vers l'invitation que si le compte n'a pas de foyer ; sur l'écran
+  « Rejoindre le foyer », « Non merci, créer mon propre foyer » oublie l'invitation (sinon
+  `/bienvenue` y ramènerait pendant 7 jours).
+- Lien qui ne marche plus ou déjà membre : le cookie est effacé par une Server Action appelée au
+  chargement (un composant serveur ne peut pas écrire de cookie).
+- Guillemets du nom du foyer avec espaces insécables sur `/rejoindre`.
+
 ## C : en direct, CLAUDE.md, e2e (rappel des choix)
 
 Le prompt fait foi ; s'y ajoutent *(choix)* : `e2e/realtime-rls.spec.ts` (deux comptes de foyers
