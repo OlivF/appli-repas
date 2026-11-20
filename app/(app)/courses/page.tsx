@@ -60,6 +60,7 @@ async function Courses({ searchParams }: Pick<PageProps<"/courses">, "searchPara
           fridgeDates={shopping.fridgeDates}
           storedAt={shopping.storedAt}
           settledAt={shopping.settledAt}
+          shared={shopping.shared}
         />
       ) : (
         <EmptyState

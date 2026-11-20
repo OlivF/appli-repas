@@ -4,11 +4,13 @@ import { refresh } from "next/cache";
 import { SAVE_ERROR } from "@/lib/data";
 import {
   ITEM_COLUMNS,
+  loadLiveList,
   loadShoppingHousehold,
   loadWeekMenu,
   syncShoppingList,
   toListItem,
   type ListItem,
+  type LiveList,
 } from "@/lib/shopping-data";
 import { parseManualItem } from "@/lib/shopping-items";
 import { createClient } from "@/lib/supabase/server";
@@ -21,6 +23,7 @@ export type ActionError = { error: string };
 export type DoneResult = { ok: true } | ActionError;
 export type ItemResult = { item: ListItem } | ActionError;
 export type ItemsResult = { items: ListItem[] } | ActionError;
+export type LiveListResult = { list: LiveList } | ActionError;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -145,4 +148,16 @@ export async function skipStoringAction(listId: string): Promise<DoneResult> {
     .eq("id", listId)
     .select("id");
   return error || data.length !== 1 ? { error: SAVE_ERROR } : { ok: true };
+}
+
+// La liste relue en direct (l'autre téléphone a ajouté, supprimé, mis à jour ou rangé ; retour sur
+// l'onglet ; reconnexion). Sans `refresh()` : l'écran garde son panneau ouvert et son défilement.
+export async function loadListItemsAction(listId: string): Promise<LiveListResult> {
+  if (!UUID.test(listId)) return { error: SAVE_ERROR };
+  try {
+    const list = await loadLiveList(listId);
+    return list ? { list } : { error: SAVE_ERROR };
+  } catch {
+    return { error: SAVE_ERROR };
+  }
 }

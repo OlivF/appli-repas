@@ -1,11 +1,12 @@
 // Qui peut ouvrir quelle adresse :
 // - « guest » : pour les visiteurs ; un compte connecté est renvoyé vers sa semaine ;
-// - « open » : pour tout le monde (référence visuelle, pages légales, image de partage) ;
+// - « open » : pour tout le monde (référence visuelle, pages légales, image de partage, page
+//   d'invitation, qui s'adapte au visiteur comme au compte connecté) ;
 // - « private » : il faut être connecté, sinon direction la page de connexion.
 export type RouteAccess = "guest" | "open" | "private";
 
 const GUEST_PATHS = ["/connexion"];
-const OPEN_PATHS = ["/design", "/mentions-legales", "/confidentialite", "/opengraph-image"];
+const OPEN_PATHS = ["/design", "/mentions-legales", "/confidentialite", "/opengraph-image", "/rejoindre"];
 
 const under = (pathname: string, path: string) => pathname === path || pathname.startsWith(`${path}/`);
 

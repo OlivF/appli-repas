@@ -1,10 +1,16 @@
 import type { ComponentProps } from "react";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ListItem } from "@/lib/shopping-data";
 import { shoppingListText } from "@/lib/shopping";
-import { setCheckedAction, skipStoringAction, storeGroceriesAction, uncheckAllAction } from "./actions";
+import {
+  loadListItemsAction,
+  setCheckedAction,
+  skipStoringAction,
+  storeGroceriesAction,
+  uncheckAllAction,
+} from "./actions";
 import { ShoppingBoard } from "./shopping-board";
 
 vi.mock("./actions", () => ({
@@ -18,6 +24,39 @@ vi.mock("./actions", () => ({
   updateListAction: vi.fn(),
   storeGroceriesAction: vi.fn(async () => ({ ok: true })),
   skipStoringAction: vi.fn(async () => ({ ok: true })),
+  loadListItemsAction: vi.fn(),
+}));
+
+// Le direct : un faux canal Supabase. `live.send` joue un changement venu de l'autre téléphone,
+// `live.status` l'état de la connexion.
+type Payload = { table: string; eventType: "INSERT" | "UPDATE" | "DELETE"; new: object; old: object };
+const live = vi.hoisted(() => ({
+  handlers: [] as { table: string; handler: (payload: Payload) => void }[],
+  status: (() => {}) as (state: string) => void,
+  send(payload: Payload) {
+    for (const { table, handler } of live.handlers) if (table === payload.table) handler(payload);
+  },
+}));
+
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: () => {
+    const channel = {
+      on: (_type: string, filter: { table: string }, handler: (payload: Payload) => void) => {
+        live.handlers.push({ table: filter.table, handler });
+        return channel;
+      },
+      subscribe: (callback: (state: string) => void) => {
+        live.status = callback;
+        return channel;
+      },
+    };
+    return {
+      auth: { getSession: async () => ({ data: { session: { access_token: "jeton" } } }) },
+      realtime: { setAuth: async () => {} },
+      channel: () => channel,
+      removeChannel: async () => "ok",
+    };
+  },
 }));
 
 const SAVE_ERROR = "L'enregistrement n'a pas abouti. Vérifie ta connexion, puis réessaie.";
@@ -67,6 +106,8 @@ function renderBoard(items = ITEMS, props: Partial<ComponentProps<typeof Shoppin
 beforeEach(() => {
   vi.mocked(setCheckedAction).mockClear();
   vi.mocked(uncheckAllAction).mockClear();
+  vi.mocked(loadListItemsAction).mockReset();
+  live.handlers = [];
 });
 
 describe("ShoppingBoard", () => {
@@ -169,5 +210,78 @@ describe("ShoppingBoard et le frigo", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Non merci" }));
     expect(skipStoringAction).toHaveBeenCalledWith("liste");
     await waitFor(() => expect(screen.queryByRole("region", { name: "Ranger les courses" })).toBeNull());
+  });
+});
+
+describe("ShoppingBoard en direct", () => {
+  const checkedOnPhone = (item: ListItem, checked: boolean) =>
+    act(() => live.send({ table: "shopping_items", eventType: "UPDATE", new: { ...item, checked }, old: { id: item.id } }));
+
+  it("« En direct » à plusieurs comptes, « Hors ligne » quand la connexion tombe ; rien seul·e", async () => {
+    const { unmount } = renderBoard(ITEMS, { shared: true });
+    const status = screen.getByRole("status");
+    expect(status).toBeEmptyDOMElement();
+    await waitFor(() => expect(live.handlers).toHaveLength(2));
+    act(() => live.status("SUBSCRIBED"));
+    expect(status).toHaveTextContent("En direct");
+    act(() => live.status("CHANNEL_ERROR"));
+    expect(status).toHaveTextContent("Hors ligne");
+    unmount();
+
+    live.handlers = [];
+    renderBoard(ITEMS);
+    await waitFor(() => expect(live.handlers).toHaveLength(2));
+    act(() => live.status("SUBSCRIBED"));
+    expect(screen.queryByText("En direct")).toBeNull();
+  });
+
+  it("une case cochée sur l'autre téléphone se coche ici, sans message", async () => {
+    renderBoard(ITEMS, { shared: true });
+    await waitFor(() => expect(live.handlers).toHaveLength(2));
+    checkedOnPhone(ITEMS[0], true);
+    expect(screen.getByRole("checkbox", { name: /Oignons/ })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByText("2 sur 3")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("un geste encore en cours d'enregistrement ici l'emporte", async () => {
+    let saved: (value: { ok: true }) => void = () => {};
+    vi.mocked(setCheckedAction).mockReturnValueOnce(new Promise((resolve) => (saved = resolve)));
+    renderBoard(ITEMS, { shared: true });
+    await waitFor(() => expect(live.handlers).toHaveLength(2));
+    await userEvent.click(screen.getByRole("checkbox", { name: /Oignons/ }));
+    checkedOnPhone(ITEMS[0], false);
+    expect(screen.getByRole("checkbox", { name: /Oignons/ })).toHaveAttribute("aria-checked", "true");
+    await act(async () => saved({ ok: true }));
+    checkedOnPhone(ITEMS[1], true);
+    expect(screen.getByText("3 sur 3")).toBeInTheDocument();
+  });
+
+  it("un article ajouté ailleurs : la liste est relue, le panneau ouvert reste ouvert", async () => {
+    const bread = listItem({ id: "pain", label: "Pain", aisle: "boulangerie", manual: true, position: 5 });
+    vi.mocked(loadListItemsAction).mockResolvedValue({
+      list: { items: [...ITEMS, bread], ingredients: {}, fridgeDates: {}, outdated: null, storedAt: null, settledAt: null },
+    });
+    renderBoard(ITEMS, { shared: true });
+    await waitFor(() => expect(live.handlers).toHaveLength(2));
+    await userEvent.click(screen.getByRole("button", { name: "Plus sur Courgettes" }));
+    const sheet = await screen.findByRole("dialog");
+    act(() => live.send({ table: "shopping_items", eventType: "INSERT", new: { id: "pain" }, old: {} }));
+    act(() => live.send({ table: "shopping_lists", eventType: "UPDATE", new: { id: "liste" }, old: { id: "liste" } }));
+    await waitFor(() => expect(screen.getByText("1 sur 4")).toBeInTheDocument(), { timeout: 2000 });
+    expect(loadListItemsAction).toHaveBeenCalledTimes(1);
+    expect(loadListItemsAction).toHaveBeenCalledWith("liste");
+    expect(sheet).toBeInTheDocument();
+  });
+
+  it("la liste mise à jour sur l'autre téléphone : le bandeau « Le menu a changé » s'en va", async () => {
+    vi.mocked(loadListItemsAction).mockResolvedValue({
+      list: { items: ITEMS, ingredients: {}, fridgeDates: {}, outdated: null, storedAt: null, settledAt: null },
+    });
+    renderBoard(ITEMS, { outdated: "menu" });
+    await waitFor(() => expect(live.handlers).toHaveLength(2));
+    expect(screen.getByText("Le menu a changé")).toBeInTheDocument();
+    act(() => live.send({ table: "shopping_lists", eventType: "UPDATE", new: { id: "liste" }, old: { id: "liste" } }));
+    await waitFor(() => expect(screen.queryByText("Le menu a changé")).toBeNull(), { timeout: 2000 });
   });
 });

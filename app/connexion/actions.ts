@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { authErrorMessage } from "@/lib/auth-errors";
+import { afterSignInPath } from "@/lib/invite-cookie";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuthFormState = { error: string; email: string } | null;
@@ -18,7 +19,8 @@ export async function signIn(_state: AuthFormState, formData: FormData): Promise
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: authErrorMessage(error.code), email };
-  redirect("/semaine");
+  // Venu d'une invitation : on y retourne.
+  redirect(await afterSignInPath("/semaine"));
 }
 
 export async function signUp(_state: AuthFormState, formData: FormData): Promise<AuthFormState> {
@@ -30,7 +32,7 @@ export async function signUp(_state: AuthFormState, formData: FormData): Promise
   if (!data.session) {
     return { error: "Ton compte est créé : confirme ton email avec le lien reçu, puis connecte-toi.", email };
   }
-  redirect("/bienvenue");
+  redirect(await afterSignInPath("/bienvenue"));
 }
 
 export async function signOut() {

@@ -124,6 +124,12 @@ export function shortDate(date: string): string {
   return `${day} ${month}`;
 }
 
+// « jeu. 26 nov. », « mar. 1er déc. ».
+export function weekdayDate(date: string): string {
+  const { weekday, day, month } = parts(date);
+  return `${weekday} ${day} ${month}`;
+}
+
 // « jeu. 26 » ; avec le mois quand ce n'est pas celui d'aujourd'hui : « mar. 1er déc. ».
 export function dayDate(date: string, today: string): string {
   const { weekday, day, month } = parts(date);

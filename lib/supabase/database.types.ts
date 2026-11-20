@@ -43,16 +43,36 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"household_users": {
+                },"household_invites": {
                   Row: {
-                    "created_at": string,"household_id": string,"user_id": string
+                    "code": string,"created_at": string,"created_by": string | null,"expires_at": string,"household_id": string,"id": string,"revoked_at": string | null,"role": Database["public"]['Enums']["household_role"],"used_at": string | null,"used_by": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"household_id": string,"user_id": string
+                    "code": string,"created_at"?: string,"created_by"?: string | null,"expires_at"?: string,"household_id": string,"id"?: string,"revoked_at"?: string | null,"role"?: Database["public"]['Enums']["household_role"],"used_at"?: string | null,"used_by"?: string | null
                   }
                   Update: {
-                    "created_at"?: string,"household_id"?: string,"user_id"?: string
+                    "code"?: string,"created_at"?: string,"created_by"?: string | null,"expires_at"?: string,"household_id"?: string,"id"?: string,"revoked_at"?: string | null,"role"?: Database["public"]['Enums']["household_role"],"used_at"?: string | null,"used_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "household_invites_household_id_fkey"
+      columns: ["household_id"]
+isOneToOne: false
+      referencedRelation: "households"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"household_users": {
+                  Row: {
+                    "created_at": string,"household_id": string,"member_chosen_at": string | null,"member_id": string | null,"role": Database["public"]['Enums']["household_role"],"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"household_id": string,"member_chosen_at"?: string | null,"member_id"?: string | null,"role"?: Database["public"]['Enums']["household_role"],"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"household_id"?: string,"member_chosen_at"?: string | null,"member_id"?: string | null,"role"?: Database["public"]['Enums']["household_role"],"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -60,6 +80,12 @@ isOneToOne: false
       columns: ["household_id"]
 isOneToOne: false
       referencedRelation: "households"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "household_users_member_id_fkey"
+      columns: ["member_id"]
+isOneToOne: false
+      referencedRelation: "members"
       referencedColumns: ["id"]
     }
                   ]
@@ -377,7 +403,10 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "add_planned_meal":
+            "accept_household_invite":
+{ Args: { "invite_code": string,"leave_current"?: boolean }; Returns: string
+                           },
+"add_planned_meal":
 { Args: { "eater_ids": (string)[],"target_day": number,"target_household_id": string,"target_meal_type": Database["public"]['Enums']["meal_type"],"target_recipe_id": string,"target_week_start": string }; Returns: string
                            },
 "add_shopping_item":
@@ -392,11 +421,44 @@ isOneToOne: false
 "create_household":
 { Args: { "household_name": string }; Returns: string
                            },
+"create_household_invite":
+{ Args: { "invite_role"?: Database["public"]['Enums']["household_role"],"target_household_id": string }; Returns: {
+              "code": string,"expires_at": string
+            }[]
+                           },
+"household_accounts":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "email": string,"is_me": boolean,"joined_at": string,"member_chosen_at": string,"member_id": string,"role": Database["public"]['Enums']["household_role"],"user_id": string
+            }[]
+                           },
+"household_invite_preview":
+{ Args: { "invite_code": string }; Returns: {
+              "household_name": string,"inviter_name": string,"is_member": boolean,"status": string
+            }[]
+                           },
+"leave_household":
+{ Args: Record<PropertyKey, never>; Returns: undefined
+                           },
+"remove_household_account":
+{ Args: { "target_user_id": string }; Returns: undefined
+                           },
+"revoke_household_invite":
+{ Args: { "invite_id": string }; Returns: undefined
+                           },
 "save_recipe":
 { Args: { "excluded_member_ids": (string)[],"ingredients": Json,"recipe": Json,"target_household_id": string,"target_recipe_id"?: string }; Returns: string
                            },
 "save_week_proposal":
 { Args: { "cards": Json,"new_seed": number,"target_household_id": string,"target_week_start": string }; Returns: string
+                           },
+"set_household_invite_role":
+{ Args: { "invite_id": string,"new_role": Database["public"]['Enums']["household_role"] }; Returns: undefined
+                           },
+"set_household_role":
+{ Args: { "new_role": Database["public"]['Enums']["household_role"],"target_user_id": string }; Returns: undefined
+                           },
+"set_my_member":
+{ Args: { "target_member_id": string }; Returns: undefined
                            },
 "set_planned_meal_eaters":
 { Args: { "eater_ids": (string)[],"target_card_id": string }; Returns: undefined
@@ -412,7 +474,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "appetite": "normal"|"grand","diet": "keto"|"vegetarian"|"gluten_free"|"lactose_free","fridge_origin": "manual"|"shopping"|"leftover","grocery_aisle": "fruits_legumes"|"boucherie"|"poissonnerie"|"cremerie"|"epicerie"|"surgeles"|"boulangerie"|"boissons"|"autre","ingredient_unit": "g"|"kg"|"ml"|"l"|"piece"|"cas"|"cac","meal_type": "petit_dej"|"midi"|"soir"|"pique_nique","shopping_unit": "g"|"ml"|"piece"
+            "appetite": "normal"|"grand","diet": "keto"|"vegetarian"|"gluten_free"|"lactose_free","fridge_origin": "manual"|"shopping"|"leftover","grocery_aisle": "fruits_legumes"|"boucherie"|"poissonnerie"|"cremerie"|"epicerie"|"surgeles"|"boulangerie"|"boissons"|"autre","household_role": "admin"|"member","ingredient_unit": "g"|"kg"|"ml"|"l"|"piece"|"cas"|"cac","meal_type": "petit_dej"|"midi"|"soir"|"pique_nique","shopping_unit": "g"|"ml"|"piece"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -528,7 +590,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "appetite": ["normal", "grand"],"diet": ["keto", "vegetarian", "gluten_free", "lactose_free"],"fridge_origin": ["manual", "shopping", "leftover"],"grocery_aisle": ["fruits_legumes", "boucherie", "poissonnerie", "cremerie", "epicerie", "surgeles", "boulangerie", "boissons", "autre"],"ingredient_unit": ["g", "kg", "ml", "l", "piece", "cas", "cac"],"meal_type": ["petit_dej", "midi", "soir", "pique_nique"],"shopping_unit": ["g", "ml", "piece"]
+            "appetite": ["normal", "grand"],"diet": ["keto", "vegetarian", "gluten_free", "lactose_free"],"fridge_origin": ["manual", "shopping", "leftover"],"grocery_aisle": ["fruits_legumes", "boucherie", "poissonnerie", "cremerie", "epicerie", "surgeles", "boulangerie", "boissons", "autre"],"household_role": ["admin", "member"],"ingredient_unit": ["g", "kg", "ml", "l", "piece", "cas", "cac"],"meal_type": ["petit_dej", "midi", "soir", "pique_nique"],"shopping_unit": ["g", "ml", "piece"]
           }
         }
 } as const

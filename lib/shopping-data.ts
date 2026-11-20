@@ -66,6 +66,8 @@ export async function loadWeekMenu(supabase: Client, householdId: string, weekSt
   return { planId: plan?.id ?? null, meals, list: Array.isArray(list) ? (list[0] ?? null) : list };
 }
 
+type WeekMenu = Awaited<ReturnType<typeof loadWeekMenu>>;
+
 async function listItems(supabase: Client, listId: string): Promise<ListItem[]> {
   const { data, error } = await supabase.from("shopping_items").select(ITEM_COLUMNS).eq("list_id", listId).order("position");
   if (error) throw new Error(error.message);
@@ -93,7 +95,7 @@ export async function syncShoppingList(
   householdId: string,
   members: PortionMember[],
   weekStart: string,
-  menu: Awaited<ReturnType<typeof loadWeekMenu>>,
+  menu: WeekMenu,
 ): Promise<{ listId: string; items: ListItem[] } | null> {
   if (!menu.planId) return null;
   const [{ recipes, ingredients }, previous, fridge] = await Promise.all([
@@ -159,6 +161,18 @@ function nearestDates(items: readonly FridgeItem[], weekStart: string): Record<s
 
 export type Outdated = "menu" | "fridge" | null;
 
+// Une liste déjà enregistrée : ses articles, son frigo, et si elle est encore à jour.
+async function savedList(supabase: Client, householdId: string, weekStart: string, menu: WeekMenu & { list: NonNullable<WeekMenu["list"]> }) {
+  const [items, fridge] = await Promise.all([listItems(supabase, menu.list.id), fridgeFor(supabase, householdId, menu.list.id, weekStart)]);
+  let outdated: Outdated = null;
+  if (menu.list.menu_signature !== menuSignature(menu.meals)) outdated = "menu";
+  // Une semaine soldée ne compte plus sur le frigo.
+  else if (!menu.list.settled_at && menu.list.fridge_signature !== fridgeSignature(fridge.stock, menuIngredientIds(items))) {
+    outdated = "fridge";
+  }
+  return { items, fridge, outdated };
+}
+
 // Tout ce que l'écran /courses affiche. D'abord le bilan des semaines finies. À la première
 // ouverture d'une semaine qui a un menu, la liste se crée ; ensuite, `outdated` dit seulement que
 // le menu, ou le frigo, a changé : jamais de mise à jour automatique.
@@ -177,22 +191,19 @@ export async function loadShopping(weekParam?: string) {
   let fridge: { items: FridgeItem[]; stock: FridgeStock } | null = null;
 
   if (menu.list) {
-    [items, fridge] = await Promise.all([listItems(supabase, menu.list.id), fridgeFor(supabase, household.id, menu.list.id, weekStart)]);
-    if (menu.list.menu_signature !== menuSignature(menu.meals)) outdated = "menu";
-    // Une semaine soldée ne compte plus sur le frigo.
-    else if (!menu.list.settled_at && menu.list.fridge_signature !== fridgeSignature(fridge.stock, menuIngredientIds(items))) {
-      outdated = "fridge";
-    }
+    ({ items, fridge, outdated } = await savedList(supabase, household.id, weekStart, { ...menu, list: menu.list }));
   } else if (menu.meals.length > 0) {
     const created = await syncShoppingList(supabase, household.id, members, weekStart, menu);
     listId = created?.listId ?? null;
     items = created?.items ?? [];
   }
 
-  const [ingredients, fridgeRows] = await Promise.all([
+  const [ingredients, fridgeRows, accounts] = await Promise.all([
     listIngredients(supabase, items),
     fridge ? Promise.resolve(fridge.items) : fridgeItems(supabase, household.id),
+    supabase.from("household_users").select("user_id", { count: "exact", head: true }).eq("household_id", household.id),
   ]);
+  if (accounts.error) throw new Error(accounts.error.message);
 
   return {
     today,
@@ -208,5 +219,43 @@ export async function loadShopping(weekParam?: string) {
     known,
     ingredients,
     fridgeDates: nearestDates(fridgeRows, weekStart),
+    // Plusieurs comptes : l'écran dit si la liste est « En direct ».
+    shared: (accounts.count ?? 0) > 1,
+  };
+}
+
+// Ce que l'écran relit quand la liste a changé sur l'autre téléphone (un article ajouté ou
+// supprimé, la liste mise à jour ou rangée), au retour sur l'onglet ou après une coupure.
+export type LiveList = {
+  items: ListItem[];
+  ingredients: Record<string, ListIngredient>;
+  fridgeDates: Record<string, string>;
+  outdated: Outdated;
+  storedAt: string | null;
+  settledAt: string | null;
+};
+
+// Null : la liste n'existe plus (semaine supprimée) ou n'est pas à ce foyer.
+export async function loadLiveList(listId: string): Promise<LiveList | null> {
+  const { supabase, household } = await loadShoppingHousehold();
+  const { data: list, error } = await supabase
+    .from("shopping_lists")
+    .select("week_plans(week_start)")
+    .eq("id", listId)
+    .eq("household_id", household.id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  const weekStart = list?.week_plans?.week_start;
+  if (!weekStart) return null;
+  const menu = await loadWeekMenu(supabase, household.id, weekStart);
+  if (menu.list?.id !== listId) return null;
+  const { items, fridge, outdated } = await savedList(supabase, household.id, weekStart, { ...menu, list: menu.list });
+  return {
+    items,
+    ingredients: await listIngredients(supabase, items),
+    fridgeDates: nearestDates(fridge.items, weekStart),
+    outdated,
+    storedAt: menu.list.stored_at,
+    settledAt: menu.list.settled_at,
   };
 }

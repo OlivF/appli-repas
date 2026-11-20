@@ -12,7 +12,9 @@ import {
   FridgeIllustration,
   PlateIllustration,
   PotIllustration,
+  TableForTwoIllustration,
 } from "@/components/illustrations";
+import { JoinInvite } from "@/components/join-invite";
 import { EmptyState } from "@/components/empty-state";
 import { KitchenPattern } from "@/components/kitchen-pattern";
 import { MealPill } from "@/components/meal-label";
@@ -23,6 +25,7 @@ import { BatchBadge, RecipeCard } from "@/components/recipe-card";
 import { RecipeChip, RecipeChipRow } from "@/components/recipe-chip";
 import { RecipeSteps } from "@/components/recipe-steps";
 import { ServingsIngredients } from "@/components/servings-ingredients";
+import { ShoppingProgress } from "@/components/shopping-progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,12 +47,14 @@ import {
   LibraryDemo,
   MemberToggleDemo,
   NavDemo,
+  OrganizersDemo,
   PlannedCardsDemo,
   SearchDemo,
   SheetDemo,
   ShoppingDemo,
   StepDemo,
   SwitchDemo,
+  WhoAmIDemo,
 } from "./interactive-demos";
 import { LogoShowcase } from "./logo-showcase";
 import { ThemeToggle } from "./theme-toggle";
@@ -459,6 +464,71 @@ export default function DesignPage() {
           </div>
         </Section>
 
+        <Section
+          title="Foyer partagé"
+          lead="Plusieurs personnes organisent les repas du même foyer. Une personne qui organise n’est pas un mangeur : elle peut dire qui elle est à table, seulement pour afficher son prénom."
+        >
+          <h3 className="text-xl">Qui organise les repas</h3>
+          <p className="mt-1 max-w-[60ch] text-muted-foreground">
+            Sur /foyer, sous « À table ». « Peut inviter » sous le nom de qui peut inviter et retirer quelqu’un. Les
+            invitations en attente, dans une carte en retrait, se rouvrent ou s’annulent. Touche une ligne, ou
+            « Inviter quelqu’un » : le code n’est créé qu’à ce moment-là.
+          </p>
+          <div className="mt-4">
+            <OrganizersDemo olivier={OLIVIER} marieLaure={MARIE_LAURE} family={FAMILY} />
+          </div>
+
+          <h3 className="mt-10 text-xl">Qui es-tu à table ?</h3>
+          <p className="mt-1 max-w-[60ch] text-muted-foreground">
+            En haut de /foyer, tant qu’on n’a pas répondu. Seuls les mangeurs que personne n’a encore choisis ; un
+            toucher suffit. On change sa réponse en touchant sa propre ligne.
+          </p>
+          <div className="mt-4">
+            <WhoAmIDemo members={FAMILY.filter((member) => member.id !== OLIVIER.id)} />
+          </div>
+
+          <h3 className="mt-10 text-xl">La liste de courses en direct</h3>
+          <p className="mt-1 max-w-[60ch] text-muted-foreground">
+            Au drive, l’un coche, l’autre le voit aussitôt, avec la même petite animation. À droite du compteur, quand
+            le foyer a plusieurs comptes : « En direct », ou « Hors ligne » si la connexion tombe ; la liste se
+            rattrape toute seule au retour. Jamais de message quand l’autre coche.
+          </p>
+          <div className="mt-4 grid max-w-3xl gap-5 sm:grid-cols-2">
+            <Card className="p-5">
+              <ShoppingProgress done={12} total={30} live="live" />
+            </Card>
+            <Card className="p-5">
+              <ShoppingProgress done={12} total={30} live="offline" />
+            </Card>
+          </div>
+
+          <h3 className="mt-10 text-xl">Le lien d’invitation</h3>
+          <p className="mt-1 max-w-[60ch] text-muted-foreground">
+            /rejoindre/7KQM3FXP, ouvert à tous : on crée son compte ou on se connecte, puis on rejoint. Avec un autre
+            foyer, on le dit sans détour. Un lien expiré, déjà utilisé ou annulé ne dit rien d’autre.
+          </p>
+          <div className="mt-5 grid gap-5 lg:grid-cols-3">
+            <Card className="p-6">
+              <JoinInvite demo state={{ kind: "visitor", householdName: "Famille F", inviterName: "Olivier" }} />
+            </Card>
+            <Card className="p-6">
+              <JoinInvite
+                demo
+                state={{
+                  kind: "switch",
+                  householdName: "Famille F",
+                  inviterName: "Olivier",
+                  currentName: "Chez moi",
+                  deletesCurrent: true,
+                }}
+              />
+            </Card>
+            <Card className="p-6">
+              <JoinInvite demo state={{ kind: "invalid" }} />
+            </Card>
+          </div>
+        </Section>
+
         <Section title="Parcours de bienvenue" lead="Une question par écran, et la barre qui avance.">
           <Card className="max-w-md gap-6 p-6">
             <StepDemo />
@@ -499,6 +569,9 @@ export default function DesignPage() {
             </EmptyState>
             <EmptyState illustration={<FridgeIllustration />} title="Rien au frigo pour l’instant">
               Après le drive, range tes courses ici : l’appli s’en servira pour ta prochaine liste.
+            </EmptyState>
+            <EmptyState illustration={<TableForTwoIllustration />} title="Une table pour deux">
+              Pour l’invitation à rejoindre un foyer : on prépare les menus à deux.
             </EmptyState>
           </div>
         </Section>

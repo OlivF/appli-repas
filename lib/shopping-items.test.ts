@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { StoredItem } from "./shopping";
 import {
+  applyLiveChange,
   defaultShoppingWeek,
   fridgeNote,
   fridgeSourceLine,
+  mergeLiveReload,
   parseManualItem,
   preStored,
   storeCandidates,
@@ -167,5 +169,120 @@ describe("urgentStripText", () => {
     );
     expect(urgentStripText(["Lait", "Œufs", "Beurre", "Crème"])).toBe("À finir : lait, œufs, beurre et 1 autre");
     expect(urgentStripText([])).toBeNull();
+  });
+});
+
+// ─── En direct ──────────────────────────────────────────────────────────────
+
+describe("applyLiveChange", () => {
+  const item = (id: string, patch: Partial<StoredItem> = {}): StoredItem & { id: string } => ({
+    id,
+    ingredient_id: null,
+    label: id,
+    amounts: [],
+    aisle: "autre",
+    pantry: false,
+    sources: [],
+    checked: false,
+    removed: false,
+    needed: false,
+    quantity_changed: false,
+    manual: false,
+    quantity_text: null,
+    position: 0,
+    from_fridge: 0,
+    maybe_in_fridge: false,
+    stored: false,
+    ...patch,
+  });
+  const items = [item("oeufs"), item("lait", { quantity_changed: true })];
+  const none = new Set<string>();
+  const update = (row: Record<string, unknown>) =>
+    ({ table: "shopping_items", eventType: "UPDATE", new: row, old: { id: row.id } }) as const;
+
+  it("une case cochée sur l'autre téléphone se coche ici", () => {
+    const result = applyLiveChange(items, update({ ...item("lait"), checked: true }), none);
+    expect(result.reload).toBe(false);
+    expect(result.items[1]).toMatchObject({ id: "lait", checked: true, quantity_changed: false });
+    expect(result.items[0]).toBe(items[0]);
+  });
+
+  it("applique « J'en ai déjà », le placard, « rangé », et le nom d'un article ajouté à la main", () => {
+    const row = { ...item("oeufs"), removed: true, needed: true, stored: true, label: "Œufs bio", quantity_text: "12" };
+    expect(applyLiveChange(items, update(row), none).items[0]).toMatchObject({
+      removed: true,
+      needed: true,
+      stored: true,
+      label: "Œufs bio",
+      quantity_text: "12",
+    });
+  });
+
+  it("garde le reste de l'article tel quel (quantités, sources, frigo)", () => {
+    const row = { ...item("oeufs"), checked: true, amounts: [{ quantity: 99, unit: "piece" }], from_fridge: "3" };
+    const result = applyLiveChange(items, update(row), none);
+    expect(result.items[0].amounts).toEqual([]);
+    expect(result.items[0].from_fridge).toBe(0);
+  });
+
+  it("un geste encore en cours d'enregistrement ici l'emporte", () => {
+    const result = applyLiveChange(items, update({ ...item("oeufs"), checked: true }), new Set(["oeufs"]));
+    expect(result).toEqual({ items, reload: false });
+    expect(result.items).toBe(items);
+  });
+
+  it("rien de neuf (son propre geste qui revient) : la même liste", () => {
+    const result = applyLiveChange(items, update({ ...items[1] }), none);
+    expect(result.items).toBe(items);
+    expect(result.reload).toBe(false);
+  });
+
+  it("un article ajouté ailleurs : on recharge ; déjà là (ajouté ici) : rien", () => {
+    expect(applyLiveChange(items, { table: "shopping_items", eventType: "INSERT", new: { id: "pain" }, old: {} }, none)).toEqual({
+      items,
+      reload: true,
+    });
+    expect(applyLiveChange(items, { table: "shopping_items", eventType: "INSERT", new: { id: "oeufs" }, old: {} }, none).reload).toBe(
+      false,
+    );
+  });
+
+  it("un article supprimé de la liste : on recharge ; inconnu : rien", () => {
+    expect(applyLiveChange(items, { table: "shopping_items", eventType: "DELETE", new: {}, old: { id: "lait" } }, none).reload).toBe(true);
+    expect(applyLiveChange(items, { table: "shopping_items", eventType: "DELETE", new: {}, old: { id: "autre" } }, none).reload).toBe(
+      false,
+    );
+  });
+
+  it("une modification d'un article inconnu ici (manqué pendant une coupure) : on recharge", () => {
+    expect(applyLiveChange(items, update({ ...item("pain"), checked: true }), none)).toEqual({ items, reload: true });
+  });
+
+  it("la liste elle-même a changé (mise à jour, rangement, suppression) : on recharge", () => {
+    expect(applyLiveChange(items, { table: "shopping_lists", eventType: "UPDATE", new: { id: "liste" }, old: { id: "liste" } }, none)).toEqual(
+      { items, reload: true },
+    );
+  });
+});
+
+describe("mergeLiveReload", () => {
+  const base = { ingredient_id: null, amounts: [], aisle: "autre" as const, pantry: false, sources: [], removed: false };
+  const rest = { needed: false, quantity_changed: false, manual: false, quantity_text: null, position: 0 };
+  const more = { from_fridge: 0, maybe_in_fridge: false, stored: false };
+  const item = (id: string, checked: boolean) => ({ id, label: id, checked, ...base, ...rest, ...more });
+
+  it("prend la liste relue, sauf les articles dont un geste est en cours ici", () => {
+    const current = [item("oeufs", true), item("lait", false)];
+    const fresh = [item("oeufs", false), item("lait", true), item("pain", false)];
+    expect(mergeLiveReload(current, fresh, new Set(["oeufs"])).map(({ id, checked }) => [id, checked])).toEqual([
+      ["oeufs", true],
+      ["lait", true],
+      ["pain", false],
+    ]);
+  });
+
+  it("un article en train d'être supprimé ici ne revient pas", () => {
+    const fresh = [item("oeufs", false), item("bougies", false)];
+    expect(mergeLiveReload([item("oeufs", false)], fresh, new Set(["bougies"])).map(({ id }) => id)).toEqual(["oeufs"]);
   });
 });
