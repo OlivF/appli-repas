@@ -17,7 +17,9 @@ import {
 } from "@dnd-kit/core";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { BookOpen, ShoppingBasket, Sparkles, Trash2, X } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "cn";
+import { CookedControls } from "@/components/cooked-controls";
 import { DayStrip } from "@/components/day-strip";
 import { EatersPicker } from "@/components/eaters-picker";
 import { FieldError } from "@/components/field";
@@ -50,11 +52,13 @@ import {
   placeRecipeAction,
   removeCardAction,
   setEatersAction,
+  setSkippedAction,
   proposeWeekAction,
   swapCardsAction,
   toggleLockAction,
   type PlaceTarget,
 } from "./actions";
+import { addLeftoverAction } from "../frigo/actions";
 import { BoardCard, DraggableRecipe, DroppableSlot } from "./board-pieces";
 
 type Card = WeekCard & { vid: string };
@@ -100,6 +104,7 @@ export function WeekBoard({
   nextHref,
   days,
   firstDay,
+  todayDay = null,
   members,
   slots,
   recipes,
@@ -113,6 +118,9 @@ export function WeekBoard({
   days: Day[];
   // Jour affiché d'abord sur téléphone.
   firstDay: number;
+  // Aujourd'hui, dans la semaine en cours (sinon null) : « Pas cuisiné » et « Il en reste »
+  // valent pour les plats d'aujourd'hui et des jours passés.
+  todayDay?: number | null;
   members: RecipeMember[];
   slots: SlotInput[];
   recipes: WeekRecipe[];
@@ -194,6 +202,23 @@ export function WeekBoard({
       );
       setTried({});
     });
+  }
+
+  // « Pas cuisiné » : ses ingrédients restent au frigo au bilan de la semaine.
+  function setSkipped(card: Card, skipped: boolean) {
+    void save(
+      (current) => current.map((item) => (item.id === card.id ? { ...item, skipped } : item)),
+      () => setSkippedAction(weekStart, card.id, skipped),
+    );
+  }
+
+  // « Il en reste » : un reste de plat au frigo.
+  async function storeLeftover(card: Card, parts: number) {
+    const result = await addLeftoverAction(card.recipe_id, parts).catch(() => ({ error: SAVE_ERROR }));
+    if ("error" in result) return result.error;
+    setSheet(null);
+    toast("Rangé au frigo");
+    return null;
   }
 
   function toggleLock(card: Card) {
@@ -636,6 +661,15 @@ export function WeekBoard({
             )}
           </SheetDescription>
         </SheetHeader>
+        {target.kind === "card" && sheetCard && todayDay !== null && sheetCard.day <= todayDay && (
+          <div className="mb-4">
+            <CookedControls
+              skipped={Boolean(sheetCard.skipped)}
+              onSkippedChange={(skipped) => setSkipped(sheetCard, skipped)}
+              onLeftover={(parts) => storeLeftover(sheetCard, parts)}
+            />
+          </div>
+        )}
         {target.kind === "card" && (
           <div className="-mt-2 mb-1">
             <Button
@@ -718,6 +752,7 @@ export function WeekBoard({
                     layout={wide ? "column" : "row"}
                     dragState={dropState(`card:${card.id}`)}
                     showMeal={slot.meal_type === "pique_nique"}
+                    skipped={Boolean(card.skipped)}
                     busy={busy.includes(card.id)}
                     onOpen={() => setSheet({ kind: "card", cardId: card.id })}
                     onEaters={() => openEaters(card)}

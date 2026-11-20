@@ -2,7 +2,8 @@ import type { PlannerCard, Protein } from "@/lib/planner";
 import { householdRecipes, loadReadyHousehold, type ListRecipe } from "@/lib/recipes-data";
 
 export type WeekRecipe = ListRecipe & { protein: Protein | null };
-export type WeekCard = PlannerCard & { id: string };
+// `skipped` : « Pas cuisiné » (ses ingrédients restent au frigo au bilan de la semaine).
+export type WeekCard = PlannerCard & { id: string; skipped?: boolean };
 
 type Client = Awaited<ReturnType<typeof loadReadyHousehold>>["supabase"];
 
@@ -10,7 +11,7 @@ type Client = Awaited<ReturnType<typeof loadReadyHousehold>>["supabase"];
 export async function weekCards(supabase: Client, planId: string): Promise<WeekCard[]> {
   const { data, error } = await supabase
     .from("planned_meals")
-    .select("id, day, meal_type, position, recipe_id, member_ids, locked")
+    .select("id, day, meal_type, position, recipe_id, member_ids, locked, skipped")
     .eq("week_plan_id", planId)
     .order("day")
     .order("position");

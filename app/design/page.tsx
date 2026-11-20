@@ -6,7 +6,13 @@ import { DayCard } from "@/components/day-card";
 import { EmptySlot } from "@/components/empty-slot";
 import { AppetiteBadge, DietBadge, KidBadge } from "@/components/diet-badge";
 import { ChoiceGroup, Field } from "@/components/field";
-import { BasketIllustration, BookIllustration, PlateIllustration, PotIllustration } from "@/components/illustrations";
+import {
+  BasketIllustration,
+  BookIllustration,
+  FridgeIllustration,
+  PlateIllustration,
+  PotIllustration,
+} from "@/components/illustrations";
 import { EmptyState } from "@/components/empty-state";
 import { KitchenPattern } from "@/components/kitchen-pattern";
 import { MealPill } from "@/components/meal-label";
@@ -31,6 +37,8 @@ import {
   DayStripDemo,
   DuoDemo,
   FavoriteDemo,
+  FridgeDemo,
+  FridgeLinksDemo,
   GridCardsDemo,
   IngredientRowDemo,
   LibraryDemo,
@@ -426,6 +434,31 @@ export default function DesignPage() {
           </div>
         </Section>
 
+        <Section
+          title="Frigo"
+          lead="On l’ouvre porte ouverte, d’une main : ce qu’il faut finir vite en haut, « Fini » en une touche."
+        >
+          <p className="max-w-[60ch] text-muted-foreground">
+            Une ligne : le nom, la quantité à droite, la date en petit (en tomate : périmé ; en moutarde :
+            aujourd’hui, demain, après-demain). Toute la ligne ouvre le panneau ; « Fini » sort l’article et
+            « Annuler » le remet. Pour ranger : le nom, puis la quantité et la date limite en puces (la date
+            proposée suit la conservation du produit).
+          </p>
+          <div className="mt-5">
+            <FridgeDemo />
+          </div>
+
+          <h3 className="mt-10 text-xl">Dans la semaine et les courses</h3>
+          <p className="mt-1 max-w-[60ch] text-muted-foreground">
+            En haut de la semaine, ce qu’il faut finir. Dans la liste, ce que le frigo donne déjà ; les
+            courses faites, on les range. Sur un plat du jour : « Pas cuisiné » (la carte grisée) et
+            « Il en reste ».
+          </p>
+          <div className="mt-4">
+            <FridgeLinksDemo family={FAMILY} />
+          </div>
+        </Section>
+
         <Section title="Parcours de bienvenue" lead="Une question par écran, et la barre qui avance.">
           <Card className="max-w-md gap-6 p-6">
             <StepDemo />
@@ -463,6 +496,9 @@ export default function DesignPage() {
             </EmptyState>
             <EmptyState illustration={<PotIllustration />} title="Le menu de la semaine mijote">
               Bientôt, l’appli te proposera les repas de la semaine en un geste.
+            </EmptyState>
+            <EmptyState illustration={<FridgeIllustration />} title="Rien au frigo pour l’instant">
+              Après le drive, range tes courses ici : l’appli s’en servira pour ta prochaine liste.
             </EmptyState>
           </div>
         </Section>

@@ -111,7 +111,8 @@ test.describe("sur ordinateur", () => {
     await signIn(page);
     await expect(page).toHaveURL(/\/semaine$/);
     const nav = page.getByRole("banner").getByRole("navigation", { name: "Navigation principale" });
-    await expect(nav.getByRole("link")).toHaveText(["Semaine", "Recettes", "Courses", "Foyer"]);
+    // Le Frigo porte sa pastille (articles à finir vite) quand il y en a.
+    await expect(nav.getByRole("link")).toHaveText(["Semaine", "Recettes", "Courses", /^Frigo/, "Foyer"]);
     await expect(nav.getByRole("link", { name: "Semaine" })).toHaveAttribute("aria-current", "page");
 
     await nav.getByRole("link", { name: "Recettes" }).click();

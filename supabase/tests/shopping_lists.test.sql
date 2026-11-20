@@ -71,7 +71,7 @@ select tests.login_as('a0000000-0000-4000-8000-000000000001');
 
 insert into tests.ids
 select 'liste', public.sync_shopping_list(
-  'a4000000-0000-4000-8000-000000000001', 'menu-1',
+  'a4000000-0000-4000-8000-000000000001', 'menu-1', '',
   $$[
     {"ingredient_id": "1d9e0000-0000-4000-8000-000000000041", "label": "Beurre", "aisle": "cremerie",
      "amounts": [{"quantity": 250, "unit": "g"}], "sources": [], "pantry": false, "checked": true,
@@ -116,7 +116,7 @@ select throws_ok(
 
 select is(
   public.sync_shopping_list(
-    'a4000000-0000-4000-8000-000000000001', 'menu-2',
+    'a4000000-0000-4000-8000-000000000001', 'menu-2', '',
     $$[{"ingredient_id": "1d9e0000-0000-4000-8000-000000000049", "label": "Lait", "aisle": "cremerie",
         "amounts": [{"quantity": 1800, "unit": "ml"}], "sources": [], "position": 0}]$$::jsonb),
   (select id from tests.ids where name = 'liste'),
@@ -132,7 +132,7 @@ select is(
   'menu-2',
   'La signature du menu suit la mise à jour');
 
-select public.sync_shopping_list('a4000000-0000-4000-8000-000000000001', 'menu-vide', '[]');
+select public.sync_shopping_list('a4000000-0000-4000-8000-000000000001', 'menu-vide', '', '[]');
 
 select results_eq(
   $$select label from public.shopping_items order by label$$,
@@ -175,7 +175,7 @@ select is(
   'Bob ne peut pas décocher les articles d''Alice');
 
 select throws_ok(
-  $$select public.sync_shopping_list('a4000000-0000-4000-8000-000000000001', 'piratée', '[]')$$,
+  $$select public.sync_shopping_list('a4000000-0000-4000-8000-000000000001', 'piratée', '', '[]')$$,
   '23503', null,
   'Bob ne peut pas créer de liste sur la semaine d''Alice');
 

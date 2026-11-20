@@ -14,7 +14,30 @@ function unbreakableParts(quantity: string) {
     .join(" + ");
 }
 
-export type RowItem = { id: string; label: string; quantity: string; checked: boolean; quantityChanged: boolean };
+// La case d'une ligne (liste de courses, rangement au frigo) : la ligne entière la coche.
+export function CheckMark({ checked }: { checked: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "grid size-7 shrink-0 place-items-center rounded-sm border-2 transition-colors",
+        checked ? "border-sage bg-sage text-white" : "border-input bg-card",
+      )}
+    >
+      {checked && <Check className="size-4.5" strokeWidth={3.5} />}
+    </span>
+  );
+}
+
+export type RowItem = {
+  id: string;
+  label: string;
+  quantity: string;
+  checked: boolean;
+  quantityChanged: boolean;
+  // Le frigo : « + 200 g au frigo », « Tu en as peut-être au frigo ».
+  note?: string | null;
+};
 
 // Une ligne de la liste : toute la ligne coche ou décoche (cible ≥ 56 px) ; « … » ouvre le panneau
 // de l'article. Coché : barré, et l'article glisse en bas de son rayon (animation de mise en page).
@@ -32,15 +55,7 @@ export function ShoppingItemRow({ item, onToggle, onMore }: { item: RowItem; onT
         onClick={onToggle}
         className="press flex min-h-14 min-w-0 flex-1 items-center gap-3.5 rounded-2xl py-2 pr-2 pl-1 text-left outline-offset-2"
       >
-        <span
-          aria-hidden="true"
-          className={cn(
-            "grid size-7 shrink-0 place-items-center rounded-sm border-2 transition-colors",
-            item.checked ? "border-sage bg-sage text-white" : "border-input bg-card",
-          )}
-        >
-          {item.checked && <Check className="size-4.5" strokeWidth={3.5} />}
-        </span>
+        <CheckMark checked={item.checked} />
         <span className="min-w-[40%] flex-1">
           <span
             className={cn(
@@ -53,6 +68,7 @@ export function ShoppingItemRow({ item, onToggle, onMore }: { item: RowItem; onT
           {item.quantityChanged && !item.checked && (
             <span className="block text-[0.875rem] font-semibold text-mustard-deep">quantité modifiée</span>
           )}
+          {item.note && <span className="block text-[0.875rem] text-muted-foreground">{item.note}</span>}
         </span>
         {item.quantity && (
           <span className={cn("text-right font-semibold tabular-nums", item.checked && "text-muted-foreground line-through")}>
@@ -89,14 +105,20 @@ export function PantryItemRow({ label, note, onNeeded }: { label: string; note: 
   );
 }
 
-// Déjà à la maison : masqué de la liste, on peut l'y remettre.
-export function HomeItemRow({ label, onRestore }: { label: string; onRestore: () => void }) {
+// Déjà à la maison : masqué de la liste (« J'en ai déjà », on peut l'y remettre), ou entièrement
+// au frigo (« 350 g au frigo »).
+export function HomeItemRow({ label, note, onRestore }: { label: string; note?: string | null; onRestore?: () => void }) {
   return (
     <li className="flex min-h-14 items-center gap-3 border-b border-border/70 py-1 last:border-b-0">
-      <span className="min-w-0 flex-1 pl-1 font-semibold text-muted-foreground">{label}</span>
-      <Button type="button" variant="ghost" size="sm" aria-label={`Remettre dans la liste : ${label}`} onClick={onRestore}>
-        Remettre dans la liste
-      </Button>
+      <span className="min-w-0 flex-1 pl-1">
+        <span className="block font-semibold text-muted-foreground">{label}</span>
+        {note && <span className="block text-[0.875rem] text-muted-foreground">{note}</span>}
+      </span>
+      {onRestore && (
+        <Button type="button" variant="ghost" size="sm" aria-label={`Remettre dans la liste : ${label}`} onClick={onRestore}>
+          Remettre dans la liste
+        </Button>
+      )}
     </li>
   );
 }

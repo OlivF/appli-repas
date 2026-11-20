@@ -31,7 +31,7 @@ Appli web multi-utilisateurs : chaque compte crée son foyer, ses membres, ses r
 ## Design
 
 - Direction « cuisine de famille » : chaleureux, gourmand, mobile d'abord. Détail dans PROMPT-design.md ; la page `/design` fait référence.
-- shadcn/ui avec thème personnalisé, framer-motion pour les micro-animations, lucide-react pour les icônes.
+- shadcn/ui avec thème personnalisé (toasts : Sonner), framer-motion pour les micro-animations, lucide-react pour les icônes.
 - Couleurs en variables CSS (fond crème, tomate, sauge, moutarde, prune), mode sombre prévu. Titres Fraunces, texte Inter.
 - Chaque nouvel écran réutilise les composants existants ; pas de style ad hoc.
 
@@ -44,14 +44,17 @@ Appli web multi-utilisateurs : chaque compte crée son foyer, ses membres, ses r
 - `recipe_ingredients` : nom, quantité, unité, rayon.
 - `ingredients` : référentiel d'ingrédients canoniques (commun + propres au foyer) : nom, rayon, unité d'achat, poids d'une pièce, densité, alias, placard. `recipe_ingredients.ingredient_id` y renvoie. Base commune de la liste de courses, du frigo et du menu IA.
 - `week_plans` + `planned_meals` : semaine (date du lundi), créneau → recette, verrou. Un repas peut porter plusieurs plats (2 ou 3), chacun pour certains membres ; chaque présent mange un seul plat par repas. Le planner privilégie les duos de même base (plat famille + plat keto).
-- `shopping_lists` + `shopping_items` : une liste par semaine (signature du menu pour savoir si elle est à jour), partagée par les comptes du foyer. Articles : ingrédient canonique, quantités dans l'unité d'achat (`amounts`), rayon, placard, sources (recette, jour, repas, convives), coché, « J'en ai déjà » (`removed`, gardé pour le frigo), ajouté à la main. Calcul pur dans `lib/shopping.ts` ; jamais de mise à jour automatique : bandeau « Le menu a changé ».
+- `shopping_lists` + `shopping_items` : une liste par semaine (signatures du menu et du frigo pour savoir si elle est à jour), partagée par les comptes du foyer. Articles : ingrédient canonique, quantités dans l'unité d'achat (`amounts`), rayon, placard, sources (recette, jour, repas, convives), coché, « J'en ai déjà » (`removed`), ajouté à la main, part prise au frigo (`from_fridge`). Calcul pur dans `lib/shopping.ts` ; jamais de mise à jour automatique : bandeau « Le menu a changé » ou « Le frigo a changé ».
+- `fridge_items` : ce qu'on a à la maison (ingrédient canonique ou texte libre, quantité dans l'unité d'achat ou inconnue, date limite, origine : à la main, courses, reste de plat). Libre (un reste) ou réservé à la liste d'une semaine. La liste de courses déduit le stock libre et réserve ce qu'elle prend (shopping_items.from_fridge) ; le bilan de fin de semaine retire ce qui a été cuisiné (planned_meals.skipped = pas cuisiné). Calcul pur dans lib/fridge.ts ; fridgeForMenu est le contrat pour le menu IA.
 
 ## Feuille de route
 
 1. Socle : auth, création du foyer, membres, créneaux, déploiement Vercel.
 2. Recettes (CRUD + catalogue de base) et grille de la semaine avec proposition auto et glisser-déposer.
 3. ✅ Liste de courses (quantités ajustées aux convives, regroupées par rayon, à cocher / copier).
-4. Batch cooking du dimanche, PWA installable.
+3 bis. ✅ Dans le frigo (restes, dates limites, déduits de la liste de courses).
+4. Génération du menu par IA (privilégie les restes à finir).
+5. Batch cooking du dimanche, PWA installable.
 
 ## Foyer de test
 

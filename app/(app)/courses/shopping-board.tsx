@@ -1,26 +1,40 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { Check, Copy, House, RefreshCw } from "lucide-react";
+import { Check, Copy, House, Refrigerator, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { AisleIcon } from "@/components/aisle-icon";
 import { FieldError } from "@/components/field";
 import { ShoppingAddBar } from "@/components/shopping-add-bar";
 import { ShoppingAisle, ShoppingFold } from "@/components/shopping-aisle";
 import { ShoppingItemSheet } from "@/components/shopping-item-sheet";
 import { HomeItemRow, PantryItemRow, ShoppingItemRow } from "@/components/shopping-item-row";
+import { StoreGroceriesCard, StoreGroceriesSheet, type StoredEntry, type StoreRow } from "@/components/store-groceries";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { useStoredFlag } from "@/components/use-stored-flag";
+import { defaultBestBefore } from "@/lib/fridge";
 import type { KnownIngredient } from "@/lib/recipes-data";
 import {
   SHOPPING_AISLES,
+  formatAmounts,
+  isAtHome,
   itemQuantity,
   shoppingListText,
   shoppingProgress,
   shoppingSections,
   usageLabel,
 } from "@/lib/shopping";
-import type { ListItem } from "@/lib/shopping-data";
-import { parseManualItem } from "@/lib/shopping-items";
+import type { ListIngredient, ListItem, Outdated } from "@/lib/shopping-data";
+import {
+  fridgeNote,
+  fridgeSourceLine,
+  parseManualItem,
+  preStored,
+  storeCandidates,
+  storeProposalVisible,
+  storedQuantity,
+} from "@/lib/shopping-items";
 import {
   addItemAction,
   deleteItemAction,
@@ -28,6 +42,8 @@ import {
   setCheckedAction,
   setNeededAction,
   setRemovedAction,
+  skipStoringAction,
+  storeGroceriesAction,
   uncheckAllAction,
   updateListAction,
   type DoneResult,
@@ -37,23 +53,38 @@ type ItemChange = Partial<Pick<ListItem, "checked" | "removed" | "needed" | "qua
 
 // La liste de la semaine, telle qu'on la suit au drive : chaque geste s'affiche tout de suite et
 // s'enregistre ; s'il ne s'enregistre pas, l'article revient comme avant et un message le dit.
+// Le frigo : ce qu'il donne à la liste (« + 200 g au frigo », « Déjà à la maison »), et, les
+// courses faites, « Range-les au frigo ».
 export function ShoppingBoard({
+  today,
   weekStart,
   label,
   listId,
   outdated: initialOutdated,
   initialItems,
   known,
+  ingredients = {},
+  fridgeDates = {},
+  storedAt: initialStoredAt = null,
+  settledAt = null,
 }: {
+  today: string;
   weekStart: string;
   label: string;
   listId: string;
-  outdated: boolean;
+  outdated: Outdated;
   initialItems: ListItem[];
   known: KnownIngredient[];
+  ingredients?: Record<string, ListIngredient>;
+  fridgeDates?: Record<string, string>;
+  storedAt?: string | null;
+  settledAt?: string | null;
 }) {
   const [items, setItems] = useState(initialItems);
   const [outdated, setOutdated] = useState(initialOutdated);
+  const [storedAt, setStoredAt] = useState(initialStoredAt);
+  const [storing, setStoring] = useState(false);
+  const [later, setLater] = useStoredFlag("session", `popote:ranger-plus-tard:${listId}`, false);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -64,6 +95,24 @@ export function ShoppingBoard({
   const sections = shoppingSections(items);
   const progress = shoppingProgress(items);
   const openItem = items.find((item) => item.id === openId) ?? null;
+  const unitOf = (item: ListItem) => (item.ingredient_id ? (ingredients[item.ingredient_id]?.unit ?? null) : null);
+
+  // Ranger les courses : les articles cochés pas encore rangés, dans l'ordre des rayons.
+  const candidates = settledAt ? [] : storeCandidates(sections.aisles.flatMap((section) => section.items));
+  const showStoreCard =
+    !later && storeProposalVisible({ items, list: { stored_at: storedAt, settled_at: settledAt }, weekStart, today });
+  const storeRows: StoreRow[] = candidates.map((item) => {
+    const info = item.ingredient_id ? ingredients[item.ingredient_id] : undefined;
+    const quantity = storedQuantity(item, info?.unit ?? null);
+    return {
+      id: item.id,
+      label: item.label,
+      quantity,
+      quantityLabel: quantity !== null && info ? formatAmounts([{ quantity, unit: info.unit }]) : "",
+      bestBefore: info ? defaultBestBefore({ shelf_life_days: info.shelfLifeDays }, today) : null,
+      checked: preStored(item),
+    };
+  });
   const options = useMemo(
     () =>
       known.map((ingredient) => ({
@@ -163,7 +212,30 @@ export function ShoppingBoard({
       return;
     }
     setItems(result.items);
-    setOutdated(false);
+    setOutdated(null);
+  }
+
+  async function store(entries: StoredEntry[]) {
+    const result = await storeGroceriesAction(listId, entries);
+    if ("error" in result) return result.error;
+    const ids = new Set(entries.map((entry) => entry.itemId));
+    setItems((current) => current.map((item) => (ids.has(item.id) ? { ...item, stored: true } : item)));
+    setStoredAt(new Date().toISOString());
+    setStoring(false);
+    toast(entries.length > 1 ? `${entries.length} articles rangés au frigo` : "Rangé au frigo");
+    return null;
+  }
+
+  async function skipStoring() {
+    setStoring(false);
+    setError(null);
+    const before = storedAt;
+    setStoredAt(new Date().toISOString());
+    const result = await skipStoringAction(listId);
+    if ("error" in result) {
+      setStoredAt(before);
+      setError(result.error);
+    }
   }
 
   async function copy() {
@@ -179,6 +251,12 @@ export function ShoppingBoard({
 
   return (
     <>
+      {showStoreCard && (
+        <div className="mt-6">
+          <StoreGroceriesCard onStore={() => setStoring(true)} onLater={setLater} />
+        </div>
+      )}
+
       <div className="mt-6">
         <p className="font-heading text-[1.625rem] leading-tight tabular-nums">
           {`${progress.done} sur ${progress.total}`}
@@ -193,7 +271,7 @@ export function ShoppingBoard({
 
       {outdated && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-2xl bg-mustard-soft py-2 pr-2 pl-4">
-          <p className="font-semibold text-mustard-deep">Le menu a changé</p>
+          <p className="font-semibold text-mustard-deep">{outdated === "fridge" ? "Le frigo a changé" : "Le menu a changé"}</p>
           <Button type="button" variant="ghost" size="sm" onClick={update} disabled={updating}>
             <RefreshCw aria-hidden="true" className={updating ? "animate-spin motion-reduce:animate-none" : undefined} />
             {updating ? "Mise à jour…" : "Mettre à jour la liste"}
@@ -223,6 +301,7 @@ export function ShoppingBoard({
                   quantity: itemQuantity(item),
                   checked: item.checked,
                   quantityChanged: item.quantity_changed,
+                  note: fridgeNote(item, unitOf(item)),
                 }}
                 onToggle={() => toggle(item)}
                 onMore={() => setOpenId(item.id)}
@@ -243,10 +322,15 @@ export function ShoppingBoard({
           <ShoppingFold
             icon={<House aria-hidden="true" className="size-5" />}
             title={`Déjà à la maison (${sections.home.length})`}
-            hint="Masqué de la liste"
+            hint="Au frigo ou déjà là"
           >
             {sections.home.map((item) => (
-              <HomeItemRow key={item.id} label={item.label} onRestore={() => setRemoved(item, false)} />
+              <HomeItemRow
+                key={item.id}
+                label={item.label}
+                note={isAtHome(item) ? fridgeNote(item, unitOf(item)) : null}
+                onRestore={item.removed ? () => setRemoved(item, false) : undefined}
+              />
             ))}
           </ShoppingFold>
         )}
@@ -257,6 +341,12 @@ export function ShoppingBoard({
           {copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
           {copied ? "Liste copiée" : "Copier la liste"}
         </Button>
+        {candidates.length > 0 && (
+          <Button type="button" variant="ghost" size="sm" onClick={() => setStoring(true)}>
+            <Refrigerator aria-hidden="true" />
+            Ranger au frigo
+          </Button>
+        )}
         {progress.done > 0 &&
           (confirming ? (
             <div role="group" aria-label="Tout décocher ?" className="w-full max-w-sm space-y-3 rounded-2xl border-2 border-destructive/40 p-4 text-center">
@@ -291,6 +381,12 @@ export function ShoppingBoard({
             needed: openItem.needed,
             quantityText: openItem.quantity_text,
             sources: openItem.sources,
+            fridgeLine: fridgeSourceLine(
+              openItem,
+              unitOf(openItem),
+              openItem.ingredient_id ? (fridgeDates[openItem.ingredient_id] ?? null) : null,
+              today,
+            ),
           }
         }
         open={openItem !== null}
@@ -299,6 +395,15 @@ export function ShoppingBoard({
         onBackToPantry={() => openItem && setNeeded(openItem, false)}
         onEdit={edit}
         onDelete={() => openItem && remove(openItem)}
+      />
+
+      <StoreGroceriesSheet
+        open={storing && storeRows.length > 0}
+        onOpenChange={(open) => !open && setStoring(false)}
+        rows={storeRows}
+        today={today}
+        onStore={store}
+        onSkip={() => void skipStoring()}
       />
     </>
   );

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
+import { AlarmClock, CookingPot, Refrigerator, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { BottomNav, TopNav } from "@/components/app-nav";
 import { Autocomplete } from "@/components/autocomplete";
 import { Logo } from "@/components/brand/logo";
@@ -11,6 +13,14 @@ import { DayStrip } from "@/components/day-strip";
 import { EatersPicker } from "@/components/eaters-picker";
 import { EmptySlot } from "@/components/empty-slot";
 import { ChoiceGroup, Field } from "@/components/field";
+import { BestBeforeChips, type BestBeforeValue } from "@/components/best-before-chips";
+import { FridgeAddField } from "@/components/fridge-add-field";
+import { FridgeItemRow, type FridgeRowItem } from "@/components/fridge-item-row";
+import { FridgeItemSheet, type FridgeSheetTarget } from "@/components/fridge-item-sheet";
+import { FridgeGroup, FridgeSection } from "@/components/fridge-section";
+import { CookedControls } from "@/components/cooked-controls";
+import { FridgeStrip } from "@/components/fridge-strip";
+import { StoreGroceriesCard } from "@/components/store-groceries";
 import { AccountAvatar } from "@/components/layout/account-menu";
 import { MemberAvatar } from "@/components/member-avatar";
 import type { CardMember } from "@/components/member-card";
@@ -62,7 +72,7 @@ export function NavDemo() {
       <figure className="hidden space-y-3 lg:block">
         <HeaderDemo className="h-16">
           <Logo />
-          <TopNav demo current={current} onSelect={setCurrent} />
+          <TopNav demo current={current} onSelect={setCurrent} fridgeCount={2} />
           <AccountAvatar email={DEMO_EMAIL} className="ml-auto" />
         </HeaderDemo>
         <figcaption className="text-[0.875rem] text-muted-foreground">
@@ -90,7 +100,7 @@ export function NavDemo() {
           <Logo className="text-[1.375rem]" />
           <AccountAvatar email={DEMO_EMAIL} />
         </HeaderDemo>
-        <BottomNav demo current={current} onSelect={setCurrent} />
+        <BottomNav demo current={current} onSelect={setCurrent} fridgeCount={2} />
         <figcaption className="text-[0.875rem] text-muted-foreground">
           Téléphone, connecté : le logo et l’avatar en haut, les onglets en bas.
         </figcaption>
@@ -498,6 +508,148 @@ export function ShoppingDemo() {
         onBackToPantry={() => setOpenId(null)}
         onEdit={async () => null}
         onDelete={() => setOpenId(null)}
+      />
+    </div>
+  );
+}
+
+// Le frigo : à finir vite (périmé en tomate, bientôt en moutarde), les restes par rayon,
+// « Fini » qui sort la ligne avec « Annuler », le panneau pour ranger avec ses puces de date.
+const FRIDGE_TODAY = "2026-11-19";
+const FRIDGE_URGENT: FridgeRowItem[] = [
+  { id: "poulet", label: "Blancs de poulet", quantity: "300 g", date: { text: "Périmé hier ?", tone: "expired" } },
+  { id: "courgettes", label: "Courgettes", quantity: "3", date: { text: "Aujourd’hui", tone: "soon" } },
+  { id: "creme", label: "Crème fraîche épaisse", quantity: "200 g", date: { text: "Demain", tone: "soon" } },
+];
+
+export function FridgeDemo() {
+  const [urgent, setUrgent] = useState(FRIDGE_URGENT);
+  const [text, setText] = useState("");
+  const [target, setTarget] = useState<FridgeSheetTarget | null>(null);
+  const [date, setDate] = useState<BestBeforeValue>({ preset: "week", custom: "" });
+
+  function finish(item: FridgeRowItem) {
+    setUrgent((current) => current.filter((entry) => entry.id !== item.id));
+    toast(`Fini : ${item.label}`, {
+      action: {
+        label: "Annuler",
+        onClick: () => setUrgent((current) => FRIDGE_URGENT.filter((entry) => entry.id === item.id || current.includes(entry))),
+      },
+    });
+  }
+
+  function open(item: FridgeRowItem) {
+    setTarget({ title: item.label, unit: "g", parts: false, quantity: 200, bestBefore: "2026-11-20", existing: true, reservedFor: null });
+  }
+
+  return (
+    <div className="max-w-md space-y-4">
+      <FridgeAddField
+        sticky={false}
+        value={text}
+        onValueChange={setText}
+        options={[
+          { value: "Crème fraîche épaisse", hint: "Crèmerie" },
+          { value: "Courgettes", hint: "Fruits et légumes" },
+          { value: "Steaks hachés pur bœuf", hint: "Boucherie" },
+        ]}
+        onChoose={(label) =>
+          setTarget({ title: label, unit: "g", parts: false, quantity: null, bestBefore: "2026-11-26", existing: false, reservedFor: null })
+        }
+      />
+
+      <FridgeSection title="À finir vite" hint="À manger en premier" icon={<AlarmClock />} urgent>
+        <ul className="border-t border-border/70">
+          <AnimatePresence initial={false}>
+            {urgent.map((item) => (
+              <FridgeItemRow key={item.id} item={item} onOpen={() => open(item)} onFinish={() => finish(item)} />
+            ))}
+          </AnimatePresence>
+        </ul>
+      </FridgeSection>
+
+      <FridgeSection title="Restes" icon={<Refrigerator />}>
+        <div className="space-y-1">
+          <FridgeGroup label="Plats" icon={<CookingPot />}>
+            <FridgeItemRow
+              item={{ id: "lasagnes", label: "Reste : Lasagnes", quantity: "2 parts", date: { text: "jusqu’au dim. 22", tone: "ok" } }}
+              onOpen={() => {}}
+              onFinish={() => {}}
+            />
+          </FridgeGroup>
+          <FridgeGroup label="Crèmerie" icon={<AisleIcon aisle="cremerie" />}>
+            <FridgeItemRow
+              item={{ id: "beurre", label: "Beurre", quantity: "250 g", date: { text: "jusqu’au sam. 19 déc.", tone: "ok" } }}
+              onOpen={() => {}}
+              onFinish={() => {}}
+            />
+            <FridgeItemRow item={{ id: "lait", label: "Lait", quantity: "1 l", date: null }} onOpen={() => {}} onFinish={() => {}} />
+          </FridgeGroup>
+        </div>
+      </FridgeSection>
+
+      <div className="rounded-3xl border border-border/80 bg-card p-4 shadow-soft">
+        <BestBeforeChips value={date} onChange={setDate} today={FRIDGE_TODAY} />
+      </div>
+
+      <FridgeItemSheet
+        target={target}
+        open={target !== null}
+        onOpenChange={(value) => !value && setTarget(null)}
+        today={FRIDGE_TODAY}
+        onSubmit={async () => {
+          setTarget(null);
+          return null;
+        }}
+        onFinish={() => setTarget(null)}
+      />
+    </div>
+  );
+}
+
+// Le frigo ailleurs : la bande de /semaine, la carte « Range-les au frigo » des courses, une ligne
+// en partie au frigo, et, dans le panneau d'un plat du jour, « Pas cuisiné » et « Il en reste ».
+export function FridgeLinksDemo({ family }: { family: CardMember[] }) {
+  const [checked, setChecked] = useState(false);
+  const [skipped, setSkipped] = useState(true);
+  const [stored, setStored] = useState(false);
+  return (
+    <div className="max-w-md space-y-4">
+      <FridgeStrip text="À finir : blancs de poulet, crème fraîche épaisse, courgettes" />
+      {!stored && <StoreGroceriesCard onStore={() => setStored(true)} onLater={() => setStored(true)} />}
+      <ShoppingAisle aisle="cremerie" label="Crèmerie" remaining={checked ? 1 : 2}>
+        <ShoppingItemRow
+          item={{
+            id: "creme",
+            label: "Crème fraîche épaisse",
+            quantity: "150 g",
+            checked,
+            quantityChanged: false,
+            note: "+ 200 g au frigo",
+          }}
+          onToggle={() => setChecked((value) => !value)}
+          onMore={() => {}}
+        />
+        <ShoppingItemRow
+          item={{ id: "lait", label: "Lait", quantity: "1,8 l", checked: false, quantityChanged: false, note: "Tu en as peut-être au frigo" }}
+          onToggle={() => {}}
+          onMore={() => {}}
+        />
+      </ShoppingAisle>
+      <PlannedMealCard
+        recipe={{ title: "Lasagnes à la bolognaise", minutes: 75, photo_url: null, mealType: "soir" }}
+        eaters={family}
+        household={family}
+        locked={false}
+        skipped={skipped}
+      />
+      <CookedControls
+        skipped={skipped}
+        onSkippedChange={setSkipped}
+        onLeftover={async () => {
+          toast("Rangé au frigo");
+          return null;
+        }}
       />
     </div>
   );

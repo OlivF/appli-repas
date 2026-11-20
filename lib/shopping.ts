@@ -1,3 +1,4 @@
+import { fnv1a } from "@/lib/hash";
 import { DAYS, MEAL_TYPES, type MealType } from "@/lib/meal-slots";
 import { dishFactor, type PortionMember } from "@/lib/portions";
 import { normalizeText, type GroceryAisle, type IngredientUnit } from "@/lib/recipes";
@@ -54,7 +55,8 @@ export type ShoppingRecipe = {
   }[];
 };
 
-export type ShoppingMeal = { day: number; meal_type: MealType; recipe_id: string; member_ids: string[] };
+// `skipped` : « Pas cuisiné » (compte pour les courses, pas pour le bilan du frigo).
+export type ShoppingMeal = { day: number; meal_type: MealType; recipe_id: string; member_ids: string[]; skipped?: boolean };
 
 export type ComputedItem = {
   key: string;
@@ -64,6 +66,10 @@ export type ComputedItem = {
   pantry: boolean;
   amounts: Amount[];
   sources: ShoppingSource[];
+  // Pris au frigo, dans l'unité d'achat (jamais plus que le besoin) : la réservation.
+  fromFridge: number;
+  // Au frigo sans quantité connue : signalé, rien de déduit.
+  maybeInFridge: boolean;
 };
 
 // Un article tel qu'enregistré (shopping_items).
@@ -82,6 +88,10 @@ export type StoredItem = {
   manual: boolean;
   quantity_text: string | null;
   position: number;
+  from_fridge: number;
+  maybe_in_fridge: boolean;
+  // Déjà rangé au frigo (« Ranger les courses »).
+  stored: boolean;
 };
 
 // ─── Conversions ────────────────────────────────────────────────────────────
@@ -140,23 +150,18 @@ type Accumulator = {
   sources: ShoppingSource[];
 };
 
-// Cumule tous les plats de la semaine par ingrédient canonique. `stock` : ce qui est déjà à la
-// maison, dans l'unité d'achat, par ingrédient (prévu pour le frigo).
-export function buildShoppingList({
-  meals,
-  recipes,
-  members,
-  ingredients,
-  weekStart,
-  stock = {},
-}: {
+type WeekInput = {
   meals: readonly ShoppingMeal[];
   recipes: readonly ShoppingRecipe[];
   members: readonly PortionMember[];
   ingredients: readonly ShoppingIngredient[];
   weekStart: string;
-  stock?: Record<string, number>;
-}): ComputedItem[] {
+};
+
+// Chaque plat à l'échelle de ses mangeurs, cumulé par ingrédient canonique : dans l'unité d'achat
+// (`main`, exact), ou dans l'unité de la recette quand la conversion manque (`residuals`). La seule
+// mise à l'échelle des courses et du bilan du frigo.
+function accumulate({ meals, recipes, members, ingredients, weekStart }: WeekInput): Accumulator[] {
   const recipesById = new Map(recipes.map((recipe) => [recipe.id, recipe]));
   const ingredientsById = new Map(ingredients.map((ingredient) => [ingredient.id, ingredient]));
   const items = new Map<string, Accumulator>();
@@ -202,17 +207,41 @@ export function buildShoppingList({
       else entry.residuals.set(amount.unit, (entry.residuals.get(amount.unit) ?? 0) + amount.quantity);
     }
   }
+  return [...items.values()];
+}
 
+// Le besoin exact des plats cuisinés de la semaine (sans les « Pas cuisiné »), par ingrédient,
+// dans l'unité d'achat, sans arrondi. Ni le placard ni les morceaux non convertibles : le bilan
+// du frigo ne les déduit pas.
+export function weekNeeds(input: WeekInput): Record<string, number> {
+  const needs: Record<string, number> = {};
+  for (const entry of accumulate({ ...input, meals: input.meals.filter((dish) => !dish.skipped) })) {
+    if (entry.ingredient && entry.main > 0) needs[entry.ingredient.id] = entry.main;
+  }
+  return needs;
+}
+
+// La liste de la semaine. `stock` : ce que le frigo peut donner à cette liste, dans l'unité
+// d'achat, par ingrédient ; déduit avant l'arrondi. Un article entièrement au frigo reste, sans
+// quantité, avec `fromFridge`. `maybeInFridge` : ingrédients au frigo sans quantité (signalés).
+export function buildShoppingList({
+  stock = {},
+  maybeInFridge = new Set(),
+  ...week
+}: WeekInput & {
+  stock?: Record<string, number>;
+  maybeInFridge?: ReadonlySet<string>;
+}): ComputedItem[] {
   const result: ComputedItem[] = [];
-  for (const entry of items.values()) {
+  for (const entry of accumulate(week)) {
     const pantry = !entry.ingredient || entry.ingredient.pantry;
     const amounts: Amount[] = [];
-    let hadQuantity = false;
+    let fromFridge = 0;
 
     if (!pantry && entry.ingredient) {
       if (entry.main > 0) {
-        hadQuantity = true;
-        const left = entry.main - (stock[entry.ingredient.id] ?? 0);
+        fromFridge = Math.min(stock[entry.ingredient.id] ?? 0, entry.main);
+        const left = entry.main - fromFridge;
         if (left > 1e-9) {
           const unit = entry.ingredient.shopping_unit;
           amounts.push({ quantity: roundForPurchase(left, unit), unit });
@@ -221,12 +250,9 @@ export function buildShoppingList({
       for (const unit of RESIDUAL_ORDER) {
         const quantity = entry.residuals.get(unit);
         if (!quantity) continue;
-        hadQuantity = true;
         amounts.push({ quantity: roundForPurchase(quantity, unit), unit });
       }
     }
-    // Tout est déjà à la maison.
-    if (hadQuantity && amounts.length === 0) continue;
 
     result.push({
       key: entry.key,
@@ -236,6 +262,8 @@ export function buildShoppingList({
       pantry,
       amounts,
       sources: entry.sources,
+      fromFridge,
+      maybeInFridge: !pantry && entry.ingredient !== null && maybeInFridge.has(entry.ingredient.id),
     });
   }
 
@@ -304,13 +332,7 @@ export function menuSignature(meals: readonly Pick<ShoppingMeal, "recipe_id" | "
     .map((dish) => `${dish.recipe_id}:${[...dish.member_ids].sort().join(",")}`)
     .sort()
     .join("|");
-  // FNV-1a 32 bits.
-  let hash = 0x811c9dc5;
-  for (let index = 0; index < text.length; index++) {
-    hash ^= text.charCodeAt(index);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return (hash >>> 0).toString(16).padStart(8, "0");
+  return fnv1a(text);
 }
 
 // ─── Mise à jour ────────────────────────────────────────────────────────────
@@ -347,15 +369,24 @@ export function mergeShoppingItems(previous: readonly StoredItem[], next: readon
       manual: false,
       quantity_text: null,
       position,
+      from_fridge: item.fromFridge,
+      maybe_in_fridge: item.maybeInFridge,
+      stored: old?.stored ?? false,
     };
   });
 }
 
 // ─── Écran ──────────────────────────────────────────────────────────────────
 
-// À acheter : ni masqué (« J'en ai déjà »), ni au placard (sauf « Il n'en reste plus »).
+// Entièrement au frigo : rien à acheter, tout est pris au frigo.
+export function isAtHome(item: Pick<StoredItem, "pantry" | "manual" | "amounts" | "from_fridge">): boolean {
+  return !item.pantry && !item.manual && item.amounts.length === 0 && item.from_fridge > 0;
+}
+
+// À acheter : ni masqué (« J'en ai déjà »), ni entièrement au frigo, ni au placard (sauf « Il
+// n'en reste plus »).
 function inList(item: StoredItem) {
-  return !item.removed && (!item.pantry || item.needed);
+  return !item.removed && !isAtHome(item) && (!item.pantry || item.needed);
 }
 
 function byListOrder(a: StoredItem, b: StoredItem) {
@@ -366,7 +397,8 @@ function byLabel(a: StoredItem, b: StoredItem) {
   return a.label.localeCompare(b.label, "fr");
 }
 
-// Les rayons dans l'ordre du drive (non cochés d'abord), le placard, et ce qui est déjà à la maison.
+// Les rayons dans l'ordre du drive (non cochés d'abord), le placard, et ce qui est déjà à la
+// maison (« J'en ai déjà », ou entièrement au frigo).
 export function shoppingSections<T extends StoredItem>(items: readonly T[]) {
   const listed = items.filter(inList);
   return {
@@ -375,7 +407,7 @@ export function shoppingSections<T extends StoredItem>(items: readonly T[]) {
       return { aisle: value, label, items: aisleItems, remaining: aisleItems.filter((item) => !item.checked).length };
     }).filter((section) => section.items.length > 0),
     pantry: items.filter((item) => item.pantry && !item.needed && !item.removed).sort(byLabel),
-    home: items.filter((item) => item.removed).sort(byLabel),
+    home: items.filter((item) => item.removed || isAtHome(item)).sort(byLabel),
   };
 }
 

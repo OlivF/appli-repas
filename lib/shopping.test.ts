@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { settleWeek, type FridgeItem } from "./fridge";
 import type { PortionMember } from "./portions";
 import {
   buildShoppingList,
@@ -12,6 +13,7 @@ import {
   shoppingSections,
   sourceLabel,
   usageLabel,
+  weekNeeds,
   type ComputedItem,
   type ShoppingIngredient,
   type ShoppingMeal,
@@ -48,6 +50,7 @@ const ingredients: ShoppingIngredient[] = [
   ingredient("salade", "Salades vertes", { aisle: "fruits_legumes", shopping_unit: "piece" }),
   ingredient("persil", "Persil", { aisle: "fruits_legumes", shopping_unit: "piece" }),
   ingredient("pdt", "Pommes de terre", { aisle: "fruits_legumes" }),
+  ingredient("oeufs", "Œufs", { aisle: "cremerie", shopping_unit: "piece" }),
 ];
 
 type Line = [ingredientId: string | null, name: string, quantity: number | null, unit: ShoppingRecipe["ingredients"][number]["unit"]];
@@ -92,6 +95,8 @@ const recipes: ShoppingRecipe[] = [
   recipe("porridge", "Porridge", 2, [["lait", "Lait", 1, "l"]]),
   recipe("chocolat", "Chocolat chaud", 2, [["lait", "Lait", 800, "ml"]]),
   recipe("puree", "Purée", 2, [["pdt", "Pommes de terre", 1.5, "kg"]]),
+  recipe("poulet-creme", "Poulet à la crème", 2, [["creme", "Crème fraîche épaisse", 350, "g"]]),
+  recipe("omelette", "Omelette", 2, [["oeufs", "Œufs", 4, "piece"]]),
 ];
 
 function meal(day: number, meal_type: ShoppingMeal["meal_type"], recipe_id: string, member_ids: string[]): ShoppingMeal {
@@ -106,8 +111,12 @@ const week: ShoppingMeal[] = [
   meal(2, "pique_nique", "wraps", ["anna-lucia", "otis"]),
 ];
 
-function build(meals: ShoppingMeal[] = week, stock?: Record<string, number>) {
-  return buildShoppingList({ meals, recipes, members, ingredients, weekStart: WEEK, stock });
+function build(meals: ShoppingMeal[] = week, stock?: Record<string, number>, maybeInFridge?: ReadonlySet<string>) {
+  return buildShoppingList({ meals, recipes, members, ingredients, weekStart: WEEK, stock, maybeInFridge });
+}
+
+function needs(meals: ShoppingMeal[] = week) {
+  return weekNeeds({ meals, recipes, members, ingredients, weekStart: WEEK });
 }
 
 function item(items: ComputedItem[], key: string) {
@@ -185,10 +194,96 @@ describe("buildShoppingList", () => {
     ]);
   });
 
-  it("déduit le stock avant d'arrondir, et retire ce qui est déjà à la maison", () => {
+  it("déduit le stock avant d'arrondir ; un article entièrement à la maison reste, sans quantité", () => {
     const items = build(week, { creme: 100, steak: 10 });
-    expect(item(items, "creme").amounts).toEqual([{ quantity: 130, unit: "g" }]);
-    expect(items.some((entry) => entry.key === "steak")).toBe(false);
+    expect(item(items, "creme")).toMatchObject({ amounts: [{ quantity: 130, unit: "g" }], fromFridge: 100 });
+    expect(item(items, "steak").amounts).toEqual([]);
+    expect(item(items, "steak").fromFridge).toBeCloseTo(4.9);
+  });
+
+  it("ne prend jamais au frigo plus que le besoin, et rien sans frigo", () => {
+    expect(item(build(), "steak")).toMatchObject({ fromFridge: 0, maybeInFridge: false });
+  });
+});
+
+describe("le frigo dans la liste", () => {
+  const dinner = [meal(3, "soir", "poulet-creme", ["olivier", "marie-laure"])];
+
+  it("200 g de crème au frigo pour 350 g : 150 g à acheter, 200 g pris au frigo", () => {
+    expect(item(build(dinner, { creme: 200 }), "creme")).toMatchObject({
+      amounts: [{ quantity: 150, unit: "g" }],
+      fromFridge: 200,
+    });
+  });
+
+  it("500 g au frigo : rien à acheter, 350 g pris au frigo, l'article reste", () => {
+    expect(item(build(dinner, { creme: 500 }), "creme")).toMatchObject({ amounts: [], fromFridge: 350 });
+  });
+
+  it("un ingrédient au frigo sans quantité : signalé, rien de déduit", () => {
+    expect(item(build(dinner, {}, new Set(["creme"])), "creme")).toMatchObject({
+      amounts: [{ quantity: 350, unit: "g" }],
+      fromFridge: 0,
+      maybeInFridge: true,
+    });
+  });
+
+  it("un morceau non convertible reste à acheter même si le reste est au frigo", () => {
+    expect(item(build(week, { parmesan: 500 }), "parmesan")).toMatchObject({
+      amounts: [{ quantity: 2, unit: "cas" }],
+      fromFridge: 200,
+    });
+  });
+});
+
+describe("weekNeeds", () => {
+  it("le besoin exact de la semaine, dans l'unité d'achat, sans arrondi", () => {
+    const result = needs();
+    expect(result.creme).toBeCloseTo(230);
+    expect(result.steak).toBeCloseTo(4.9);
+    expect(result.jambon).toBeCloseTo(2.8);
+    expect(result.frites).toBeCloseTo(780);
+  });
+
+  it("sans le placard ni les morceaux non convertibles", () => {
+    const result = needs();
+    expect(result).not.toHaveProperty("huile");
+    expect(result.parmesan).toBeCloseTo(200);
+    expect(result).not.toHaveProperty("persil");
+  });
+
+  it("sans les plats « Pas cuisiné »", () => {
+    const skipped = week.map((dish) => (dish.recipe_id === "salade-keto" ? { ...dish, skipped: true } : dish));
+    expect(needs(skipped).creme).toBeCloseTo(200);
+    expect(needs(skipped)).not.toHaveProperty("salade");
+  });
+});
+
+describe("bilan de la semaine", () => {
+  const LIST = "liste-23";
+  const eggs: FridgeItem[] = [
+    {
+      id: "oeufs-drive",
+      ingredient_id: "oeufs",
+      label: "Œufs",
+      quantity: 6,
+      unit: "piece",
+      best_before: "2026-12-10",
+      origin: "shopping",
+      recipe_id: null,
+      reserved_list_id: LIST,
+    },
+  ];
+  const omelette = meal(4, "soir", "omelette", ["olivier", "marie-laure"]);
+
+  it("6 œufs rangés depuis le drive, une omelette de 4 : il en reste 2", () => {
+    expect(settleWeek({ items: eggs, listId: LIST, fromFridge: {}, needs: needs([omelette]) })).toEqual([
+      { id: "oeufs-drive", quantity: 2 },
+    ]);
+  });
+
+  it("une omelette « Pas cuisiné » laisse les 6 œufs", () => {
+    expect(settleWeek({ items: eggs, listId: LIST, fromFridge: {}, needs: needs([{ ...omelette, skipped: true }]) })).toEqual([]);
   });
 });
 
@@ -258,12 +353,26 @@ function stored(fields: Partial<StoredItem> & Pick<StoredItem, "label">): Stored
     manual: false,
     quantity_text: null,
     position: 0,
+    from_fridge: 0,
+    maybe_in_fridge: false,
+    stored: false,
     ...fields,
   };
 }
 
 function computed(key: string, amounts: ComputedItem["amounts"], fields: Partial<ComputedItem> = {}): ComputedItem {
-  return { key, ingredientId: key, label: key, aisle: "epicerie", pantry: false, amounts, sources: [], ...fields };
+  return {
+    key,
+    ingredientId: key,
+    label: key,
+    aisle: "epicerie",
+    pantry: false,
+    amounts,
+    sources: [],
+    fromFridge: 0,
+    maybeInFridge: false,
+    ...fields,
+  };
 }
 
 describe("mergeShoppingItems", () => {
@@ -311,6 +420,14 @@ describe("mergeShoppingItems", () => {
   it("un menu vide ne laisse aucun article calculé", () => {
     expect(mergeShoppingItems(previous, [])).toEqual([]);
   });
+
+  it("reprend la part du frigo du calcul et garde « déjà rangé »", () => {
+    const result = mergeShoppingItems(
+      [stored({ ingredient_id: "riz", label: "Riz", checked: true, stored: true, from_fridge: 100 })],
+      [computed("riz", [{ quantity: 300, unit: "g" }], { fromFridge: 200, maybeInFridge: true })],
+    );
+    expect(result[0]).toMatchObject({ from_fridge: 200, maybe_in_fridge: true, stored: true });
+  });
 });
 
 describe("shoppingSections et shoppingProgress", () => {
@@ -322,6 +439,15 @@ describe("shoppingSections et shoppingProgress", () => {
     stored({ ingredient_id: "sel", label: "Sel", aisle: "epicerie", pantry: true, position: 3 }),
     stored({ ingredient_id: "huile", label: "Huile d'olive", aisle: "epicerie", pantry: true, needed: true, position: 4 }),
     stored({ ingredient_id: "oeufs", label: "Œufs", aisle: "cremerie", removed: true, position: 5 }),
+    stored({ ingredient_id: "creme", label: "Crème fraîche épaisse", aisle: "cremerie", from_fridge: 350, position: 6 }),
+    stored({
+      ingredient_id: "parmesan",
+      label: "Parmesan",
+      aisle: "cremerie",
+      amounts: [{ quantity: 2, unit: "cas" }],
+      from_fridge: 200,
+      position: 7,
+    }),
   ];
 
   it("range la liste par rayon : non cochés, puis cochés ; les manuels après les calculés", () => {
@@ -329,18 +455,19 @@ describe("shoppingSections et shoppingProgress", () => {
     expect(aisles.map((aisle) => [aisle.label, aisle.remaining, aisle.items.map((entry) => entry.label)])).toEqual([
       ["Fruits et légumes", 2, ["Courgettes", "Bananes", "Oignons"]],
       ["Boucherie", 0, ["Steaks"]],
+      ["Crèmerie", 1, ["Parmesan"]],
       ["Épicerie", 1, ["Huile d'olive"]],
     ]);
   });
 
-  it("sépare le placard et ce qui est déjà à la maison", () => {
+  it("sépare le placard et ce qui est déjà à la maison : « J'en ai déjà » et entièrement au frigo", () => {
     const { pantry, home } = shoppingSections(items);
     expect(pantry.map((entry) => entry.label)).toEqual(["Sel"]);
-    expect(home.map((entry) => entry.label)).toEqual(["Œufs"]);
+    expect(home.map((entry) => entry.label)).toEqual(["Crème fraîche épaisse", "Œufs"]);
   });
 
   it("compte la progression sur les articles à acheter", () => {
-    expect(shoppingProgress(items)).toEqual({ done: 2, total: 5 });
+    expect(shoppingProgress(items)).toEqual({ done: 2, total: 6 });
   });
 });
 
@@ -353,6 +480,7 @@ describe("shoppingListText", () => {
       stored({ ingredient_id: "creme", label: "Crème fraîche épaisse", aisle: "cremerie", amounts: [{ quantity: 250, unit: "g" }] }),
       stored({ label: "Bougies", manual: true, quantity_text: "2 paquets" }),
       stored({ ingredient_id: "sel", label: "Sel", pantry: true }),
+      stored({ ingredient_id: "lait", label: "Lait", aisle: "cremerie", from_fridge: 1000 }),
     ];
     expect(shoppingListText("Semaine du 23 au 29 novembre", items)).toBe(
       [

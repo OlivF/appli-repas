@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Archive, House, Pencil, Trash2 } from "lucide-react";
+import { Archive, House, Pencil, Refrigerator, Trash2 } from "lucide-react";
 import { Field, FieldError } from "@/components/field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,8 @@ export type SheetItem = {
   needed: boolean;
   quantityText: string | null;
   sources: ShoppingSource[];
+  // « Au frigo : 200 g, jusqu'au mar. 24 ».
+  fridgeLine?: string | null;
 };
 
 // Le panneau d'un article : « Pour quoi ? » (les plats qui le demandent), « J'en ai déjà », et pour
@@ -100,6 +102,12 @@ function SheetBody({
           </ul>
         ) : (
           <p className="mt-1 text-muted-foreground">Ajouté à la main</p>
+        )}
+        {item.fridgeLine && (
+          <p className="mt-2 flex items-center gap-2 border-t border-border/70 pt-2 font-semibold">
+            <Refrigerator aria-hidden="true" className="size-4.5 shrink-0 text-sage-deep" />
+            {item.fridgeLine}
+          </p>
         )}
       </section>
 
