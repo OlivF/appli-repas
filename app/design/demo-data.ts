@@ -70,6 +70,9 @@ export const DEMO_RECIPES: ListRecipe[] = [
   batch_friendly: false,
   base: null,
   basic: false,
+  course: "main" as const,
+  servings: 4,
+  ingredientIds: [],
   ingredientNames: [],
   excludedIds: [],
 }));
@@ -89,6 +92,9 @@ export const DEMO_BASICS: ListRecipe[] = [
   photo_url: null,
   batch_friendly: false,
   basic: true,
+  course: "main" as const,
+  servings: 4,
+  ingredientIds: [],
   ingredientNames: [],
   excludedIds: [],
 }));

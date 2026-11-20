@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { LEA, PAUL, TOM, formData } from "@/test/helpers";
 import {
+  COURSES,
+  EXTRA_COURSES,
   describeEaters,
   dietReason,
   filterRecipes,
@@ -10,6 +12,8 @@ import {
   formatIngredientQuantity,
   hideCopiedOriginals,
   incompatibleDiets,
+  isExtra,
+  isLightCourse,
   matchesSearch,
   memberEatability,
   normalizeText,
@@ -74,6 +78,7 @@ describe("parseRecipeForm", () => {
         kid_friendly: true,
         base: "Crêpe",
         basic: true,
+        course: "main",
       },
       ingredients: [{ name: "Farine", quantity: 250, unit: "g", aisle: "epicerie" }],
       excludedMemberIds: [LEA],
@@ -84,6 +89,41 @@ describe("parseRecipeForm", () => {
     const result = parse({ base: "   " });
     expect(result.ok && result.recipe.base).toBeNull();
     expect(result.ok && result.recipe.basic).toBe(false);
+  });
+
+  it("lit la sorte, un plat par défaut ou si elle est inconnue", () => {
+    const plain = parse();
+    expect(plain.ok && plain.recipe.course).toBe("main");
+    const dessert = parse({ course: "dessert" });
+    expect(dessert.ok && dessert.recipe.course).toBe("dessert");
+    const unknown = parse({ course: "gouter" });
+    expect(unknown.ok && unknown.recipe.course).toBe("main");
+  });
+
+  it("retire l'élément principal et « basique » d'une recette qui n'est pas un plat", () => {
+    const result = parse({ course: "starter", base: "Carottes", basic: "on" });
+    expect(result.ok && result.recipe.base).toBeNull();
+    expect(result.ok && result.recipe.basic).toBe(false);
+  });
+
+  it("accepte un fruit d'un ingrédient, pour une personne, sans étapes ni temps", () => {
+    const result = parse({
+      title: "Pomme",
+      course: "fruit",
+      meal_types: ["petit_dej", "midi", "soir", "pique_nique"],
+      servings: "1",
+      prep_minutes: "",
+      cook_minutes: "",
+      steps: "",
+      diets: ["vegetarian", "gluten_free", "lactose_free"],
+      ingredient_name: ["Pommes"],
+      ingredient_quantity: ["1"],
+      ingredient_unit: ["piece"],
+      ingredient_aisle: ["fruits_legumes"],
+    });
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.recipe).toMatchObject({ course: "fruit", servings: 1, steps: [], prep_minutes: 0, cook_minutes: 0 });
+    expect(result.ok && result.ingredients).toEqual([{ name: "Pommes", quantity: 1, unit: "piece", aisle: "fruits_legumes" }]);
   });
 
   it("refuse un élément principal de plus de 60 caractères", () => {
@@ -213,6 +253,39 @@ describe("parseRecipeForm", () => {
   it("ignore les repas et régimes inconnus", () => {
     const result = parse({ meal_types: ["soir", "goûter"], diets: ["keto", "paleo"] });
     expect(result.ok && [result.recipe.meal_types, result.recipe.diets]).toEqual([["soir"], ["keto"]]);
+  });
+});
+
+describe("sortes", () => {
+  it("nomme les six sortes, le plat d'abord", () => {
+    expect(COURSES.map((course) => [course.value, course.label])).toEqual([
+      ["main", "Plat"],
+      ["starter", "Entrée"],
+      ["dessert", "Dessert"],
+      ["fruit", "Fruit"],
+      ["cheese", "Fromage"],
+      ["dairy", "Laitage"],
+    ]);
+    expect(COURSES.every((course) => course.icon)).toBe(true);
+  });
+
+  it("range les plats légers de fin de repas : laitage, fruit, fromage, dessert", () => {
+    expect(EXTRA_COURSES).toEqual(["dairy", "fruit", "cheese", "dessert"]);
+  });
+
+  it("appelle « plat léger » tout ce qui n'est pas un plat", () => {
+    expect(isExtra("main")).toBe(false);
+    expect(isExtra(undefined)).toBe(false);
+    expect(isExtra(null)).toBe(false);
+    for (const course of ["starter", "dessert", "fruit", "cheese", "dairy"] as const) expect(isExtra(course)).toBe(true);
+  });
+
+  it("propose le formulaire léger aux fruits, fromages et laitages seulement", () => {
+    expect(["main", "starter", "dessert", "fruit", "cheese", "dairy"].filter((course) => isLightCourse(course as never))).toEqual([
+      "fruit",
+      "cheese",
+      "dairy",
+    ]);
   });
 });
 

@@ -7,10 +7,11 @@
 //   docker compose exec web node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON \
 //     scripts/json-to-catalogue.ts recettes-basiques.json supabase/migrations/0007_basics_catalog.sql
 //
-// Format du JSON : { "recettes": [ { titre, description, base?, accompagnement?, types,
+// Format du JSON : { "recettes": [ { titre, description, base?, accompagnement?, plat?, types,
 // portions, prep, cuisson, regimes, batch, batch_notes, kid_friendly, basique?,
 // ingredients: [[nom, quantité, unité, rayon]], etapes } ] }. `accompagnement` sert à la
-// lecture du fichier seulement : il n'est pas stocké.
+// lecture du fichier seulement : il n'est pas stocké. `plat` : la sorte (entree, laitage, fruit,
+// fromage, dessert) ; absent, c'est un plat (main).
 //
 // Référentiel d'ingrédients (0009) : chaque ligne insérée est rattachée à son ingrédient canonique
 // par le trigger recipe_ingredients_set_ingredient (nom ou alias normalisés, sinon un nouvel
@@ -27,6 +28,7 @@ export type JsonRecipe = {
   description?: string | null;
   base?: string | null;
   accompagnement?: string | null;
+  plat?: string;
   types: string[];
   portions: number;
   prep?: number;
@@ -46,6 +48,14 @@ const DIETS: Record<string, string> = {
   vegetarien: "vegetarian",
   sans_gluten: "gluten_free",
   sans_lactose: "lactose_free",
+};
+// La sorte (recipes.course), en français dans le JSON.
+const COURSES: Record<string, string> = {
+  entree: "starter",
+  laitage: "dairy",
+  fruit: "fruit",
+  fromage: "cheese",
+  dessert: "dessert",
 };
 const UNITS = ["g", "kg", "ml", "l", "piece", "cas", "cac"];
 const AISLES = [
@@ -104,6 +114,7 @@ function check(recipe: JsonRecipe) {
   if (recipe.base != null && (recipe.base.trim().length < 1 || recipe.base.trim().length > 60)) {
     fail("base vide ou trop longue (60 caractères au plus)");
   }
+  if (recipe.plat !== undefined && !(recipe.plat in COURSES)) fail(`sorte inconnue : ${recipe.plat}`);
   if (recipe.types.length === 0) fail("aucun type de repas");
   for (const type of recipe.types) if (!MEAL_TYPES.includes(type)) fail(`type de repas inconnu : ${type}`);
   for (const diet of recipe.regimes ?? []) if (!(diet in DIETS)) fail(`régime inconnu : ${diet}`);
@@ -134,13 +145,14 @@ function recipeSql(recipe: JsonRecipe) {
 with recipe as (
   insert into public.recipes (
     id, household_id, title, description, meal_types, servings, prep_minutes, cook_minutes,
-    diets, steps, batch_friendly, batch_notes, kid_friendly, base, basic
+    diets, steps, batch_friendly, batch_notes, kid_friendly, base, basic, course
   ) values (
     ${text(recipeId(recipe.titre))}, null, ${text(recipe.titre.trim())}, ${text(recipe.description ?? null)},
     ${textArray(recipe.types, "public.meal_type")}, ${recipe.portions}, ${recipe.prep ?? 0}, ${recipe.cuisson ?? 0},
     ${textArray(diets, "public.diet")},
     ${textArray(recipe.etapes, "text")},
-    ${recipe.batch ?? false}, ${text(recipe.batch_notes ?? null)}, ${recipe.kid_friendly ?? false}, ${text(recipe.base?.trim() ?? null)}, ${recipe.basique ?? false}
+    ${recipe.batch ?? false}, ${text(recipe.batch_notes ?? null)}, ${recipe.kid_friendly ?? false}, ${text(recipe.base?.trim() ?? null)}, ${recipe.basique ?? false},
+    ${text(recipe.plat === undefined ? "main" : COURSES[recipe.plat])}::public.course
   )
   on conflict (id) do nothing
   returning id

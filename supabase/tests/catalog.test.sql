@@ -1,23 +1,24 @@
--- Catalogue commun (migrations 0003 et 0007) : le compte demandé, des recettes complètes,
--- des basiques qui s'associent, et des régimes qui tiennent leurs promesses.
+-- Catalogue commun (migrations 0003, 0007 et 0016) : le compte demandé, des recettes complètes,
+-- des basiques qui s'associent, des plats légers d'un ingrédient, et des régimes qui tiennent
+-- leurs promesses.
 -- Lancer : supabase test db
 begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(20);
+select plan(24);
 
 create temp view catalog as
 select * from public.recipes where household_id is null;
 
 create temp view catalog_ingredients as
-select ri.*, r.diets, r.title
+select ri.*, r.diets, r.title, r.course
 from public.recipe_ingredients ri
 join public.recipes r on r.id = ri.recipe_id
 where r.household_id is null;
 
 -- ── Le compte ───────────────────────────────────────────────────────────────
-select is((select count(*) from catalog), 75::bigint, 'Le catalogue compte 75 recettes');
+select is((select count(*) from catalog), 103::bigint, 'Le catalogue compte 103 recettes');
 
 select is(
   (select count(*) from catalog where id::text like 'ca7a0000-0000-4000-8000-%'),
@@ -78,16 +79,51 @@ select cmp_ok(
   'Au moins 6 pique-niques rapides pour les enfants');
 
 -- ── Des recettes complètes ──────────────────────────────────────────────────
+-- Hors recettes légères (une portion) : un yaourt n'a ni étapes ni second ingrédient.
 select is(
   (select count(*) from catalog c
-    where (select count(*) from public.recipe_ingredients ri where ri.recipe_id = c.id) < 2),
+    where c.servings > 1
+      and (select count(*) from public.recipe_ingredients ri where ri.recipe_id = c.id) < 2),
   0::bigint,
   'Chaque recette a au moins deux ingrédients');
 
 select is(
-  (select count(*) from catalog where cardinality(steps) = 0),
+  (select count(*) from catalog where servings > 1 and cardinality(steps) = 0),
   0::bigint,
   'Chaque recette a ses étapes');
+
+-- ── Desserts, fruits, fromages (0016) ───────────────────────────────────────
+select is(
+  (select array_agg(course::text || ':' || n order by course) from (
+    select course, count(*) as n from catalog where course <> 'main' group by course) as t),
+  array['starter:3', 'dessert:5', 'fruit:10', 'cheese:4', 'dairy:6'],
+  '3 entrées, 5 desserts, 10 fruits, 4 fromages, 6 laitages');
+
+select is(
+  (select count(*) from catalog c
+    where c.course <> 'main' and c.servings = 1 and cardinality(c.steps) = 0
+      and (select count(*) from public.recipe_ingredients ri where ri.recipe_id = c.id) = 1),
+  21::bigint,
+  '21 recettes légères : un ingrédient, une portion, pas d''étapes');
+
+select is(
+  (select count(*) from catalog where course <> 'main' and (base is not null or basic)),
+  0::bigint,
+  'Aucun plat léger n''a d''élément principal ni de place dans « Les basiques »');
+
+-- Chaque ingrédient d'une recette légère est au référentiel commun (identifiant fixe) et se
+-- convertit dans son unité d'achat : la liste de courses sait combien en acheter.
+select is(
+  (select array_agg(ci.title) from catalog_ingredients ci
+   left join public.ingredients i on i.id = ci.ingredient_id
+   where ci.course <> 'main'
+     and ci.recipe_id in (select id from catalog where servings = 1)
+     and (i.id is null
+          or i.id::text not like '1d9e0000-0000-4000-8000-%'
+          or (ci.unit::text <> i.shopping_unit::text
+              and not (ci.unit::text in ('g', 'kg') and i.shopping_unit = 'piece' and i.piece_grams is not null)))),
+  null,
+  'Les recettes légères se convertissent en unités d''achat');
 
 select is(
   (select count(*) from catalog where batch_friendly and coalesce(btrim(batch_notes), '') = ''),
@@ -125,11 +161,14 @@ select is(
 select is(
   (select array_agg(distinct title || ' : ' || name) from catalog_ingredients
     where 'lactose_free' = any (diets)
+      -- Sauf les fromages affinés, quasiment sans lactose (note de recettes-legeres.json).
+      and not (course = 'cheese' and name in ('Comté', 'Emmental'))
       and (name in ('Beurre', 'Lait', 'Crème fraîche épaisse', 'Crème liquide', 'Fromage frais')
            or name ilike any (array['%gruyère%', '%emmental%', '%mozzarella%', '%parmesan%',
                                     '%yaourt%', '%feta%', '%comté%', '%fromage blanc%']))),
   null,
   'Aucune recette sans lactose ne contient de produit laitier');
+
 
 select * from finish();
 rollback;

@@ -499,3 +499,68 @@ describe("shoppingListText", () => {
     );
   });
 });
+
+describe("desserts, fruits, fromages", () => {
+  const ALL = members.map((member) => member.id);
+  const extraIngredients: ShoppingIngredient[] = [
+    ingredient("yaourts", "Yaourts nature", { aisle: "cremerie", shopping_unit: "piece" }),
+    ingredient("comte", "Comté", { aisle: "cremerie", shopping_unit: "piece", piece_grams: 250 }),
+    ingredient("chocolat", "Chocolat noir", { shopping_unit: "piece", piece_grams: 100 }),
+    ingredient("oeufs", "Œufs", { aisle: "cremerie", shopping_unit: "piece" }),
+  ];
+  const extraRecipes: ShoppingRecipe[] = [
+    { ...recipe("yaourt", "Yaourt nature", 1, [["yaourts", "Yaourts nature", 1, "piece"]]), course: "dairy" },
+    { ...recipe("comte", "Comté", 1, [["comte", "Comté", 30, "g"]]), course: "cheese" },
+    {
+      ...recipe("mousse", "Mousse au chocolat", 6, [
+        ["chocolat", "Chocolat noir", 200, "g"],
+        ["oeufs", "Œufs", 6, "piece"],
+      ]),
+      course: "dessert",
+    },
+  ];
+  const dinners = (recipeId: string, eaters: string[], days = [0, 1, 2, 3, 4, 5, 6]) =>
+    days.map((day) => meal(day, "soir", recipeId, eaters));
+  const input = (meals: ShoppingMeal[]) => ({
+    meals,
+    recipes: extraRecipes,
+    members,
+    ingredients: extraIngredients,
+    weekStart: WEEK,
+  });
+
+  it("un yaourt nature à tous les dîners pour les 5 : 35 yaourts, pas 34,3", () => {
+    expect(weekNeeds(input(dinners("yaourt", ALL))).yaourts).toBe(35);
+    expect(item(buildShoppingList(input(dinners("yaourt", ALL))), "yaourts").amounts).toEqual([{ quantity: 35, unit: "piece" }]);
+  });
+
+  it("8 yaourts au frigo : 27 à acheter, 8 pris au frigo", () => {
+    const result = item(buildShoppingList({ ...input(dinners("yaourt", ALL)), stock: { yaourts: 8 } }), "yaourts");
+    expect(result.amounts).toEqual([{ quantity: 27, unit: "piece" }]);
+    expect(result.fromFridge).toBe(8);
+  });
+
+  it("garde les sources : « Yaourt nature · lun. soir · 5 pers. »", () => {
+    expect(sourceLabel(item(buildShoppingList(input(dinners("yaourt", ALL))), "yaourts").sources[0])).toBe(
+      "Yaourt nature · lun. soir · 5 pers.",
+    );
+  });
+
+  it("Comté 30 g pour Marie-Laure 4 soirs : 120 g, un morceau", () => {
+    const meals = dinners("comte", ML, [0, 1, 3, 4]);
+    expect(weekNeeds(input(meals)).comte).toBeCloseTo(120 / 250);
+    expect(item(buildShoppingList(input(meals)), "comte").amounts).toEqual([{ quantity: 1, unit: "piece" }]);
+  });
+
+  it("une mousse pour 6 mangée par les 5 : 5/6 de la recette, sans coefficient", () => {
+    const result = weekNeeds(input([meal(6, "soir", "mousse", ALL)]));
+    expect(result.oeufs).toBeCloseTo(5);
+    expect(result.chocolat).toBeCloseTo((200 * 5) / 6 / 100);
+  });
+
+  it("un yaourt « Pas mangé » compte pour les courses, pas pour le bilan du frigo", () => {
+    const meals = dinners("yaourt", ALL).map((dish) => (dish.day === 0 ? { ...dish, skipped: true } : dish));
+    expect(item(buildShoppingList(input(meals)), "yaourts").amounts).toEqual([{ quantity: 35, unit: "piece" }]);
+    expect(weekNeeds(input(meals)).yaourts).toBe(30);
+  });
+});

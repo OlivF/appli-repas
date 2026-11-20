@@ -287,14 +287,14 @@ isOneToOne: false
                   ]
                 },"recipes": {
                   Row: {
-                    "base": string | null,"basic": boolean,"batch_friendly": boolean,"batch_notes": string | null,"cook_minutes": number,"created_at": string,"description": string | null,"diets": (Database["public"]['Enums']["diet"])[],"household_id": string | null,"id": string,"kid_friendly": boolean,"meal_types": (Database["public"]['Enums']["meal_type"])[],"photo_url": string | null,"prep_minutes": number,"servings": number,"source_recipe_id": string | null,"steps": (string)[],"title": string
+                    "base": string | null,"basic": boolean,"batch_friendly": boolean,"batch_notes": string | null,"cook_minutes": number,"course": Database["public"]['Enums']["course"],"created_at": string,"description": string | null,"diets": (Database["public"]['Enums']["diet"])[],"household_id": string | null,"id": string,"kid_friendly": boolean,"meal_types": (Database["public"]['Enums']["meal_type"])[],"photo_url": string | null,"prep_minutes": number,"servings": number,"source_recipe_id": string | null,"steps": (string)[],"title": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "base"?: string | null,"basic"?: boolean,"batch_friendly"?: boolean,"batch_notes"?: string | null,"cook_minutes"?: number,"created_at"?: string,"description"?: string | null,"diets"?: (Database["public"]['Enums']["diet"])[],"household_id"?: string | null,"id"?: string,"kid_friendly"?: boolean,"meal_types": (Database["public"]['Enums']["meal_type"])[],"photo_url"?: string | null,"prep_minutes"?: number,"servings": number,"source_recipe_id"?: string | null,"steps"?: (string)[],"title": string
+                    "base"?: string | null,"basic"?: boolean,"batch_friendly"?: boolean,"batch_notes"?: string | null,"cook_minutes"?: number,"course"?: Database["public"]['Enums']["course"],"created_at"?: string,"description"?: string | null,"diets"?: (Database["public"]['Enums']["diet"])[],"household_id"?: string | null,"id"?: string,"kid_friendly"?: boolean,"meal_types": (Database["public"]['Enums']["meal_type"])[],"photo_url"?: string | null,"prep_minutes"?: number,"servings": number,"source_recipe_id"?: string | null,"steps"?: (string)[],"title": string
                   }
                   Update: {
-                    "base"?: string | null,"basic"?: boolean,"batch_friendly"?: boolean,"batch_notes"?: string | null,"cook_minutes"?: number,"created_at"?: string,"description"?: string | null,"diets"?: (Database["public"]['Enums']["diet"])[],"household_id"?: string | null,"id"?: string,"kid_friendly"?: boolean,"meal_types"?: (Database["public"]['Enums']["meal_type"])[],"photo_url"?: string | null,"prep_minutes"?: number,"servings"?: number,"source_recipe_id"?: string | null,"steps"?: (string)[],"title"?: string
+                    "base"?: string | null,"basic"?: boolean,"batch_friendly"?: boolean,"batch_notes"?: string | null,"cook_minutes"?: number,"course"?: Database["public"]['Enums']["course"],"created_at"?: string,"description"?: string | null,"diets"?: (Database["public"]['Enums']["diet"])[],"household_id"?: string | null,"id"?: string,"kid_friendly"?: boolean,"meal_types"?: (Database["public"]['Enums']["meal_type"])[],"photo_url"?: string | null,"prep_minutes"?: number,"servings"?: number,"source_recipe_id"?: string | null,"steps"?: (string)[],"title"?: string
                   }
                   Relationships: [
                     {
@@ -406,6 +406,26 @@ isOneToOne: false
             "accept_household_invite":
 { Args: { "invite_code": string,"leave_current"?: boolean }; Returns: string
                            },
+"add_planned_extras":
+{ Args: { "items": Json,"target_household_id": string,"target_week_start": string }; Returns: {
+              "created_at": string,
+"day": number,
+"household_id": string,
+"id": string,
+"locked": boolean,
+"meal_type": Database["public"]['Enums']["meal_type"],
+"member_ids": (string)[],
+"position": number,
+"recipe_id": string,
+"skipped": boolean,
+"week_plan_id": string
+            }[]
+                          SetofOptions: {
+        from: "*"
+        to: "planned_meals"
+        isOneToOne: false
+        isSetofReturn: true
+      } },
 "add_planned_meal":
 { Args: { "eater_ids": (string)[],"target_day": number,"target_household_id": string,"target_meal_type": Database["public"]['Enums']["meal_type"],"target_recipe_id": string,"target_week_start": string }; Returns: string
                            },
@@ -474,7 +494,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "appetite": "normal"|"grand","diet": "keto"|"vegetarian"|"gluten_free"|"lactose_free","fridge_origin": "manual"|"shopping"|"leftover","grocery_aisle": "fruits_legumes"|"boucherie"|"poissonnerie"|"cremerie"|"epicerie"|"surgeles"|"boulangerie"|"boissons"|"autre","household_role": "admin"|"member","ingredient_unit": "g"|"kg"|"ml"|"l"|"piece"|"cas"|"cac","meal_type": "petit_dej"|"midi"|"soir"|"pique_nique","shopping_unit": "g"|"ml"|"piece"
+            "appetite": "normal"|"grand","course": "starter"|"main"|"dessert"|"fruit"|"cheese"|"dairy","diet": "keto"|"vegetarian"|"gluten_free"|"lactose_free","fridge_origin": "manual"|"shopping"|"leftover","grocery_aisle": "fruits_legumes"|"boucherie"|"poissonnerie"|"cremerie"|"epicerie"|"surgeles"|"boulangerie"|"boissons"|"autre","household_role": "admin"|"member","ingredient_unit": "g"|"kg"|"ml"|"l"|"piece"|"cas"|"cac","meal_type": "petit_dej"|"midi"|"soir"|"pique_nique","shopping_unit": "g"|"ml"|"piece"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -590,7 +610,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "appetite": ["normal", "grand"],"diet": ["keto", "vegetarian", "gluten_free", "lactose_free"],"fridge_origin": ["manual", "shopping", "leftover"],"grocery_aisle": ["fruits_legumes", "boucherie", "poissonnerie", "cremerie", "epicerie", "surgeles", "boulangerie", "boissons", "autre"],"household_role": ["admin", "member"],"ingredient_unit": ["g", "kg", "ml", "l", "piece", "cas", "cac"],"meal_type": ["petit_dej", "midi", "soir", "pique_nique"],"shopping_unit": ["g", "ml", "piece"]
+            "appetite": ["normal", "grand"],"course": ["starter", "main", "dessert", "fruit", "cheese", "dairy"],"diet": ["keto", "vegetarian", "gluten_free", "lactose_free"],"fridge_origin": ["manual", "shopping", "leftover"],"grocery_aisle": ["fruits_legumes", "boucherie", "poissonnerie", "cremerie", "epicerie", "surgeles", "boulangerie", "boissons", "autre"],"household_role": ["admin", "member"],"ingredient_unit": ["g", "kg", "ml", "l", "piece", "cas", "cac"],"meal_type": ["petit_dej", "midi", "soir", "pique_nique"],"shopping_unit": ["g", "ml", "piece"]
           }
         }
 } as const

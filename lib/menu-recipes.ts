@@ -13,7 +13,7 @@ export async function loadMenuRecipes(
   if (recipeIds.length === 0) return { recipes: [], ingredients: [] };
   const { data: recipeRows, error } = await supabase
     .from("recipes")
-    .select("id, title, servings, recipe_ingredients(ingredient_id, name, quantity, unit, aisle)")
+    .select("id, title, servings, course, recipe_ingredients(ingredient_id, name, quantity, unit, aisle)")
     .in("id", recipeIds);
   if (error) throw new Error(error.message);
   const recipes: ShoppingRecipe[] = recipeRows.map(({ recipe_ingredients, ...recipe }) => ({ ...recipe, ingredients: recipe_ingredients }));

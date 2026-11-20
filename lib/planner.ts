@@ -1,11 +1,12 @@
 import { baseKey } from "@/lib/bases";
 import { MEAL_TYPES, type MealType } from "@/lib/meal-slots";
 import type { Diet } from "@/lib/members";
-import { incompatibleDiets, normalizeText, type GroceryAisle } from "@/lib/recipes";
+import { incompatibleDiets, isExtra, normalizeText, type Course, type GroceryAisle } from "@/lib/recipes";
 
 // « Proposer la semaine » : code pur, sans base ni réseau, testé par lib/planner.test.ts.
 // Règles et notes : docs/superpowers/specs/2026-11-17-semaine-design.md (section Algorithme),
-// et 2026-11-19-plusieurs-plats-design.md (plusieurs plats par repas).
+// 2026-11-19-plusieurs-plats-design.md (plusieurs plats par repas) et 2026-11-20-desserts-design.md :
+// les desserts, fruits, fromages, laitages et entrées ne sont ni proposés, ni comptés.
 
 // ─── Réglages ───────────────────────────────────────────────────────────────
 // Pour chaque repas, la proposition compare des solutions entières : un plat pour tous, un plat
@@ -41,6 +42,8 @@ export type PlannerRecipe = {
   base: string | null;
   // Recette du panneau « Les basiques » : proposée seulement en duo avec un plat de sa base.
   basic?: boolean;
+  // Sorte (défaut : un plat). Le planificateur ignore tout ce qui n'est pas un plat.
+  course?: Course;
 };
 
 export type PlannerSlot = { day: number; meal_type: MealType; member_ids: readonly string[] };
@@ -52,6 +55,8 @@ export type PlannerCard = {
   recipe_id: string;
   member_ids: string[];
   locked: boolean;
+  // Sorte de sa recette (défaut : un plat) : une carte légère ne sert personne.
+  course?: Course;
 };
 
 export type Unfed = { day: number; meal_type: MealType; member_ids: string[] };
@@ -80,7 +85,7 @@ export function mainProtein(ingredients: readonly { name: string; aisle: Grocery
 
 // ─── Qui peut manger quoi ───────────────────────────────────────────────────
 
-export function canEat(recipe: PlannerRecipe, member: PlannerMember): boolean {
+export function canEat(recipe: Pick<PlannerRecipe, "diets" | "excludedIds">, member: PlannerMember): boolean {
   return incompatibleDiets(recipe.diets, member.diets).length === 0 && !recipe.excludedIds.includes(member.id);
 }
 
@@ -317,6 +322,18 @@ function bySlotOrder(a: { day: number; meal_type: MealType }, b: { day: number; 
   return a.day - b.day || MEAL_ORDER.indexOf(a.meal_type) - MEAL_ORDER.indexOf(b.meal_type);
 }
 
+// ─── Plats seulement ────────────────────────────────────────────────────────
+
+// Les plats parmi les recettes, et les cartes de plats (une carte dont la recette connue n'est pas
+// un plat est légère, même si elle ne le dit pas).
+function mainsOnly<C extends PlannerCard>(recipes: readonly PlannerRecipe[], cards: readonly C[]) {
+  const extras = new Set(recipes.filter((recipe) => isExtra(recipe.course)).map((recipe) => recipe.id));
+  return {
+    recipes: recipes.filter((recipe) => !isExtra(recipe.course)),
+    cards: cards.filter((card) => !isExtra(card.course) && !extras.has(card.recipe_id)),
+  };
+}
+
 // ─── Proposer la semaine ────────────────────────────────────────────────────
 
 // Rend les nouvelles cartes (non verrouillées) ; les cartes verrouillées restent telles quelles,
@@ -328,6 +345,8 @@ export function proposeWeek(input: {
   locked: readonly PlannerCard[];
   seed: number;
 }): { cards: PlannerCard[]; unfed: Unfed[] } {
+  const mains = mainsOnly(input.recipes, input.locked);
+  input = { ...input, recipes: mains.recipes, locked: mains.cards };
   const week: Week = {
     cards: [...input.locked],
     recipes: new Map(input.recipes.map((recipe) => [recipe.id, recipe])),
@@ -410,6 +429,8 @@ export function nextIdea<C extends PlannerCard>(input: {
   tried: readonly string[];
   seed: number;
 }): Idea<C> | null {
+  const mains = mainsOnly(input.recipes, input.cards);
+  input = { ...input, recipes: mains.recipes, cards: mains.cards };
   const { card } = input;
   const week: Week = {
     cards: [...input.cards],

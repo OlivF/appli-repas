@@ -20,6 +20,9 @@ function recipe(id: string, title: string, basic: boolean): ListRecipe {
     excludedIds: [],
     base: basic ? "Steak haché" : null,
     basic,
+    course: "main",
+    servings: 4,
+    ingredientIds: [],
   };
 }
 
