@@ -42,8 +42,9 @@ test("un duo le lundi soir, un plat pour Timothé, qui mange quoi, retirer un pl
   await page.getByRole("button", { name: "Proposer la semaine" }).first().click();
   await expect(page.getByRole("button", { name: "Relancer" }).first()).toBeVisible();
 
-  // Lundi soir : un plat pour Paul et Timothé, le plat céto de même base pour Léa.
-  await expect(monday(page).getByText(/^Même base : /)).toBeVisible();
+  // Lundi soir : un plat pour Paul et Timothé, le plat céto de même base pour Léa (le petit-déj
+  // peut avoir son propre duo, d'œufs coque par exemple).
+  await expect(monday(page).locator('[data-meal="soir"]').getByText(/^Même base : /)).toBeVisible();
   await expect(dish(page, "Sauf Léa")).toBeVisible();
   await expect(dish(page, "Pour Léa")).not.toContainText("Ne convient pas");
 

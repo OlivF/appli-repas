@@ -933,7 +933,7 @@ export function WeekBoard({
   const renderSlot = (slot: BoardSlot<Card>) => {
     const slotLabel = `${MEAL_NOUN[slot.meal_type]} de ${days[slot.day].long}`;
     return (
-      <div key={slot.meal_type} className="flex min-w-0 flex-col gap-2">
+      <div key={slot.meal_type} data-meal={slot.meal_type} className="flex min-w-0 flex-col gap-2">
         <h3
           className={cn(
             "text-[0.9375rem] font-semibold text-muted-foreground",

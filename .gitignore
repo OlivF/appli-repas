@@ -44,3 +44,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# SQL des semaines (scripts/week-to-sql.ts) : il contient l'email d'un compte
+/semaines/*.sql
