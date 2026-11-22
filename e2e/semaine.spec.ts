@@ -145,7 +145,7 @@ test.describe("sur un ordinateur portable", () => {
   // 1280 px (un écran 1920 px à 150 %) : la grille des sept jours, aux colonnes les plus étroites.
   test.use({ viewport: { width: 1280, height: 800 }, isMobile: false, hasTouch: false });
 
-  test("rien ne dépasse de la colonne de son jour, une puce garde son icône devant le titre", async ({ page }) => {
+  test("rien ne dépasse de la colonne de son jour, une entrée garde les plats alignés", async ({ page }) => {
     await newHousehold(page);
     await propose(page);
 
@@ -169,6 +169,14 @@ test.describe("sur un ordinateur portable", () => {
       return middle > title.y && middle < title.y + title.height;
     };
     await expect.poll(sameLine).toBe(true);
+
+    // Les plats du dîner restent alignés d'un jour à l'autre : lundi (avec entrée) et mardi (sans).
+    const firstDish = (index: number) => day(page, index).locator('[data-meal="soir"]').getByRole("group").first();
+    const gap = async () => {
+      const [monday, tuesday] = await Promise.all([firstDish(0).boundingBox(), firstDish(1).boundingBox()]);
+      return Math.round(monday!.y - tuesday!.y);
+    };
+    await expect.poll(gap).toBe(0);
 
     // Ce qui sort de la colonne de son jour, à gauche ou à droite (les copies cachées des pages
     // déjà vues n'ont pas de boîte ; les textes pour lecteur d'écran, rognés, ne se voient pas).

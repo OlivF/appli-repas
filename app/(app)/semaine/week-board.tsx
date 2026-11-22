@@ -137,6 +137,10 @@ const fromMeal = (mealType: MealType) => MEAL_NOUN[mealType].replace(/^le /, "du
 // « Le dîner de lundi ».
 const theMeal = (mealType: MealType, day: string) => `L${MEAL_NOUN[mealType].slice(1)} de ${day}`;
 
+// Sur ordinateur, chaque ligne de repas de la grille est faite de trois sous-lignes communes aux
+// sept jours : qui est là, les entrées, les plats (voir renderSlot ; « row-span-3 » dans les classes).
+const ROW_TRACKS = 3;
+
 // Zone, au bord de l'écran, où un plat glissé fait venir le jour voisin (px).
 const EDGE = 44;
 
@@ -1135,12 +1139,16 @@ export function WeekBoard({
       </ul>
     );
 
-  const renderSlot = (slot: BoardSlot<Card>) => {
+  // Un repas, en trois blocs : qui est là, les entrées, les plats (et ce qui les suit). Sur
+  // ordinateur, avec `band`, les trois blocs prennent les trois sous-lignes de la ligne du repas
+  // (voir ROW_TRACKS) : une entrée un jour réserve sa place les autres jours, et les plats de la
+  // semaine restent alignés.
+  const renderSlot = (slot: BoardSlot<Card>, band: boolean) => {
     const slotLabel = `${MEAL_NOUN[slot.meal_type]} de ${days[slot.day].long}`;
     return (
-      <div key={slot.meal_type} data-meal={slot.meal_type} className="flex min-w-0 flex-col gap-2">
+      <div key={slot.meal_type} data-meal={slot.meal_type} className={cn("flex min-w-0 flex-col gap-2", band && "xl:contents")}>
         {/* Le repas, « cette semaine » s'il ne suit pas le foyer, et qui est là (à toucher). */}
-        <div className="flex min-w-0 items-center gap-2">
+        <div className={cn("flex min-w-0 items-center gap-2", band && "xl:pb-2")}>
           <h3
             className={cn(
               "text-[0.9375rem] font-semibold text-muted-foreground",
@@ -1160,85 +1168,91 @@ export function WeekBoard({
             onOpen={() => openMeal(slot.day, slot.meal_type)}
           />
         </div>
-        {extraChips(slot, slot.starters)}
-        {slot.cards.length === 0 ? (
-          <DroppableSlot
-            id={`slot:${slot.day}:${slot.meal_type}`}
-            label={`Choisir ${slotLabel}`}
-            compact={wide}
-            dropState={dropState(`slot:${slot.day}:${slot.meal_type}`) as "target" | "refused" | undefined}
-            onClick={() => setSheet({ kind: "slot", day: slot.day, meal_type: slot.meal_type, member_ids: slot.member_ids })}
-          />
+        {slot.starters.length > 0 ? (
+          <div className={cn("min-w-0", band && "xl:pb-2")}>{extraChips(slot, slot.starters)}</div>
         ) : (
-          <ul className="flex flex-col gap-2">
-            <AnimatePresence initial={false} mode="popLayout">
-              {slot.cards.map((card) => {
-                const recipe = recipeById.get(card.recipe_id);
-                return (
-                  <BoardCard
-                    key={card.vid}
-                    id={card.id}
-                    vid={card.vid}
-                    delay={delays[card.id] ?? 0}
-                    recipe={{
-                      title: recipe?.title ?? "Recette",
-                      minutes: recipe?.minutes ?? 0,
-                      photo_url: recipe?.photo_url ?? null,
-                      mealType: slot.meal_type,
-                    }}
-                    eaters={eatersOf(card.member_ids, recipe)}
-                    household={members}
-                    locked={card.locked}
-                    layout={wide ? "column" : "row"}
-                    dragState={dropState(`card:${card.id}`)}
-                    showMeal={slot.meal_type === "pique_nique"}
-                    skipped={Boolean(card.skipped)}
-                    busy={busy.includes(card.id)}
-                    onOpen={() => setSheet({ kind: "card", cardId: card.id })}
-                    onEaters={() => openEaters(card)}
-                    onToggleLock={() => toggleLock(card)}
-                    onAnotherIdea={() => void anotherIdea(card)}
-                  />
-                );
-              })}
-            </AnimatePresence>
-          </ul>
+          band && <div aria-hidden="true" className="hidden xl:block" />
         )}
-        {slot.cards.length > 1 && sharedBase(slot.cards) && <SameBaseNote base={sharedBase(slot.cards)!} />}
-        {slot.unfed.length > 0 && (
-          <p className="text-[0.9375rem] text-muted-foreground">
-            Rien de prévu pour{" "}
-            {new Intl.ListFormat("fr", { type: "conjunction" }).format(
-              slot.unfed.map((id) => memberById.get(id)?.first_name ?? "?"),
-            )}
-            .{" "}
-            <Button
-              variant="link"
-              className="min-h-0 align-baseline"
-              onClick={() => setSheet({ kind: "slot", day: slot.day, meal_type: slot.meal_type, member_ids: slot.unfed })}
-            >
-              Choisir
-            </Button>
-          </p>
-        )}
-        {slot.cards.length > 0 && (
-          <DroppableSlot
-            id={`add:${slot.day}:${slot.meal_type}`}
-            variant="add"
-            label={`Ajouter un plat ${toMeal(slot.meal_type)} de ${days[slot.day].long}`}
-            compact={wide}
-            dropState={dropState(`add:${slot.day}:${slot.meal_type}`) as "target" | "refused" | undefined}
-            onClick={() => openAdd(slot.day, slot.meal_type)}
-          />
-        )}
-        {extraChips(
-          slot,
-          slot.extras,
-          <AddExtraChip
-            label={`Ajouter un dessert, un fruit… ${toMeal(slot.meal_type)} de ${days[slot.day].long}`}
-            onClick={() => setSheet({ kind: "extras", day: slot.day, meal_type: slot.meal_type })}
-          />,
-        )}
+        <div className={cn("flex min-w-0 flex-col gap-2", band && "xl:pb-4")}>
+          {slot.cards.length === 0 ? (
+            <DroppableSlot
+              id={`slot:${slot.day}:${slot.meal_type}`}
+              label={`Choisir ${slotLabel}`}
+              compact={wide}
+              dropState={dropState(`slot:${slot.day}:${slot.meal_type}`) as "target" | "refused" | undefined}
+              onClick={() => setSheet({ kind: "slot", day: slot.day, meal_type: slot.meal_type, member_ids: slot.member_ids })}
+            />
+          ) : (
+            <ul className="flex flex-col gap-2">
+              <AnimatePresence initial={false} mode="popLayout">
+                {slot.cards.map((card) => {
+                  const recipe = recipeById.get(card.recipe_id);
+                  return (
+                    <BoardCard
+                      key={card.vid}
+                      id={card.id}
+                      vid={card.vid}
+                      delay={delays[card.id] ?? 0}
+                      recipe={{
+                        title: recipe?.title ?? "Recette",
+                        minutes: recipe?.minutes ?? 0,
+                        photo_url: recipe?.photo_url ?? null,
+                        mealType: slot.meal_type,
+                      }}
+                      eaters={eatersOf(card.member_ids, recipe)}
+                      household={members}
+                      locked={card.locked}
+                      layout={wide ? "column" : "row"}
+                      dragState={dropState(`card:${card.id}`)}
+                      showMeal={slot.meal_type === "pique_nique"}
+                      skipped={Boolean(card.skipped)}
+                      busy={busy.includes(card.id)}
+                      onOpen={() => setSheet({ kind: "card", cardId: card.id })}
+                      onEaters={() => openEaters(card)}
+                      onToggleLock={() => toggleLock(card)}
+                      onAnotherIdea={() => void anotherIdea(card)}
+                    />
+                  );
+                })}
+              </AnimatePresence>
+            </ul>
+          )}
+          {slot.cards.length > 1 && sharedBase(slot.cards) && <SameBaseNote base={sharedBase(slot.cards)!} />}
+          {slot.unfed.length > 0 && (
+            <p className="text-[0.9375rem] text-muted-foreground">
+              Rien de prévu pour{" "}
+              {new Intl.ListFormat("fr", { type: "conjunction" }).format(
+                slot.unfed.map((id) => memberById.get(id)?.first_name ?? "?"),
+              )}
+              .{" "}
+              <Button
+                variant="link"
+                className="min-h-0 align-baseline"
+                onClick={() => setSheet({ kind: "slot", day: slot.day, meal_type: slot.meal_type, member_ids: slot.unfed })}
+              >
+                Choisir
+              </Button>
+            </p>
+          )}
+          {slot.cards.length > 0 && (
+            <DroppableSlot
+              id={`add:${slot.day}:${slot.meal_type}`}
+              variant="add"
+              label={`Ajouter un plat ${toMeal(slot.meal_type)} de ${days[slot.day].long}`}
+              compact={wide}
+              dropState={dropState(`add:${slot.day}:${slot.meal_type}`) as "target" | "refused" | undefined}
+              onClick={() => openAdd(slot.day, slot.meal_type)}
+            />
+          )}
+          {extraChips(
+            slot,
+            slot.extras,
+            <AddExtraChip
+              label={`Ajouter un dessert, un fruit… ${toMeal(slot.meal_type)} de ${days[slot.day].long}`}
+              onClick={() => setSheet({ kind: "extras", day: slot.day, meal_type: slot.meal_type })}
+            />,
+          )}
+        </div>
       </div>
     );
   };
@@ -1328,15 +1342,20 @@ export function WeekBoard({
           layoutScroll
           onScroll={onScroll}
           className={cn(
-            "relative -mx-5 mt-3 flex scroll-px-5 gap-5 overflow-x-auto px-5 pb-6 sm:scroll-px-8 [scrollbar-width:none] sm:-mx-8 sm:gap-4 sm:px-8 xl:mx-0 xl:grid xl:grid-cols-[6rem_repeat(7,minmax(0,1fr))] xl:gap-x-3 xl:gap-y-4 xl:overflow-visible xl:px-0 [&::-webkit-scrollbar]:hidden",
+            "relative -mx-5 mt-3 flex scroll-px-5 gap-5 overflow-x-auto px-5 pb-6 sm:scroll-px-8 [scrollbar-width:none] sm:-mx-8 sm:gap-4 sm:px-8 xl:mx-0 xl:grid xl:grid-cols-[6rem_repeat(7,minmax(0,1fr))] xl:gap-x-3 xl:gap-y-0 xl:overflow-visible xl:px-0 [&::-webkit-scrollbar]:hidden",
             drag ? "snap-none" : "snap-x snap-mandatory",
           )}
         >
-          {/* Ordinateur : les noms des lignes, à gauche. */}
-          <div aria-hidden="true" className="hidden xl:grid xl:grid-rows-subgrid" style={{ gridRow: `span ${board.length + 2}` }}>
+          {/* Ordinateur : les noms des lignes, à gauche. Les lignes ne sont pas espacées (gap-y-0) :
+              chaque bloc porte son propre espace en bas, et une sous-ligne vide ne prend aucune place. */}
+          <div
+            aria-hidden="true"
+            className="hidden xl:grid xl:grid-rows-subgrid"
+            style={{ gridRow: `span ${board.length * ROW_TRACKS + 2}` }}
+          >
             <span />
             {board.map((row) => (
-              <p key={row.row} className="pt-2 font-heading text-[1.25rem] leading-tight">
+              <p key={row.row} className="row-span-3 pt-2 font-heading text-[1.25rem] leading-tight">
                 <MealLabel type={row.row} className="flex-col items-start gap-1" />
               </p>
             ))}
@@ -1350,22 +1369,28 @@ export function WeekBoard({
               key={day.short}
               data-day={index}
               aria-label={`${day.long} ${day.date}`}
-              className="flex w-full min-w-0 shrink-0 snap-start flex-col gap-5 sm:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-2rem)/3)] xl:grid xl:w-auto xl:grid-cols-1 xl:grid-rows-subgrid xl:gap-y-4"
-              style={{ gridRow: `span ${board.length + 2}` }}
+              className="flex w-full min-w-0 shrink-0 snap-start flex-col gap-5 sm:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-2rem)/3)] xl:grid xl:w-auto xl:grid-cols-1 xl:grid-rows-subgrid xl:gap-y-0"
+              style={{ gridRow: `span ${board.length * ROW_TRACKS + 2}` }}
             >
-              <h2 className="sr-only sm:not-sr-only sm:flex sm:items-baseline sm:gap-2 sm:font-heading sm:text-[1.375rem] xl:justify-center">
+              <h2 className="sr-only sm:not-sr-only sm:flex sm:items-baseline sm:gap-2 sm:font-heading sm:text-[1.375rem] xl:justify-center xl:pb-4">
                 <span className="first-letter:uppercase">{day.short}</span>
                 <span className="text-muted-foreground">{day.date}</span>
               </h2>
-              {board.map((row) =>
-                row.days[index].slots.length === 0 ? (
-                  <div key={row.row} aria-hidden="true" className="hidden xl:block" />
-                ) : (
-                  <div key={row.row} className="flex min-w-0 flex-col gap-4">
-                    {row.days[index].slots.map(renderSlot)}
+              {/* Un seul repas dans la ligne : ses trois blocs vont dans les trois sous-lignes. Deux
+                  (le midi et le pique-nique du même jour) : empilés dans une case des trois. */}
+              {board.map((row) => {
+                const slots = row.days[index].slots;
+                if (slots.length === 0) return <div key={row.row} aria-hidden="true" className="hidden xl:row-span-3 xl:block" />;
+                const band = slots.length === 1;
+                return (
+                  <div
+                    key={row.row}
+                    className={cn("flex min-w-0 flex-col gap-4", band ? "xl:contents" : "xl:row-span-3 xl:pb-4")}
+                  >
+                    {slots.map((slot) => renderSlot(slot, band))}
                   </div>
-                ),
-              )}
+                );
+              })}
               {/* Un repas qui n'a pas lieu d'habitude, pour cette semaine (caché si les 4 ont lieu).
                   Dans une colonne étroite de la grille, le libellé passe sur deux lignes. */}
               {freeMeals(index).length > 0 ? (
