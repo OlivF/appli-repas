@@ -30,7 +30,7 @@ async function MealsStep() {
   return (
     <>
       {onboarding && <StepIndicator step={3} />}
-      <h1 className="page-title">Qui mange à la maison ?</h1>
+      <h1 className="page-title">{onboarding ? "Qui mange à la maison ?" : "Les repas d’une semaine habituelle"}</h1>
       <p className="lead">
         {onboarding
           ? "Touche une case pour dire qui est là. Le petit-déj et le dîner sont déjà cochés pour tout le monde."

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildBoard, extrasToAdd, menuBase, moveEaters } from "@/lib/board";
-import type { SlotInput } from "@/lib/meal-slots";
+import { buildBoard, canDropOn, extrasToAdd, leavingNote, menuBase, moveEaters, restorableEaters, trimCards, type BoardDrag } from "@/lib/board";
+import { weekSlots, type SlotInput } from "@/lib/meal-slots";
 import type { PlannerMember } from "@/lib/planner";
 import type { Course } from "@/lib/recipes";
 import { LEA, PAUL, TOM } from "@/test/helpers";
@@ -267,5 +267,158 @@ describe("extrasToAdd", () => {
   it("respecte les membres exclus d'une recette", () => {
     const { items } = add({ recipes: [{ ...comte, excludedIds: [TIMOTHE] }], target: { day: 0, meal_type: "soir" } });
     expect(items[0].member_ids).toEqual([OLIVIER, ML, ANNA, OTIS]);
+  });
+});
+
+// ─── La corbeille ───────────────────────────────────────────────────────────
+describe("canDropOn", () => {
+  const meals: Record<string, SlotInput["meal_type"][]> = { "r-a": ["soir"], "r-b": ["soir"], "r-c": ["midi", "soir"] };
+  const fits = (recipeId: string, mealType: SlotInput["meal_type"]) => meals[recipeId]?.includes(mealType) ?? false;
+  const free = card("a", 0, "soir", 0, [OLIVIER]);
+  const locked = { ...card("b", 1, "soir", 0, [OLIVIER]), locked: true };
+  const other = card("c", 2, "soir", 0, [OLIVIER]);
+  const cards = [free, locked, other];
+  const drop = (drag: BoardDrag, target: string) => canDropOn(drag, target, cards, fits);
+
+  it("la corbeille accepte un plat, même verrouillé, et une puce", () => {
+    expect(drop({ kind: "card", card: free }, "trash")).toBe(true);
+    expect(drop({ kind: "card", card: locked }, "trash")).toBe(true);
+    expect(drop({ kind: "extra", card: other }, "trash")).toBe(true);
+  });
+
+  it("une recette de la Bibliothèque ne va jamais à la corbeille", () => {
+    expect(drop({ kind: "recipe", recipe: { meal_types: ["soir"] } }, "trash")).toBe(false);
+  });
+
+  it("un plat verrouillé ne va qu'à la corbeille", () => {
+    expect(drop({ kind: "card", card: locked }, "card:c")).toBe(false);
+    expect(drop({ kind: "card", card: locked }, "slot:3:soir")).toBe(false);
+    expect(drop({ kind: "card", card: locked }, "add:3:soir")).toBe(false);
+  });
+
+  it("une puce ne va qu'à la corbeille", () => {
+    expect(drop({ kind: "extra", card: other }, "card:a")).toBe(false);
+    expect(drop({ kind: "extra", card: other }, "slot:3:soir")).toBe(false);
+    expect(drop({ kind: "extra", card: other }, "add:3:soir")).toBe(false);
+  });
+
+  it("garde les règles d'avant : échange si chaque recette va au repas de l'autre, jamais sur un verrouillé", () => {
+    expect(drop({ kind: "card", card: free }, "card:c")).toBe(true);
+    expect(drop({ kind: "card", card: free }, "card:a")).toBe(false);
+    expect(drop({ kind: "card", card: free }, "card:b")).toBe(false);
+    expect(drop({ kind: "card", card: { ...free, recipe_id: "r-x" } }, "card:c")).toBe(false);
+  });
+
+  it("garde les règles d'avant : une recette va sur un repas qui lui convient", () => {
+    expect(drop({ kind: "recipe", recipe: { meal_types: ["soir"] } }, "card:a")).toBe(true);
+    expect(drop({ kind: "recipe", recipe: { meal_types: ["soir"] } }, "card:b")).toBe(false);
+    expect(drop({ kind: "recipe", recipe: { meal_types: ["midi"] } }, "card:a")).toBe(false);
+    expect(drop({ kind: "recipe", recipe: { meal_types: ["midi"] } }, "slot:0:midi")).toBe(true);
+    expect(drop({ kind: "recipe", recipe: { meal_types: ["midi"] } }, "add:0:soir")).toBe(false);
+    expect(drop({ kind: "card", card: free }, "slot:0:soir")).toBe(false);
+  });
+});
+
+describe("restorableEaters", () => {
+  const roast = dish("roti", "main", 0, [OLIVIER, TIMOTHE]);
+
+  it("un plat : ceux qui ont déjà un autre plat au repas restent où ils sont", () => {
+    const now = [dish("pates", "main", 0, [TIMOTHE, ANNA, OTIS])];
+    expect(restorableEaters({ card: roast, cards: now, presentIds: ALL })).toEqual([OLIVIER]);
+  });
+
+  it("un plat : un absent du repas ne revient pas", () => {
+    expect(restorableEaters({ card: roast, cards: [], presentIds: [TIMOTHE, ML] })).toEqual([TIMOTHE]);
+  });
+
+  it("un plat : les desserts des autres ne comptent pas, ni les plats d'un autre repas", () => {
+    const now = [dish("yaourt", "dairy", 1, ALL), dish("pates", "main", 0, [OLIVIER], 1)];
+    expect(restorableEaters({ card: roast, cards: now, presentIds: ALL })).toEqual([OLIVIER, TIMOTHE]);
+  });
+
+  it("un dessert : tous ses présents reviennent, même s'ils ont un plat", () => {
+    const flan = dish("flan", "dessert", 1, ALL);
+    const now = [dish("pates", "main", 0, ALL)];
+    expect(restorableEaters({ card: flan, cards: now, presentIds: ALL })).toEqual(ALL);
+  });
+
+  it("personne : rien ne revient", () => {
+    const now = [dish("pates", "main", 0, ALL)];
+    expect(restorableEaters({ card: roast, cards: now, presentIds: ALL })).toEqual([]);
+    expect(restorableEaters({ card: roast, cards: [], presentIds: [] })).toEqual([]);
+  });
+});
+
+// ─── Les repas d'une semaine ────────────────────────────────────────────────
+describe("buildBoard : repas d'une semaine", () => {
+  it("un repas retiré disparaît, un repas ajouté apparaît, avec sa ligne", () => {
+    const home = SLOTS.filter((slot) => slot.meal_type !== "midi" && slot.meal_type !== "pique_nique");
+    const slots = weekSlots(home, [
+      { day: 6, meal_type: "soir", member_ids: [] },
+      { day: 5, meal_type: "midi", member_ids: ALL },
+    ]);
+    const board = buildBoard(slots, []);
+    expect(board.map((row) => row.row)).toEqual(["petit_dej", "midi", "soir"]);
+    expect(board[1].days[5].slots.map((slot) => slot.meal_type)).toEqual(["midi"]);
+    expect(board[1].days[0].slots).toEqual([]);
+    expect(board[2].days[6].slots).toEqual([]);
+  });
+});
+
+describe("trimCards", () => {
+  const cards = [
+    dish("roti", "main", 0, [OLIVIER, TIMOTHE, ANNA, OTIS]),
+    dish("ceto", "main", 1, [ML]),
+    dish("yaourt", "dairy", 2, ALL),
+    dish("mardi", "main", 0, ALL, 1),
+  ];
+
+  it("retire les absents des plats et des desserts du repas, supprime les cartes vides", () => {
+    const trimmed = trimCards(cards, 0, "soir", [OLIVIER, TIMOTHE, ANNA, OTIS]);
+    expect(trimmed.map((card) => card.id)).toEqual(["roti", "yaourt", "mardi"]);
+    expect(trimmed.find((card) => card.id === "yaourt")?.member_ids).toEqual([OLIVIER, TIMOTHE, ANNA, OTIS]);
+    expect(trimmed.find((card) => card.id === "mardi")?.member_ids).toEqual(ALL);
+  });
+
+  it("personne : toutes les cartes du repas partent", () => {
+    expect(trimCards(cards, 0, "soir", []).map((card) => card.id)).toEqual(["mardi"]);
+  });
+});
+
+describe("leavingNote", () => {
+  const FAMILY = [
+    { id: OLIVIER, first_name: "Olivier" },
+    { id: ML, first_name: "Marie-Laure" },
+    { id: TIMOTHE, first_name: "Timothé" },
+    { id: ANNA, first_name: "Anna-Lucia" },
+    { id: OTIS, first_name: "Otis" },
+  ];
+  const note = (cards: ReturnType<typeof dish>[], present: string[]) => leavingNote(cards, 0, "soir", present, FAMILY);
+  const duo = [dish("roti", "main", 0, [OLIVIER, TIMOTHE, ANNA, OTIS]), dish("ceto", "main", 1, [ML])];
+
+  it("seule sur son plat : il sera retiré", () => {
+    expect(note(duo, [OLIVIER, TIMOTHE, ANNA, OTIS])).toBe("Le plat de Marie-Laure sera retiré.");
+  });
+
+  it("le plat reste pour les autres : elle le quitte", () => {
+    expect(note([dish("roti", "main", 0, ALL)], [OLIVIER, TIMOTHE, ANNA, OTIS])).toBe("Marie-Laure quittera son plat.");
+  });
+
+  it("plusieurs à quitter, dans l'ordre du foyer", () => {
+    expect(note([dish("roti", "main", 0, ALL)], [TIMOTHE, ANNA, OTIS])).toBe("Olivier et Marie-Laure quitteront leur plat.");
+  });
+
+  it("plusieurs plats retirés, « d' » devant une voyelle", () => {
+    const kids = [dish("roti", "main", 0, [OLIVIER, ML, TIMOTHE]), dish("pates", "main", 1, [OTIS]), dish("riz", "main", 2, [ANNA])];
+    expect(note(kids, [OLIVIER, ML, TIMOTHE])).toBe("Les plats d’Anna-Lucia et Otis seront retirés.");
+    expect(note([dish("pates", "main", 0, [OTIS]), dish("roti", "main", 1, [OLIVIER])], [OLIVIER])).toBe("Le plat d’Otis sera retiré.");
+  });
+
+  it("les deux phrases ensemble ; les desserts ne comptent pas ; personne : rien à dire", () => {
+    expect(note([...duo, dish("yaourt", "dairy", 2, ALL)], [TIMOTHE, ANNA, OTIS])).toBe(
+      "Olivier quittera son plat. Le plat de Marie-Laure sera retiré.",
+    );
+    expect(note([dish("yaourt", "dairy", 2, ALL)], [OLIVIER])).toBeNull();
+    expect(note(duo, ALL)).toBeNull();
   });
 });

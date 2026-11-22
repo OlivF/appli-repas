@@ -369,6 +369,32 @@ isOneToOne: true
       referencedColumns: ["id"]
     }
                   ]
+                },"week_meal_overrides": {
+                  Row: {
+                    "created_at": string,"day": number,"household_id": string,"id": string,"meal_type": Database["public"]['Enums']["meal_type"],"member_ids": (string)[],"week_plan_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"day": number,"household_id": string,"id"?: string,"meal_type": Database["public"]['Enums']["meal_type"],"member_ids"?: (string)[],"week_plan_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"day"?: number,"household_id"?: string,"id"?: string,"meal_type"?: Database["public"]['Enums']["meal_type"],"member_ids"?: (string)[],"week_plan_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "week_meal_overrides_household_id_fkey"
+      columns: ["household_id"]
+isOneToOne: false
+      referencedRelation: "households"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "week_meal_overrides_week_plan_id_fkey"
+      columns: ["week_plan_id"]
+isOneToOne: false
+      referencedRelation: "week_plans"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"week_plans": {
                   Row: {
                     "created_at": string,"household_id": string,"id": string,"seed": number,"week_start": string
@@ -462,6 +488,9 @@ isOneToOne: false
 "remove_household_account":
 { Args: { "target_user_id": string }; Returns: undefined
                            },
+"reset_week_meals":
+{ Args: { "target_household_id": string,"target_week_start": string }; Returns: undefined
+                           },
 "revoke_household_invite":
 { Args: { "invite_id": string }; Returns: undefined
                            },
@@ -482,6 +511,9 @@ isOneToOne: false
                            },
 "set_planned_meal_eaters":
 { Args: { "eater_ids": (string)[],"target_card_id": string }; Returns: undefined
+                           },
+"set_week_meal":
+{ Args: { "eater_ids": (string)[],"target_day": number,"target_household_id": string,"target_meal_type": Database["public"]['Enums']["meal_type"],"target_week_start": string }; Returns: undefined
                            },
 "store_groceries":
 { Args: { "entries": Json,"target_list_id": string }; Returns: number

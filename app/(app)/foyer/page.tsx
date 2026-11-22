@@ -107,6 +107,13 @@ async function Dashboard() {
             </div>
           ))}
         </Card>
+        <p className="mt-3 text-[0.9375rem] text-muted-foreground">
+          C’est le modèle de toutes les semaines. Une semaine différente ? Change-la directement dans{" "}
+          <Link href="/semaine" className="text-link">
+            La semaine
+          </Link>
+          .
+        </p>
       </section>
 
       <section aria-labelledby="table-title" className="mt-10">

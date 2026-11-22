@@ -130,3 +130,96 @@ export function summarizeMeals(
     ];
   });
 }
+
+// ─── Les repas d'une semaine ────────────────────────────────────────────────
+// Le réglage du foyer est le modèle de toutes les semaines ; une semaine peut changer un repas
+// (week_meal_overrides) : ses présents remplacent ceux du foyer, vide = pas de repas.
+
+export type WeekOverride = { day: number; meal_type: MealType; member_ids: string[] };
+export type WeekChange = {
+  day: number;
+  meal_type: MealType;
+  kind: "added" | "removed" | "changed";
+  // Les présents cette semaine, et ceux du foyer (pour « Comme d'habitude »).
+  member_ids: string[];
+  home_ids: string[];
+};
+
+const MEAL_ORDER = MEAL_TYPES.map((meal) => meal.value);
+const sameSet = (first: readonly string[], second: readonly string[]) =>
+  first.length === new Set(second).size && first.every((id) => second.includes(id)) && second.every((id) => first.includes(id));
+const byDayAndMeal = (a: { day: number; meal_type: MealType }, b: { day: number; meal_type: MealType }) =>
+  a.day - b.day || MEAL_ORDER.indexOf(a.meal_type) - MEAL_ORDER.indexOf(b.meal_type);
+
+// Les repas qui ont lieu cette semaine : ceux du foyer, remplacés par les exceptions, sans les
+// repas vides, triés par jour puis dans l'ordre de la journée.
+export function weekSlots(slots: readonly SlotInput[], overrides: readonly WeekOverride[]): SlotInput[] {
+  const changed = (slot: { day: number; meal_type: MealType }) =>
+    overrides.find((override) => override.day === slot.day && override.meal_type === slot.meal_type);
+  return [
+    ...slots.filter((slot) => !changed(slot)).map((slot) => ({ ...slot, member_ids: [...slot.member_ids] })),
+    ...overrides.map((override) => ({ day: override.day, meal_type: override.meal_type, member_ids: [...override.member_ids] })),
+  ]
+    .filter((slot) => slot.member_ids.length > 0)
+    .sort(byDayAndMeal);
+}
+
+// Les repas qui ne suivent pas le foyer cette semaine : ajouté, retiré ou changé (qui est là). Une
+// exception identique au foyer ne compte pas.
+export function weekChanges(slots: readonly SlotInput[], overrides: readonly WeekOverride[]): WeekChange[] {
+  return overrides
+    .flatMap((override): WeekChange[] => {
+      const home = slots.find((slot) => slot.day === override.day && slot.meal_type === override.meal_type)?.member_ids ?? [];
+      if (sameSet(home, override.member_ids)) return [];
+      const kind = home.length === 0 ? "added" : override.member_ids.length === 0 ? "removed" : "changed";
+      return [{ day: override.day, meal_type: override.meal_type, kind, member_ids: [...override.member_ids], home_ids: [...home] }];
+    })
+    .sort(byDayAndMeal);
+}
+
+type Named = { id: string; first_name: string };
+const names = (ids: readonly string[], members: readonly Named[]) =>
+  new Intl.ListFormat("fr", { type: "conjunction" }).format(
+    members.filter((member) => ids.includes(member.id)).map((member) => member.first_name),
+  );
+const mealLabel = (mealType: MealType) => MEAL_TYPES.find((meal) => meal.value === mealType)!.label;
+// « Dîner de lundi », « Pas de dîner dimanche ».
+const mealOfDay = (day: number, mealType: MealType) => `${mealLabel(mealType)} de ${DAYS[day].long}`;
+const noMeal = (day: number, mealType: MealType) => `Pas de ${mealLabel(mealType).toLowerCase()} ${DAYS[day].long}`;
+
+// Le toast après « Qui est là ? » : `before` et `after`, les présents avant et après ; `home`,
+// ceux du foyer.
+export function weekMealMessage({
+  day,
+  meal_type,
+  before,
+  after,
+  home,
+  members,
+}: {
+  day: number;
+  meal_type: MealType;
+  before: readonly string[];
+  after: readonly string[];
+  home: readonly string[];
+  members: readonly Named[];
+}): string {
+  if (after.length === 0) return `${noMeal(day, meal_type)} cette semaine`;
+  if (home.length > 0 && sameSet(home, after)) return `${mealOfDay(day, meal_type)} : comme d’habitude`;
+  if (before.length === 0) return `${mealOfDay(day, meal_type)} ajouté`;
+  const gone = before.filter((id) => !after.includes(id));
+  const come = after.filter((id) => !before.includes(id));
+  if (gone.length > 0 && come.length === 0) return `${mealOfDay(day, meal_type)} : sans ${names(gone, members)} cette semaine`;
+  if (come.length > 0 && gone.length === 0) return `${mealOfDay(day, meal_type)} : avec ${names(come, members)} cette semaine`;
+  return `${mealOfDay(day, meal_type)} : changé pour cette semaine`;
+}
+
+// Une ligne de « Tout remettre comme d'habitude ? » : ce qui change par rapport au foyer.
+export function describeChange(change: WeekChange, members: readonly Named[]): string {
+  if (change.kind === "removed") return noMeal(change.day, change.meal_type);
+  if (change.kind === "added") return `${mealOfDay(change.day, change.meal_type)} : ajouté`;
+  const gone = change.home_ids.filter((id) => !change.member_ids.includes(id));
+  const come = change.member_ids.filter((id) => !change.home_ids.includes(id));
+  const parts = [gone.length > 0 && `sans ${names(gone, members)}`, come.length > 0 && `avec ${names(come, members)}`];
+  return `${mealOfDay(change.day, change.meal_type)} : ${parts.filter(Boolean).join(", ")}`;
+}

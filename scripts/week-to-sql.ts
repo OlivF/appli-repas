@@ -12,7 +12,8 @@
 // Format : { "semaine": "2026-11-16", "repas": [ { "jour": "lundi", "repas": "soir", "plats": [
 //   { "recette": "Tartiflette", "pour": ["Olivier", "Otis"] }, { "recette": "…", "pour": "tous" } ] } ] }
 // semaine : un lundi ; jour : lundi … dimanche ; repas : petit_dej | midi | soir | pique_nique ;
-// "tous" : les membres du créneau.
+// "tous" : les présents du repas cette semaine (le repas tel que changé pour la semaine dans
+// l'appli, « Qui est là ? », sinon le réglage du foyer).
 //
 // Le script vérifie ce qui se lit dans le fichier. Le SQL vérifie le reste dans la base (foyer,
 // recettes, prénoms, créneaux, et « un seul plat par personne et par repas » : seule la base sait si
@@ -181,7 +182,13 @@ begin
       '[[:space:]]+', ' ', 'g'));
   $key$;
 
-  -- Les plats du fichier, dans l'ordre ; eaters null : tous les membres du créneau.
+  -- La semaine, si elle existe déjà : elle peut avoir des repas changés (« Qui est là ? »).
+  select wp.id into plan_id
+  from public.week_plans wp
+  where wp.household_id = household
+    and wp.week_start = target_week;
+
+  -- Les plats du fichier, dans l'ordre ; eaters null : tous les présents du repas.
   create temp table popote_week (
     meal smallint not null,
     day smallint not null,
@@ -227,14 +234,18 @@ ${all.map(rowSql).join(",\n")};
         matches[1]);
     end if;
 
-    -- Les mangeurs : les membres du créneau, ou ceux nommés, qui doivent en être.
-    select s.member_ids into slot_members
-    from public.meal_slots s
-    where s.household_id = household
-      and s.day = dish.day
-      and s.meal_type = dish.meal_type;
-    if slot_members is null then
-      raise exception '% : ce repas n''est pas prévu dans le foyer (aucun créneau)', dish.label;
+    -- Les mangeurs : les présents du repas cette semaine, ou ceux nommés, qui doivent en être.
+    if plan_id is null then
+      select s.member_ids into slot_members
+      from public.meal_slots s
+      where s.household_id = household
+        and s.day = dish.day
+        and s.meal_type = dish.meal_type;
+    else
+      slot_members := private.week_slot_members(plan_id, dish.day, dish.meal_type);
+    end if;
+    if coalesce(cardinality(slot_members), 0) = 0 then
+      raise exception '% : ce repas n''a pas lieu cette semaine (ni dans le foyer, ni ajouté à la semaine dans l''appli)', dish.label;
     end if;
 
     if dish.eaters is null then
@@ -257,7 +268,7 @@ ${all.map(rowSql).join(",\n")};
           raise exception '% : plusieurs membres s''appellent « % »', dish.label, eater;
         end if;
         if not (matches[1] = any (slot_members)) then
-          raise exception '% : % n''est pas de ce repas (plat « % ») : ajoute-le au créneau dans l''appli, ou retire-le du fichier', dish.label, eater, dish.recipe;
+          raise exception '% : % n''est pas de ce repas (plat « % ») : ajoute-le au repas dans l''appli (« Qui est là ? »), ou retire-le du fichier', dish.label, eater, dish.recipe;
         end if;
         eater_ids := eater_ids || matches[1];
       end loop;
@@ -325,8 +336,7 @@ ${all.map(rowSql).join(",\n")};
   for problem in
     select w.label, string_agg(m.first_name, ', ' order by e.k) as names
     from (select distinct x.meal, x.label, x.day, x.meal_type from popote_week x) as w
-    join public.meal_slots s on s.household_id = household and s.day = w.day and s.meal_type = w.meal_type
-    cross join lateral unnest(s.member_ids) with ordinality as e (id, k)
+    cross join lateral unnest(private.week_slot_members(plan_id, w.day, w.meal_type)) with ordinality as e (id, k)
     join public.members m on m.id = e.id and m.household_id = household
     where not exists (
       select 1 from popote_week x where x.meal = w.meal and x.course = 'main' and e.id = any (x.member_ids))

@@ -7,6 +7,8 @@ import { MemberToggle } from "@/components/member-toggle";
 import { PlannedMealCard } from "@/components/planned-meal-card";
 import { RecipeLibrary } from "@/components/recipe-library";
 import { SameBaseNote } from "@/components/same-base-note";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { MealAttendees, WeekMealPanel } from "@/components/week-meal-panel";
 import type { ListRecipe } from "@/lib/recipes-data";
 import { LEA, PAUL } from "@/test/helpers";
 
@@ -243,5 +245,104 @@ describe("plusieurs plats sur un repas", () => {
   it("deux plats de même base sont liés : « Même base : steak haché »", () => {
     render(<SameBaseNote base="Steak haché" />);
     expect(screen.getByText("Même base : steak haché")).toBeInTheDocument();
+  });
+});
+
+describe("WeekMealPanel (« Qui est là ? »)", () => {
+  const MEMBERS = [
+    { ...PAUL_AVATAR, diets: [] },
+    { ...LEA_AVATAR, diets: ["keto" as const] },
+  ];
+
+  function panel(overrides: Partial<Parameters<typeof WeekMealPanel>[0]> = {}) {
+    const props = {
+      title: "Le dîner de lundi",
+      members: MEMBERS,
+      selected: [PAUL],
+      onChange: vi.fn(),
+      note: null,
+      meal: "soir" as const,
+      onValidate: vi.fn(),
+      onNoMeal: vi.fn(),
+      onUsual: vi.fn(),
+      ...overrides,
+    };
+    render(
+      <Sheet open>
+        <SheetContent>
+          <WeekMealPanel {...props} />
+        </SheetContent>
+      </Sheet>,
+    );
+    return props;
+  }
+
+  it("titre, « Pour cette semaine seulement », tous les membres, les présents cochés", () => {
+    panel();
+    expect(screen.getByRole("heading", { name: "Le dîner de lundi" })).toBeInTheDocument();
+    expect(screen.getByText("Pour cette semaine seulement.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Paul est là" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Léa est là" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("décocher appelle onChange ; la phrase sur les plats s'affiche", async () => {
+    const props = panel({ note: "Le plat de Léa sera retiré." });
+    expect(screen.getByText("Le plat de Léa sera retiré.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Paul est là" }));
+    expect(props.onChange).toHaveBeenCalledWith([]);
+  });
+
+  it("« Valider »", async () => {
+    const props = panel();
+    await userEvent.click(screen.getByRole("button", { name: "Valider" }));
+    expect(props.onValidate).toHaveBeenCalled();
+  });
+
+  it("« Valider » grisé quand personne n'est là", () => {
+    panel({ selected: [] });
+    expect(screen.getByRole("button", { name: "Valider" })).toBeDisabled();
+  });
+
+  it("« Pas de dîner ce jour-là »", async () => {
+    const props = panel();
+    await userEvent.click(screen.getByRole("button", { name: "Pas de dîner ce jour-là" }));
+    expect(props.onNoMeal).toHaveBeenCalled();
+  });
+
+  it("pas de « Comme d’habitude » pour un repas comme dans le foyer", () => {
+    panel();
+    expect(screen.queryByRole("button", { name: "Comme d’habitude" })).toBeNull();
+  });
+
+  it("« Comme d’habitude » pour un repas changé", async () => {
+    const props = panel({ changed: true });
+    await userEvent.click(screen.getByRole("button", { name: "Comme d’habitude" }));
+    expect(props.onUsual).toHaveBeenCalled();
+  });
+
+  it("un repas en plus : on choisit le repas, puis « Ajouter »", async () => {
+    const props = panel({
+      title: "Un repas en plus samedi",
+      meal: "midi",
+      choices: ["midi", "pique_nique"],
+      onMealChange: vi.fn(),
+      onNoMeal: undefined,
+      onUsual: undefined,
+    });
+    expect(screen.getByRole("radio", { name: "Midi" })).toBeChecked();
+    await userEvent.click(screen.getByRole("radio", { name: "Pique-nique" }));
+    expect(props.onMealChange).toHaveBeenCalledWith("pique_nique");
+    expect(screen.queryByRole("button", { name: /^Pas de/ })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Ajouter" }));
+    expect(props.onValidate).toHaveBeenCalled();
+  });
+});
+
+describe("MealAttendees", () => {
+  it("les présents en avatars, dans un bouton « Qui est là au dîner de lundi ? »", async () => {
+    const onOpen = vi.fn();
+    render(<MealAttendees label="Qui est là au dîner de lundi ?" members={[PAUL_AVATAR, LEA_AVATAR]} onOpen={onOpen} />);
+    await userEvent.click(screen.getByRole("button", { name: "Qui est là au dîner de lundi ?" }));
+    expect(onOpen).toHaveBeenCalled();
   });
 });

@@ -46,6 +46,8 @@ import {
   GridCardsDemo,
   IngredientRowDemo,
   LibraryDemo,
+  TrashDemo,
+  WeekMealDemo,
   MemberToggleDemo,
   NavDemo,
   OrganizersDemo,
@@ -413,6 +415,28 @@ export default function DesignPage() {
           <div className="mt-4 grid max-w-md grid-cols-3 gap-3">
             <GridCardsDemo family={FAMILY} />
             <EmptySlot compact label="Choisir le dîner de mercredi" />
+          </div>
+
+          <h3 className="mt-10 text-xl">La corbeille</h3>
+          <p className="mt-1 max-w-[60ch] text-muted-foreground">
+            Elle n’apparaît que pendant qu’on fait glisser un plat ou une puce (appui long au doigt), en bas
+            au centre de l’écran, au-dessus de la barre d’onglets. Un plat au-dessus : elle grossit et passe en
+            tomate. Lâché, il est retiré du menu ; « Annuler » le fait revenir pendant quelques secondes. Un plat
+            verrouillé s’y jette aussi, mais ne s’échange pas.
+          </p>
+          <div className="mt-4">
+            <TrashDemo />
+          </div>
+
+          <h3 className="mt-10 text-xl">Une semaine pas comme les autres</h3>
+          <p className="mt-1 max-w-[60ch] text-muted-foreground">
+            Les repas du foyer sont le modèle de toutes les semaines. Les avatars à côté d’un repas disent qui est
+            là : les toucher ouvre « Qui est là ? », pour cette semaine seulement (retirer quelqu’un, « Pas de dîner
+            ce jour-là », « Comme d’habitude »). « Un repas en plus » ajoute un repas qui n’a pas lieu d’habitude.
+            Un repas changé porte « cette semaine », en moutarde ; la ligne sous la semaine permet de tout remettre.
+          </p>
+          <div className="mt-4">
+            <WeekMealDemo family={FAMILY} />
           </div>
 
           <h3 className="mt-10 text-xl">La Bibliothèque</h3>

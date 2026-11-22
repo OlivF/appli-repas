@@ -173,3 +173,125 @@ export function extrasToAdd({
   }
   return { items, unserved };
 }
+
+// ─── Glisser-déposer ────────────────────────────────────────────────────────
+
+// Ce qu'on fait glisser : un plat de la grille, une puce (entrée, dessert…), ou une recette de la
+// Bibliothèque. Cibles : « card:<id> », « slot:<jour>:<repas> », « add:<jour>:<repas> », « trash ».
+export type DragCard = { id: string; recipe_id: string; meal_type: MealType; locked: boolean };
+export type BoardDrag =
+  | { kind: "card"; card: DragCard }
+  | { kind: "extra"; card: DragCard }
+  | { kind: "recipe"; recipe: { meal_types: readonly MealType[] } };
+
+// La corbeille prend les plats (même verrouillés : le verrou protège de « Relancer » et des
+// échanges, pas d'un geste voulu) et les puces, jamais une recette de la Bibliothèque. Un plat
+// verrouillé et une puce ne vont nulle part ailleurs. Deux plats s'échangent si chaque recette va
+// au repas de l'autre ; une recette se pose sur un plat ou un repas qui lui conviennent.
+export function canDropOn(
+  drag: BoardDrag,
+  targetId: string,
+  cards: readonly DragCard[],
+  fits: (recipeId: string, mealType: MealType) => boolean,
+): boolean {
+  if (targetId === "trash") return drag.kind !== "recipe";
+  if (drag.kind === "extra" || (drag.kind === "card" && drag.card.locked)) return false;
+  if (targetId.startsWith("card:")) {
+    const target = cards.find((card) => `card:${card.id}` === targetId);
+    if (!target || target.locked) return false;
+    if (drag.kind === "recipe") return drag.recipe.meal_types.includes(target.meal_type);
+    return (
+      drag.card.id !== target.id &&
+      fits(drag.card.recipe_id, target.meal_type) &&
+      fits(target.recipe_id, drag.card.meal_type)
+    );
+  }
+  if (targetId.startsWith("slot:") || targetId.startsWith("add:")) {
+    const mealType = targetId.split(":")[2] as MealType;
+    return drag.kind === "recipe" && drag.recipe.meal_types.includes(mealType);
+  }
+  return false;
+}
+
+// « Annuler » après la corbeille : qui retrouve la carte. Les présents du repas seulement ; pour un
+// plat, pas ceux qui ont pris un autre plat entre-temps (un seul plat par personne et par repas).
+// Un plat léger revient pour tous ses présents.
+export function restorableEaters({
+  card,
+  cards,
+  presentIds,
+}: {
+  card: { id?: string; day: number; meal_type: MealType; member_ids: readonly string[]; course?: Course };
+  cards: readonly { id: string; day: number; meal_type: MealType; member_ids: readonly string[]; course?: Course }[];
+  presentIds: readonly string[];
+}): string[] {
+  const present = card.member_ids.filter((id) => presentIds.includes(id));
+  if (isExtra(card.course)) return present;
+  const served = new Set(
+    cards
+      .filter(
+        (other) =>
+          other.id !== card.id && other.day === card.day && other.meal_type === card.meal_type && !isExtra(other.course),
+      )
+      .flatMap((other) => other.member_ids),
+  );
+  return present.filter((id) => !served.has(id));
+}
+
+// ─── Les repas d'une semaine ────────────────────────────────────────────────
+
+// Les cartes d'un repas ne gardent que ses présents (plats et plats légers) ; une carte qui n'a
+// plus personne disparaît. Même règle que private.trim_week_cards, pour l'écran.
+export function trimCards<C extends { day: number; meal_type: MealType; member_ids: string[] }>(
+  cards: readonly C[],
+  day: number,
+  mealType: MealType,
+  presentIds: readonly string[],
+): C[] {
+  return cards.flatMap((card) => {
+    if (card.day !== day || card.meal_type !== mealType) return [card];
+    const kept = card.member_ids.filter((id) => presentIds.includes(id));
+    if (kept.length === 0) return [];
+    return [kept.length === card.member_ids.length ? card : { ...card, member_ids: kept }];
+  });
+}
+
+const VOWEL = /^[aeiouyàâäéèêëîïôöùûüœæ]/i;
+const list = (names: string[]) => new Intl.ListFormat("fr", { type: "conjunction" }).format(names);
+
+// « Qui est là ? » : ce que deviennent les plats de ceux qu'on décoche (le genre des membres n'est
+// pas connu : « son plat », jamais « qu'elle avait »). Les plats légers ne comptent pas.
+export function leavingNote(
+  cards: readonly { day: number; meal_type: MealType; member_ids: readonly string[]; course?: Course }[],
+  day: number,
+  mealType: MealType,
+  presentIds: readonly string[],
+  members: readonly { id: string; first_name: string }[],
+): string | null {
+  const leaving = new Set<string>();
+  const orphans = new Set<string>();
+  let removed = 0;
+  for (const card of cards) {
+    if (card.day !== day || card.meal_type !== mealType || isExtra(card.course)) continue;
+    const gone = card.member_ids.filter((id) => !presentIds.includes(id));
+    if (gone.length === 0) continue;
+    if (gone.length === card.member_ids.length) {
+      removed += 1;
+      for (const id of gone) orphans.add(id);
+    } else {
+      for (const id of gone) leaving.add(id);
+    }
+  }
+  const named = (ids: Set<string>) => members.filter((member) => ids.has(member.id)).map((member) => member.first_name);
+  const sentences: string[] = [];
+  const quitters = named(leaving);
+  if (quitters.length > 0) {
+    sentences.push(`${list(quitters)} ${quitters.length > 1 ? "quitteront leur plat." : "quittera son plat."}`);
+  }
+  const owners = list(named(orphans));
+  if (removed > 0) {
+    const of = VOWEL.test(owners) ? `d’${owners}` : `de ${owners}`;
+    sentences.push(removed > 1 ? `Les plats ${of} seront retirés.` : `Le plat ${of} sera retiré.`);
+  }
+  return sentences.length > 0 ? sentences.join(" ") : null;
+}
