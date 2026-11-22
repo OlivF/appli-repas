@@ -65,8 +65,11 @@ export function ExtraChip({
         className,
       )}
     >
-      <Icon aria-hidden="true" className={cn("size-4 shrink-0", skipped ? "text-muted-foreground" : COURSE_TINT[course])} />
-      <span className="min-w-0 truncate">{title}</span>
+      {/* L'icône et le titre restent sur la même ligne : c'est le titre qui se coupe. */}
+      <span className="flex min-w-0 max-w-full items-center gap-1.5">
+        <Icon aria-hidden="true" className={cn("size-4 shrink-0", skipped ? "text-muted-foreground" : COURSE_TINT[course])} />
+        <span className="min-w-0 truncate">{title}</span>
+      </span>
       {skipped && <span className="shrink-0 text-[0.8125rem] font-semibold">Pas mangé</span>}
       {eaters && eaters.length > 0 && (
         <MemberAvatars members={eaters} size="xs" max={3} crossedIds={outIds} decorative className="shrink-0" />

@@ -141,6 +141,63 @@ test.describe("sur ordinateur", () => {
   });
 });
 
+test.describe("sur un ordinateur portable", () => {
+  // 1280 px (un écran 1920 px à 150 %) : la grille des sept jours, aux colonnes les plus étroites.
+  test.use({ viewport: { width: 1280, height: 800 }, isMobile: false, hasTouch: false });
+
+  test("rien ne dépasse de la colonne de son jour, une puce garde son icône devant le titre", async ({ page }) => {
+    await newHousehold(page);
+    await propose(page);
+
+    // Une entrée au titre trop long pour la colonne : le titre se coupe, l'icône reste devant.
+    const extras = day(page, 0).getByRole("button", { name: "Ajouter un dessert, un fruit… au dîner de lundi" });
+    const panel = page.getByRole("dialog", { name: /^Pour finir/ });
+    await expect(async () => {
+      await extras.click();
+      await expect(panel).toBeVisible({ timeout: 1_000 });
+    }).toPass();
+    await panel.getByText("Entrée", { exact: true }).click();
+    await panel.getByText("Avocat vinaigrette", { exact: true }).click();
+    await panel.getByRole("button", { name: "Ajouter 1" }).click();
+    await expect(panel).toBeHidden();
+    const chip = day(page, 0).getByRole("button", { name: /^Entrée : Avocat vinaigrette/ });
+    await expect(chip).toBeVisible();
+    const sameLine = async () => {
+      const icon = (await chip.locator("svg").first().boundingBox())!;
+      const title = (await chip.getByText("Avocat vinaigrette").boundingBox())!;
+      const middle = icon.y + icon.height / 2;
+      return middle > title.y && middle < title.y + title.height;
+    };
+    await expect.poll(sameLine).toBe(true);
+
+    // Ce qui sort de la colonne de son jour, à gauche ou à droite (les copies cachées des pages
+    // déjà vues n'ont pas de boîte ; les textes pour lecteur d'écran, rognés, ne se voient pas).
+    const overflowing = () =>
+      page.evaluate(() =>
+        [...document.querySelectorAll<HTMLElement>("section[data-day]")]
+          .filter((section) => section.getClientRects().length > 0)
+          .flatMap((section) => {
+            const column = section.getBoundingClientRect();
+            const clipped = (element: Element) => {
+              for (let node: Element | null = element; node && node !== section; node = node.parentElement) {
+                if (getComputedStyle(node).clipPath !== "none") return true;
+              }
+              return false;
+            };
+            return [...section.querySelectorAll<HTMLElement>("*")]
+              .filter((element) => {
+                const box = element.getBoundingClientRect();
+                return (
+                  box.width > 1 && (box.left < column.left - 0.5 || box.right > column.right + 0.5) && !clipped(element)
+                );
+              })
+              .map((element) => `${section.dataset.day} : ${element.tagName} « ${element.textContent?.slice(0, 30)} »`);
+          }),
+      );
+    await expect.poll(overflowing).toEqual([]);
+  });
+});
+
 test("sur téléphone, la barre d'onglets est collée au bas de l'écran", async ({ page }) => {
   await newHousehold(page);
   // Même tout en bas de la page : rien ne doit défiler sous la barre ni à côté.

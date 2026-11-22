@@ -1343,12 +1343,14 @@ export function WeekBoard({
             <span />
           </div>
 
+          {/* Ordinateur : chaque jour est une grille d'une colonne, à la largeur exacte de sa
+              colonne (grid-cols-1) : aucun contenu ne peut l'élargir et déborder sur le jour d'à côté. */}
           {days.map((day, index) => (
             <section
               key={day.short}
               data-day={index}
               aria-label={`${day.long} ${day.date}`}
-              className="flex w-full min-w-0 shrink-0 snap-start flex-col gap-5 sm:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-2rem)/3)] xl:grid xl:w-auto xl:grid-rows-subgrid xl:gap-y-4"
+              className="flex w-full min-w-0 shrink-0 snap-start flex-col gap-5 sm:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-2rem)/3)] xl:grid xl:w-auto xl:grid-cols-1 xl:grid-rows-subgrid xl:gap-y-4"
               style={{ gridRow: `span ${board.length + 2}` }}
             >
               <h2 className="sr-only sm:not-sr-only sm:flex sm:items-baseline sm:gap-2 sm:font-heading sm:text-[1.375rem] xl:justify-center">
@@ -1364,13 +1366,14 @@ export function WeekBoard({
                   </div>
                 ),
               )}
-              {/* Un repas qui n'a pas lieu d'habitude, pour cette semaine (caché si les 4 ont lieu). */}
+              {/* Un repas qui n'a pas lieu d'habitude, pour cette semaine (caché si les 4 ont lieu).
+                  Dans une colonne étroite de la grille, le libellé passe sur deux lignes. */}
               {freeMeals(index).length > 0 ? (
                 <div className="xl:self-start">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="-ml-3 text-muted-foreground xl:ml-0"
+                    className="-ml-3 text-muted-foreground xl:ml-0 xl:text-left xl:text-balance xl:whitespace-normal"
                     aria-haspopup="dialog"
                     aria-label={`Un repas en plus ${day.long}`}
                     onClick={() => openNewMeal(index)}
