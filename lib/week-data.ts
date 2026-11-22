@@ -1,3 +1,4 @@
+import { weekChanges, weekSlots, type WeekOverride } from "@/lib/meal-slots";
 import type { PlannerCard, Protein } from "@/lib/planner";
 import { isExtra } from "@/lib/recipes";
 import { householdRecipes, loadReadyHousehold, type ListRecipe } from "@/lib/recipes-data";
@@ -21,12 +22,24 @@ export async function weekCards(supabase: Client, planId: string): Promise<WeekC
   return data.map(({ recipes, ...card }) => ({ ...card, course: recipes?.course ?? "main" }));
 }
 
+// Les repas changés pour une semaine (vide : pas de repas).
+export async function weekOverrides(supabase: Client, planId: string): Promise<WeekOverride[]> {
+  const { data, error } = await supabase
+    .from("week_meal_overrides")
+    .select("day, meal_type, member_ids")
+    .eq("week_plan_id", planId);
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 // Tout ce qu'il faut pour afficher et planifier la semaine qui commence le lundi `weekStart` :
-// membres, créneaux, recettes (foyer + catalogue), la semaine enregistrée et ses cartes.
-// `recipes` : les plats seulement (le planificateur, la Bibliothèque) ; `extraRecipes` : entrées,
-// desserts, fruits, fromages et laitages (les puces de la grille, le panneau d'ajout).
+// membres, repas, recettes (foyer + catalogue), la semaine enregistrée et ses cartes.
+// `slots` : les repas qui ont lieu cette semaine (ceux du foyer, `homeSlots`, changés par les
+// exceptions de la semaine, `overrides`) ; tout le planning les suit. `changes` : ce qui ne suit
+// pas le foyer. `recipes` : les plats seulement (le planificateur, la Bibliothèque) ;
+// `extraRecipes` : entrées, desserts, fruits, fromages et laitages (puces, panneau d'ajout).
 export async function loadWeek(weekStart: string) {
-  const { supabase, household, members, slots } = await loadReadyHousehold();
+  const { supabase, household, members, slots: homeSlots } = await loadReadyHousehold();
 
   const [recipes, planResult] = await Promise.all([
     householdRecipes(supabase, household.id),
@@ -40,13 +53,18 @@ export async function loadWeek(weekStart: string) {
   if (planResult.error) throw new Error(planResult.error.message);
 
   const plan = planResult.data;
-  const cards = plan ? await weekCards(supabase, plan.id) : [];
+  const [cards, overrides] = plan
+    ? await Promise.all([weekCards(supabase, plan.id), weekOverrides(supabase, plan.id)])
+    : [[], []];
   const all = recipes as WeekRecipe[];
   return {
     supabase,
     household,
     members,
-    slots,
+    slots: weekSlots(homeSlots, overrides),
+    homeSlots,
+    overrides,
+    changes: weekChanges(homeSlots, overrides),
     recipes: all.filter((recipe) => !isExtra(recipe.course)),
     extraRecipes: all.filter((recipe) => isExtra(recipe.course)),
     plan,

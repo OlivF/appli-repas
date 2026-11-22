@@ -31,7 +31,7 @@ async function Week({ searchParams }: Pick<PageProps<"/semaine">, "searchParams"
   const { semaine } = await searchParams;
   const today = todayInParis();
   const weekStart = parseWeekParam(typeof semaine === "string" ? semaine : undefined, today);
-  const { supabase, household, members, slots, recipes, extraRecipes, cards } = await loadWeek(weekStart);
+  const { supabase, household, members, slots, homeSlots, changes, recipes, extraRecipes, cards } = await loadWeek(weekStart);
   const relation = weekRelation(weekStart, today);
   const todayDay = relation === "current" ? ([0, 1, 2, 3, 4, 5, 6].find((day) => addDays(weekStart, day) === today) ?? null) : null;
   // Le bilan des semaines finies d'abord (silencieux), puis ce qu'il faut finir vite.
@@ -60,7 +60,9 @@ async function Week({ searchParams }: Pick<PageProps<"/semaine">, "searchParams"
         firstDay={todayDay ?? 0}
         todayDay={todayDay}
         members={members}
-        slots={slots}
+        initialSlots={slots}
+        homeSlots={homeSlots}
+        initialChanges={changes}
         recipes={recipes}
         extraRecipes={extraRecipes}
         fridgeHints={fridgeHints}

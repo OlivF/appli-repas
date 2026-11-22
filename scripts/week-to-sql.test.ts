@@ -94,6 +94,16 @@ describe("weekSql", () => {
     expect(weekSql(week([tuesday]), { email: EMAIL })).toContain("and m.id = any (slot_members);");
   });
 
+  it("les présents : ceux du repas cette semaine (changé pour la semaine), sinon ceux du foyer", () => {
+    const sql = weekSql(week([tuesday]), { email: EMAIL });
+    // La semaine est cherchée avant les plats : elle peut avoir des repas changés.
+    expect(sql.indexOf("into plan_id")).toBeLessThan(sql.indexOf("for dish in select"));
+    expect(sql).toContain("private.week_slot_members(plan_id, dish.day, dish.meal_type)");
+    expect(sql).toContain("ce repas n''a pas lieu cette semaine");
+    expect(sql).toContain("unnest(private.week_slot_members(plan_id, w.day, w.meal_type))");
+    expect(sql).not.toContain("join public.meal_slots s on");
+  });
+
   it("échappe les apostrophes des titres, des prénoms et de l'email", () => {
     const sql = weekSql(
       week([{ jour: "jeudi", repas: "midi", plats: [{ recette: "Gratin d'endives", pour: ["D'Artagnan"] }] }]),

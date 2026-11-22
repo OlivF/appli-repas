@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { DndContext } from "@dnd-kit/core";
 import { AnimatePresence } from "framer-motion";
-import { AlarmClock, CookingPot, Refrigerator, Trash2, UserPlus } from "lucide-react";
+import { AlarmClock, CookingPot, Plus, Refrigerator, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { TrashZone } from "@/app/(app)/semaine/board-pieces";
 import { BottomNav, TopNav } from "@/components/app-nav";
+import { MealAttendees, WeekMealPanel } from "@/components/week-meal-panel";
 import { Autocomplete } from "@/components/autocomplete";
 import { Logo } from "@/components/brand/logo";
 import { ChoiceChip } from "@/components/choice-chip";
@@ -54,6 +55,7 @@ import { ShoppingProgress } from "@/components/shopping-progress";
 import { PantryItemRow, ShoppingItemRow, type RowItem } from "@/components/shopping-item-row";
 import { SwitchField } from "@/components/switch-field";
 import { StepProgress } from "@/components/step-progress";
+import { MealLabel } from "@/components/meal-label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -441,6 +443,56 @@ export function TrashDemo() {
       <DndContext>
         <TrashZone over demo />
       </DndContext>
+    </div>
+  );
+}
+
+// Une semaine différente du foyer : la ligne sous le sélecteur, la marque « cette semaine », qui
+// est là (les avatars, à toucher), le panneau « Qui est là ? » et « Un repas en plus ».
+export function WeekMealDemo({ family }: { family: CardMember[] }) {
+  const keto = family.find((member) => member.diets.includes("keto"))!;
+  const [open, setOpen] = useState(false);
+  const [picked, setPicked] = useState(family.filter((member) => member.id !== keto.id).map((member) => member.id));
+  return (
+    <div className="max-w-md space-y-4">
+      <p className="text-[0.9375rem] text-muted-foreground">
+        Cette semaine ne suit pas tout à fait le foyer ·{" "}
+        <Button variant="link" className="min-h-0 align-baseline">
+          Tout remettre comme d’habitude
+        </Button>
+      </p>
+      <div className="flex min-w-0 items-center gap-2">
+        <span className="text-[0.9375rem] font-semibold text-muted-foreground">
+          <MealLabel type="soir" />
+        </span>
+        <span className="text-[0.8125rem] font-semibold text-mustard-deep">cette semaine</span>
+        <MealAttendees
+          className="ml-auto"
+          label="Qui est là au dîner de lundi ?"
+          members={family.filter((member) => picked.includes(member.id))}
+          onOpen={() => setOpen(true)}
+        />
+      </div>
+      <Button variant="ghost" size="sm" className="-ml-3 text-muted-foreground">
+        <Plus aria-hidden="true" />
+        Un repas en plus
+      </Button>
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent>
+          <WeekMealPanel
+            title="Le dîner de lundi"
+            members={family}
+            selected={picked}
+            onChange={setPicked}
+            note={picked.includes(keto.id) ? null : `Le plat de ${keto.first_name} sera retiré.`}
+            changed={!picked.includes(keto.id)}
+            meal="soir"
+            onValidate={() => setOpen(false)}
+            onNoMeal={() => setOpen(false)}
+            onUsual={() => setPicked(family.map((member) => member.id))}
+          />
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

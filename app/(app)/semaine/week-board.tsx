@@ -17,7 +17,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
-import { BookOpen, ShoppingBasket, Sparkles, Trash2, X } from "lucide-react";
+import { BookOpen, Plus, ShoppingBasket, Sparkles, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
 import { CookedControls } from "@/components/cooked-controls";
@@ -41,11 +41,32 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "@/components/use-media-query";
+import { MealAttendees, WeekMealPanel } from "@/components/week-meal-panel";
 import { WeekPicker } from "@/components/week-picker";
 import { baseKey } from "@/lib/bases";
-import { buildBoard, canDropOn, extrasToAdd, menuBase, moveEaters, type BoardSlot, type ExtraItem, type ExtraTarget } from "@/lib/board";
+import {
+  buildBoard,
+  canDropOn,
+  extrasToAdd,
+  leavingNote,
+  menuBase,
+  moveEaters,
+  trimCards,
+  type BoardSlot,
+  type ExtraItem,
+  type ExtraTarget,
+} from "@/lib/board";
 import type { FridgeHint } from "@/lib/fridge";
-import type { MealType, SlotInput } from "@/lib/meal-slots";
+import {
+  MEAL_TYPES,
+  describeChange,
+  weekChanges,
+  weekMealMessage,
+  weekSlots,
+  type MealType,
+  type SlotInput,
+  type WeekChange,
+} from "@/lib/meal-slots";
 import { canEat } from "@/lib/planner";
 import type { QuickRecipeInput } from "@/lib/quick-recipe";
 import type { KnownIngredient, RecipeMember } from "@/lib/recipes-data";
@@ -58,9 +79,11 @@ import {
   createQuickRecipeAction,
   placeRecipeAction,
   removeCardAction,
+  resetWeekMealsAction,
   restoreCardAction,
   setEatersAction,
   setSkippedAction,
+  setWeekMealAction,
   proposeWeekAction,
   swapCardsAction,
   toggleLockAction,
@@ -75,15 +98,22 @@ type Day = { short: string; long: string; date: string };
 type Drag = { kind: "card"; card: Card } | { kind: "extra"; card: Card } | { kind: "recipe"; recipe: WeekRecipe };
 // Le panneau du bas : changer un plat, choisir pour un repas (ou ses présents sans plat),
 // ajouter un plat (« Pour qui ? », recette déjà choisie après un dépôt), dire qui mange un plat,
-// ajouter des desserts, fruits… (« extras »), ou en ouvrir un (« extra »).
+// ajouter des desserts, fruits… (« extras »), ou en ouvrir un (« extra »). Pour la semaine
+// seulement : qui est là à un repas (« meal »), un repas en plus (« newMeal »), tout remettre
+// comme dans le foyer (« reset »).
 type SheetTarget =
   | { kind: "card"; cardId: string }
   | { kind: "slot"; day: number; meal_type: MealType; member_ids: string[] }
   | { kind: "add"; day: number; meal_type: MealType; recipeId?: string }
   | { kind: "eaters"; cardId: string }
   | { kind: "extras"; day: number; meal_type: MealType }
-  | { kind: "extra"; cardId: string };
+  | { kind: "extra"; cardId: string }
+  | { kind: "meal"; day: number; meal_type: MealType }
+  | { kind: "newMeal"; day: number }
+  | { kind: "reset" };
 type PlaceSheet = Extract<SheetTarget, { kind: "card" | "slot" }>;
+type WeekSheet = Extract<SheetTarget, { kind: "meal" | "newMeal" | "reset" }>;
+type MealSheet = Exclude<SheetTarget, WeekSheet>;
 
 // « le dîner de mardi », « le pique-nique de mercredi ».
 const MEAL_NOUN: Record<MealType, string> = {
@@ -104,6 +134,8 @@ function dayOffset(scroller: HTMLElement | null, day: number) {
 const toMeal = (mealType: MealType) => MEAL_NOUN[mealType].replace(/^le /, "au ");
 // « retiré du dîner de mardi ».
 const fromMeal = (mealType: MealType) => MEAL_NOUN[mealType].replace(/^le /, "du ");
+// « Le dîner de lundi ».
+const theMeal = (mealType: MealType, day: string) => `L${MEAL_NOUN[mealType].slice(1)} de ${day}`;
 
 // Zone, au bord de l'écran, où un plat glissé fait venir le jour voisin (px).
 const EDGE = 44;
@@ -120,7 +152,9 @@ export function WeekBoard({
   firstDay,
   todayDay = null,
   members,
-  slots,
+  initialSlots,
+  homeSlots,
+  initialChanges,
   recipes,
   extraRecipes,
   fridgeHints,
@@ -139,7 +173,11 @@ export function WeekBoard({
   // valent pour les plats d'aujourd'hui et des jours passés.
   todayDay?: number | null;
   members: RecipeMember[];
-  slots: SlotInput[];
+  // Les repas de cette semaine (ceux du foyer, changés pour la semaine), ceux du foyer, et ce qui
+  // ne le suit pas (« cette semaine »).
+  initialSlots: SlotInput[];
+  homeSlots: SlotInput[];
+  initialChanges: WeekChange[];
   // Les plats (planificateur, Bibliothèque).
   recipes: WeekRecipe[];
   // Entrées, desserts, fruits, fromages, laitages (puces, panneau d'ajout).
@@ -151,6 +189,10 @@ export function WeekBoard({
   initialCards: WeekCard[];
 }) {
   const [cards, setCards] = useState<Card[]>(() => initialCards.map((card) => ({ ...card, vid: card.id })));
+  const [slots, setSlots] = useState<SlotInput[]>(initialSlots);
+  const [changes, setChanges] = useState<WeekChange[]>(initialChanges);
+  // « Un repas en plus » : le repas choisi.
+  const [newMeal, setNewMeal] = useState<MealType>("midi");
   const [delays, setDelays] = useState<Record<string, number>>({});
   const [tried, setTried] = useState<Record<string, string[]>>({});
   const [busy, setBusy] = useState<string[]>([]);
@@ -518,6 +560,83 @@ export function WeekBoard({
     syncCards(result.cards, before.filter((item) => item.id !== card.id), vid);
   }
 
+  // ─── Les repas de cette semaine ───────────────────────────────────────────
+  const homeAt = (day: number, mealType: MealType) =>
+    homeSlots.find((slot) => slot.day === day && slot.meal_type === mealType)?.member_ids ?? [];
+  const changeAt = (day: number, mealType: MealType) =>
+    changes.find((change) => change.day === day && change.meal_type === mealType);
+  // Les repas qui n'ont pas lieu ce jour-là (« Un repas en plus »).
+  const freeMeals = (day: number) =>
+    MEAL_TYPES.map((meal) => meal.value).filter((meal) => !slots.some((slot) => slot.day === day && slot.meal_type === meal));
+
+  function openMeal(day: number, mealType: MealType) {
+    setPicked(presentAt(day, mealType));
+    setSheet({ kind: "meal", day, meal_type: mealType });
+  }
+
+  function openNewMeal(day: number) {
+    setNewMeal(freeMeals(day)[0]);
+    setPicked(members.map((member) => member.id));
+    setSheet({ kind: "newMeal", day });
+  }
+
+  // Qui est là à un repas, cette semaine : tout de suite à l'écran (repas, marque « cette semaine »,
+  // plats de ceux qui partent), puis ce que rend le serveur ; en cas d'échec, l'état d'avant.
+  async function setWeekMeal(day: number, mealType: MealType, memberIds: readonly string[]) {
+    const after = members.filter((member) => memberIds.includes(member.id)).map((member) => member.id);
+    const previous = presentAt(day, mealType);
+    const before = { slots, changes, cards };
+    const overrides = [
+      ...changes
+        .filter((change) => change.day !== day || change.meal_type !== mealType)
+        .map(({ day: changeDay, meal_type, member_ids }) => ({ day: changeDay, meal_type, member_ids })),
+      { day, meal_type: mealType, member_ids: after },
+    ];
+    setSheet(null);
+    setError(null);
+    setDelays({});
+    setSlots(weekSlots(homeSlots, overrides));
+    setChanges(weekChanges(homeSlots, overrides));
+    setCards((current) => trimCards(current, day, mealType, after));
+    const result = await setWeekMealAction(weekStart, day, mealType, after).catch(() => ({ error: SAVE_ERROR }));
+    if ("error" in result) {
+      setSlots(before.slots);
+      setChanges(before.changes);
+      setCards(before.cards);
+      setError(result.error);
+      return;
+    }
+    setSlots(result.slots);
+    setChanges(result.changes);
+    syncCards(result.cards, before.cards);
+    toast(weekMealMessage({ day, meal_type: mealType, before: previous, after, home: homeAt(day, mealType), members }));
+  }
+
+  // « Tout remettre comme d'habitude » : la semaine suit à nouveau le foyer.
+  async function resetWeek() {
+    const before = { slots, changes, cards };
+    setSheet(null);
+    setError(null);
+    setDelays({});
+    setSlots(weekSlots(homeSlots, []));
+    setChanges([]);
+    setCards((current) =>
+      changes.reduce((next, change) => trimCards(next, change.day, change.meal_type, change.home_ids), current),
+    );
+    const result = await resetWeekMealsAction(weekStart).catch(() => ({ error: SAVE_ERROR }));
+    if ("error" in result) {
+      setSlots(before.slots);
+      setChanges(before.changes);
+      setCards(before.cards);
+      setError(result.error);
+      return;
+    }
+    setSlots(result.slots);
+    setChanges(result.changes);
+    syncCards(result.cards, before.cards);
+    toast("Les repas suivent à nouveau le foyer");
+  }
+
   // La base que partagent au moins deux plats du repas, telle qu'écrite sur la recette.
   function sharedBase(list: readonly Card[]) {
     const seen = new Map<string, string>();
@@ -637,13 +756,13 @@ export function WeekBoard({
 
   // ─── Panneau « Changer » ──────────────────────────────────────────────────
   const sheetCard = sheet && "cardId" in sheet ? cards.find((card) => card.id === sheet.cardId) : undefined;
-  const sheetMeal = sheet ? ("cardId" in sheet ? sheetCard?.meal_type : sheet.meal_type) : undefined;
-  const sheetDay = sheet ? ("cardId" in sheet ? sheetCard?.day : sheet.day) : undefined;
+  const sheetMeal = sheet && "meal_type" in sheet ? sheet.meal_type : sheetCard?.meal_type;
+  const sheetDay = sheet && "day" in sheet ? sheet.day : sheetCard?.day;
   const sheetEaterIds = !sheet
     ? []
     : sheet.kind === "slot"
       ? sheet.member_ids
-      : sheet.kind === "add"
+      : sheet.kind === "add" || sheet.kind === "meal"
         ? picked
         : (sheetCard?.member_ids ?? []);
   // Les présents du repas, dans l'ordre du foyer, comme partout ailleurs.
@@ -662,7 +781,67 @@ export function WeekBoard({
         })
       : null;
 
-  function sheetBody(target: SheetTarget, mealType: MealType, day: number) {
+  // Les panneaux de la semaine : qui est là, un repas en plus, tout remettre.
+  function weekSheetBody(target: WeekSheet) {
+    if (target.kind === "reset") {
+      return (
+        <>
+          <SheetHeader>
+            <SheetTitle>Tout remettre comme d’habitude ?</SheetTitle>
+            <SheetDescription>Les repas de cette semaine reprennent le réglage du foyer.</SheetDescription>
+          </SheetHeader>
+          <ul className="flex list-disc flex-col gap-1 pl-5">
+            {changes.map((change) => (
+              <li key={`${change.day}:${change.meal_type}`}>{describeChange(change, members)}</li>
+            ))}
+          </ul>
+          {changes.some((change) => change.kind === "added") && (
+            <p className="mt-3 text-[0.9375rem] text-muted-foreground">Les repas ajoutés partent avec leurs plats.</p>
+          )}
+          <Button block size="lg" className="mt-5" onClick={() => void resetWeek()}>
+            Tout remettre
+          </Button>
+          <Button variant="ghost" block className="mt-2 text-muted-foreground" onClick={() => setSheet(null)}>
+            Annuler
+          </Button>
+        </>
+      );
+    }
+
+    if (target.kind === "newMeal") {
+      return (
+        <WeekMealPanel
+          title={`Un repas en plus ${days[target.day].long}`}
+          members={members}
+          selected={picked}
+          onChange={setPicked}
+          note={null}
+          meal={newMeal}
+          choices={freeMeals(target.day)}
+          onMealChange={setNewMeal}
+          onValidate={() => void setWeekMeal(target.day, newMeal, picked)}
+        />
+      );
+    }
+
+    const change = changeAt(target.day, target.meal_type);
+    return (
+      <WeekMealPanel
+        title={theMeal(target.meal_type, days[target.day].long)}
+        members={members}
+        selected={picked}
+        onChange={setPicked}
+        note={leavingNote(cards, target.day, target.meal_type, picked, members)}
+        changed={change !== undefined}
+        meal={target.meal_type}
+        onValidate={() => void setWeekMeal(target.day, target.meal_type, picked)}
+        onNoMeal={() => void setWeekMeal(target.day, target.meal_type, [])}
+        onUsual={change && (() => void setWeekMeal(target.day, target.meal_type, change.home_ids))}
+      />
+    );
+  }
+
+  function sheetBody(target: MealSheet, mealType: MealType, day: number) {
     const mealOfDay = `${MEAL_NOUN[mealType]} de ${days[day].long}`;
 
     if (target.kind === "extras") {
@@ -960,15 +1139,27 @@ export function WeekBoard({
     const slotLabel = `${MEAL_NOUN[slot.meal_type]} de ${days[slot.day].long}`;
     return (
       <div key={slot.meal_type} data-meal={slot.meal_type} className="flex min-w-0 flex-col gap-2">
-        <h3
-          className={cn(
-            "text-[0.9375rem] font-semibold text-muted-foreground",
-            // Dans la grille, la ligne dit déjà le repas ; le pique-nique le rappelle sur sa carte.
-            (slot.meal_type !== "pique_nique" || slot.cards.length > 0) && "xl:sr-only",
+        {/* Le repas, « cette semaine » s'il ne suit pas le foyer, et qui est là (à toucher). */}
+        <div className="flex min-w-0 items-center gap-2">
+          <h3
+            className={cn(
+              "text-[0.9375rem] font-semibold text-muted-foreground",
+              // Dans la grille, la ligne dit déjà le repas ; le pique-nique le rappelle sur sa carte.
+              (slot.meal_type !== "pique_nique" || slot.cards.length > 0) && "xl:sr-only",
+            )}
+          >
+            <MealLabel type={slot.meal_type} />
+          </h3>
+          {changeAt(slot.day, slot.meal_type) && (
+            <span className="text-[0.8125rem] font-semibold text-mustard-deep">cette semaine</span>
           )}
-        >
-          <MealLabel type={slot.meal_type} />
-        </h3>
+          <MealAttendees
+            className="ml-auto"
+            label={`Qui est là ${toMeal(slot.meal_type)} de ${days[slot.day].long} ?`}
+            members={members.filter((member) => slot.member_ids.includes(member.id))}
+            onOpen={() => openMeal(slot.day, slot.meal_type)}
+          />
+        </div>
         {extraChips(slot, slot.starters)}
         {slot.cards.length === 0 ? (
           <DroppableSlot
@@ -1101,6 +1292,19 @@ export function WeekBoard({
         </div>
         {cards.length > 0 && <ShoppingLink className="hidden sm:inline-flex" weekStart={weekStart} />}
       </div>
+      {changes.length > 0 && (
+        <p className="mt-3 text-[0.9375rem] text-muted-foreground">
+          Cette semaine ne suit pas tout à fait le foyer ·{" "}
+          <Button
+            variant="link"
+            className="min-h-0 align-baseline"
+            aria-haspopup="dialog"
+            onClick={() => setSheet({ kind: "reset" })}
+          >
+            Tout remettre comme d’habitude
+          </Button>
+        </p>
+      )}
       <div className="mt-5 flex flex-col gap-3 sm:hidden">
         {proposeButton(true)}
         {cards.length > 0 && <ShoppingLink block weekStart={weekStart} />}
@@ -1129,13 +1333,14 @@ export function WeekBoard({
           )}
         >
           {/* Ordinateur : les noms des lignes, à gauche. */}
-          <div aria-hidden="true" className="hidden xl:grid xl:grid-rows-subgrid" style={{ gridRow: `span ${board.length + 1}` }}>
+          <div aria-hidden="true" className="hidden xl:grid xl:grid-rows-subgrid" style={{ gridRow: `span ${board.length + 2}` }}>
             <span />
             {board.map((row) => (
               <p key={row.row} className="pt-2 font-heading text-[1.25rem] leading-tight">
                 <MealLabel type={row.row} className="flex-col items-start gap-1" />
               </p>
             ))}
+            <span />
           </div>
 
           {days.map((day, index) => (
@@ -1144,7 +1349,7 @@ export function WeekBoard({
               data-day={index}
               aria-label={`${day.long} ${day.date}`}
               className="flex w-full min-w-0 shrink-0 snap-start flex-col gap-5 sm:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-2rem)/3)] xl:grid xl:w-auto xl:grid-rows-subgrid xl:gap-y-4"
-              style={{ gridRow: `span ${board.length + 1}` }}
+              style={{ gridRow: `span ${board.length + 2}` }}
             >
               <h2 className="sr-only sm:not-sr-only sm:flex sm:items-baseline sm:gap-2 sm:font-heading sm:text-[1.375rem] xl:justify-center">
                 <span className="first-letter:uppercase">{day.short}</span>
@@ -1158,6 +1363,24 @@ export function WeekBoard({
                     {row.days[index].slots.map(renderSlot)}
                   </div>
                 ),
+              )}
+              {/* Un repas qui n'a pas lieu d'habitude, pour cette semaine (caché si les 4 ont lieu). */}
+              {freeMeals(index).length > 0 ? (
+                <div className="xl:self-start">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="-ml-3 text-muted-foreground xl:ml-0"
+                    aria-haspopup="dialog"
+                    aria-label={`Un repas en plus ${day.long}`}
+                    onClick={() => openNewMeal(index)}
+                  >
+                    <Plus aria-hidden="true" />
+                    Un repas en plus
+                  </Button>
+                </div>
+              ) : (
+                <div aria-hidden="true" className="hidden xl:block" />
               )}
             </section>
           ))}
@@ -1226,7 +1449,11 @@ export function WeekBoard({
       <AnimatePresence>{drag && drag.kind !== "recipe" && <TrashZone over={overId === "trash"} />}</AnimatePresence>
 
       <Sheet open={sheet !== null} onOpenChange={(open) => !open && setSheet(null)}>
-        <SheetContent>{sheet && sheetMeal !== undefined && sheetDay !== undefined && sheetBody(sheet, sheetMeal, sheetDay)}</SheetContent>
+        <SheetContent>
+          {sheet?.kind === "meal" || sheet?.kind === "newMeal" || sheet?.kind === "reset"
+            ? weekSheetBody(sheet)
+            : sheet && sheetMeal !== undefined && sheetDay !== undefined && sheetBody(sheet, sheetMeal, sheetDay)}
+        </SheetContent>
       </Sheet>
     </DndContext>
   );

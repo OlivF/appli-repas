@@ -237,3 +237,61 @@ export function restorableEaters({
   );
   return present.filter((id) => !served.has(id));
 }
+
+// ─── Les repas d'une semaine ────────────────────────────────────────────────
+
+// Les cartes d'un repas ne gardent que ses présents (plats et plats légers) ; une carte qui n'a
+// plus personne disparaît. Même règle que private.trim_week_cards, pour l'écran.
+export function trimCards<C extends { day: number; meal_type: MealType; member_ids: string[] }>(
+  cards: readonly C[],
+  day: number,
+  mealType: MealType,
+  presentIds: readonly string[],
+): C[] {
+  return cards.flatMap((card) => {
+    if (card.day !== day || card.meal_type !== mealType) return [card];
+    const kept = card.member_ids.filter((id) => presentIds.includes(id));
+    if (kept.length === 0) return [];
+    return [kept.length === card.member_ids.length ? card : { ...card, member_ids: kept }];
+  });
+}
+
+const VOWEL = /^[aeiouyàâäéèêëîïôöùûüœæ]/i;
+const list = (names: string[]) => new Intl.ListFormat("fr", { type: "conjunction" }).format(names);
+
+// « Qui est là ? » : ce que deviennent les plats de ceux qu'on décoche (le genre des membres n'est
+// pas connu : « son plat », jamais « qu'elle avait »). Les plats légers ne comptent pas.
+export function leavingNote(
+  cards: readonly { day: number; meal_type: MealType; member_ids: readonly string[]; course?: Course }[],
+  day: number,
+  mealType: MealType,
+  presentIds: readonly string[],
+  members: readonly { id: string; first_name: string }[],
+): string | null {
+  const leaving = new Set<string>();
+  const orphans = new Set<string>();
+  let removed = 0;
+  for (const card of cards) {
+    if (card.day !== day || card.meal_type !== mealType || isExtra(card.course)) continue;
+    const gone = card.member_ids.filter((id) => !presentIds.includes(id));
+    if (gone.length === 0) continue;
+    if (gone.length === card.member_ids.length) {
+      removed += 1;
+      for (const id of gone) orphans.add(id);
+    } else {
+      for (const id of gone) leaving.add(id);
+    }
+  }
+  const named = (ids: Set<string>) => members.filter((member) => ids.has(member.id)).map((member) => member.first_name);
+  const sentences: string[] = [];
+  const quitters = named(leaving);
+  if (quitters.length > 0) {
+    sentences.push(`${list(quitters)} ${quitters.length > 1 ? "quitteront leur plat." : "quittera son plat."}`);
+  }
+  const owners = list(named(orphans));
+  if (removed > 0) {
+    const of = VOWEL.test(owners) ? `d’${owners}` : `de ${owners}`;
+    sentences.push(removed > 1 ? `Les plats ${of} seront retirés.` : `Le plat ${of} sera retiré.`);
+  }
+  return sentences.length > 0 ? sentences.join(" ") : null;
+}

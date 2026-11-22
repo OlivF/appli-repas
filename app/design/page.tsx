@@ -47,6 +47,7 @@ import {
   IngredientRowDemo,
   LibraryDemo,
   TrashDemo,
+  WeekMealDemo,
   MemberToggleDemo,
   NavDemo,
   OrganizersDemo,
@@ -425,6 +426,17 @@ export default function DesignPage() {
           </p>
           <div className="mt-4">
             <TrashDemo />
+          </div>
+
+          <h3 className="mt-10 text-xl">Une semaine pas comme les autres</h3>
+          <p className="mt-1 max-w-[60ch] text-muted-foreground">
+            Les repas du foyer sont le modèle de toutes les semaines. Les avatars à côté d’un repas disent qui est
+            là : les toucher ouvre « Qui est là ? », pour cette semaine seulement (retirer quelqu’un, « Pas de dîner
+            ce jour-là », « Comme d’habitude »). « Un repas en plus » ajoute un repas qui n’a pas lieu d’habitude.
+            Un repas changé porte « cette semaine », en moutarde ; la ligne sous la semaine permet de tout remettre.
+          </p>
+          <div className="mt-4">
+            <WeekMealDemo family={FAMILY} />
           </div>
 
           <h3 className="mt-10 text-xl">La Bibliothèque</h3>

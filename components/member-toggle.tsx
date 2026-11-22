@@ -8,7 +8,8 @@ import { MemberAvatar, type AvatarMember } from "@/components/member-avatar";
 // `disabled` + `reason` : son régime l'écarte d'office (« Céto »), on ne peut pas le réintégrer.
 // Avec `name`, la case part avec le formulaire (valeur : l'id du membre) quand elle est barrée.
 // `mode="pick"` : « Léa mange ce plat » ; coché, l'avatar prend un cercle tomate et une coche
-// (le barré reste réservé à « n'en mange pas »). `reason` dit alors son régime.
+// (le barré reste réservé à « n'en mange pas »). `reason` dit alors son régime ; `label`
+// remplace « Léa mange ce plat » (« Léa est là »).
 export function MemberToggle({
   member,
   pressed,
@@ -17,6 +18,7 @@ export function MemberToggle({
   reason,
   name,
   mode = "exclude",
+  label,
 }: {
   member: AvatarMember;
   pressed: boolean;
@@ -25,13 +27,14 @@ export function MemberToggle({
   reason?: string;
   name?: string;
   mode?: "exclude" | "pick";
+  label?: string;
 }) {
   if (mode === "pick") {
     return (
       <button
         type="button"
         aria-pressed={pressed}
-        aria-label={`${member.first_name} mange ce plat`}
+        aria-label={label ?? `${member.first_name} mange ce plat`}
         onClick={() => onPressedChange(!pressed)}
         className="press group flex w-[4.5rem] flex-col items-center gap-1.5 rounded-2xl px-0.5 pt-1 pb-1.5 text-center outline-offset-2 hover:bg-muted"
       >

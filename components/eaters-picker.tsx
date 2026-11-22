@@ -19,6 +19,7 @@ export function EatersPicker({
   recipe,
   label = "Pour qui ?",
   labelHidden = false,
+  memberLabel,
   className,
 }: {
   members: readonly PickerMember[];
@@ -28,6 +29,8 @@ export function EatersPicker({
   label?: string;
   // Le titre du panneau le dit déjà : le libellé reste pour les lecteurs d'écran.
   labelHidden?: boolean;
+  // Le nom lu de chaque avatar (« Léa est là ») ; « Léa mange ce plat » sinon.
+  memberLabel?: (firstName: string) => string;
   className?: string;
 }) {
   const id = useId();
@@ -56,6 +59,7 @@ export function EatersPicker({
             mode="pick"
             member={member}
             pressed={selected.includes(member.id)}
+            label={memberLabel?.(member.first_name)}
             reason={member.diets.length > 0 ? dietReason(member.diets) : undefined}
             onPressedChange={(on) => toggle(member.id, on)}
           />

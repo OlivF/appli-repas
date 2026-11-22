@@ -2,10 +2,15 @@ import { describe, expect, it } from "vitest";
 import { LEA, PAUL, TOM } from "@/test/helpers";
 import {
   describeAttendees,
+  describeChange,
   describeDays,
   initialSelection,
   slotsFromSelection,
   summarizeMeals,
+  weekChanges,
+  weekMealMessage,
+  weekSlots,
+  type SlotInput,
 } from "./meal-slots";
 
 describe("initialSelection", () => {
@@ -147,5 +152,122 @@ describe("summarizeMeals", () => {
 
   it("ne garde que les repas qui ont au moins un créneau", () => {
     expect(summarizeMeals(everyDay("soir"), members).map((meal) => meal.label)).toEqual(["Dîner"]);
+  });
+});
+
+// ─── Les repas d'une semaine : le foyer de test ─────────────────────────────
+const OLIVIER = "o";
+const ML = "ml";
+const TIMOTHE = "t";
+const ANNA = "a";
+const OTIS = "x";
+const ALL = [OLIVIER, ML, TIMOTHE, ANNA, OTIS];
+const FAMILY = [
+  { id: OLIVIER, first_name: "Olivier" },
+  { id: ML, first_name: "Marie-Laure" },
+  { id: TIMOTHE, first_name: "Timothé" },
+  { id: ANNA, first_name: "Anna-Lucia" },
+  { id: OTIS, first_name: "Otis" },
+];
+// Petit-déj et dîner pour tous ; midi Marie-Laure lun/mar/jeu/ven ; mercredi pique-nique Otis + Anna-Lucia.
+const HOME: SlotInput[] = [
+  ...[0, 1, 2, 3, 4, 5, 6].flatMap((day) => [
+    { day, meal_type: "petit_dej" as const, member_ids: ALL },
+    { day, meal_type: "soir" as const, member_ids: ALL },
+  ]),
+  ...[0, 1, 3, 4].map((day) => ({ day, meal_type: "midi" as const, member_ids: [ML] })),
+  { day: 2, meal_type: "pique_nique", member_ids: [ANNA, OTIS] },
+];
+const WITHOUT_ML = { day: 0, meal_type: "soir" as const, member_ids: [OLIVIER, TIMOTHE, ANNA, OTIS] };
+const SATURDAY_LUNCH = { day: 5, meal_type: "midi" as const, member_ids: ALL };
+const NO_SUNDAY_DINNER = { day: 6, meal_type: "soir" as const, member_ids: [] };
+const find = (slots: SlotInput[], day: number, meal: SlotInput["meal_type"]) =>
+  slots.find((slot) => slot.day === day && slot.meal_type === meal);
+
+describe("weekSlots", () => {
+  it("sans exception : les repas du foyer", () => {
+    expect(weekSlots(HOME, [])).toHaveLength(HOME.length);
+  });
+
+  it("lundi soir sans Marie-Laure", () => {
+    expect(find(weekSlots(HOME, [WITHOUT_ML]), 0, "soir")?.member_ids).toEqual([OLIVIER, TIMOTHE, ANNA, OTIS]);
+  });
+
+  it("samedi midi ajouté pour tous, dimanche soir retiré", () => {
+    const slots = weekSlots(HOME, [SATURDAY_LUNCH, NO_SUNDAY_DINNER]);
+    expect(find(slots, 5, "midi")?.member_ids).toEqual(ALL);
+    expect(find(slots, 6, "soir")).toBeUndefined();
+    expect(slots).toHaveLength(HOME.length);
+  });
+
+  it("triés par jour, puis dans l'ordre de la journée", () => {
+    const slots = weekSlots(HOME, [SATURDAY_LUNCH]);
+    const saturday = slots.filter((slot) => slot.day === 5).map((slot) => slot.meal_type);
+    expect(saturday).toEqual(["petit_dej", "midi", "soir"]);
+    expect(slots.map((slot) => slot.day)).toEqual([...slots.map((slot) => slot.day)].sort((a, b) => a - b));
+  });
+});
+
+describe("weekChanges", () => {
+  it("les trois sortes de changement, avec les présents du foyer", () => {
+    expect(weekChanges(HOME, [WITHOUT_ML, SATURDAY_LUNCH, NO_SUNDAY_DINNER])).toEqual([
+      { day: 0, meal_type: "soir", kind: "changed", member_ids: [OLIVIER, TIMOTHE, ANNA, OTIS], home_ids: ALL },
+      { day: 5, meal_type: "midi", kind: "added", member_ids: ALL, home_ids: [] },
+      { day: 6, meal_type: "soir", kind: "removed", member_ids: [], home_ids: ALL },
+    ]);
+  });
+
+  it("une exception identique au foyer (dans un autre ordre) ne compte pas", () => {
+    expect(weekChanges(HOME, [{ day: 1, meal_type: "soir", member_ids: [...ALL].reverse() }])).toEqual([]);
+  });
+
+  it("un repas vide là où le foyer n'en a pas ne compte pas", () => {
+    expect(weekChanges(HOME, [{ day: 5, meal_type: "pique_nique", member_ids: [] }])).toEqual([]);
+  });
+});
+
+describe("weekMealMessage", () => {
+  const message = (day: number, meal_type: SlotInput["meal_type"], before: string[], after: string[], home: string[]) =>
+    weekMealMessage({ day, meal_type, before, after, home, members: FAMILY });
+
+  it("pas de repas", () => {
+    expect(message(6, "soir", ALL, [], ALL)).toBe("Pas de dîner dimanche cette semaine");
+  });
+
+  it("revenu au réglage du foyer", () => {
+    expect(message(0, "soir", [OLIVIER], ALL, ALL)).toBe("Dîner de lundi : comme d’habitude");
+  });
+
+  it("un repas ajouté", () => {
+    expect(message(5, "midi", [], ALL, [])).toBe("Midi de samedi ajouté");
+  });
+
+  it("quelqu'un en moins", () => {
+    expect(message(0, "soir", ALL, [OLIVIER, TIMOTHE, ANNA, OTIS], ALL)).toBe("Dîner de lundi : sans Marie-Laure cette semaine");
+  });
+
+  it("quelqu'un en plus", () => {
+    expect(message(0, "midi", [ML], [ML, TIMOTHE], [ML])).toBe("Midi de lundi : avec Timothé cette semaine");
+  });
+
+  it("en moins et en plus", () => {
+    expect(message(0, "midi", [ML], [TIMOTHE], [ML])).toBe("Midi de lundi : changé pour cette semaine");
+  });
+});
+
+describe("describeChange", () => {
+  const [changed, added, removed] = weekChanges(HOME, [WITHOUT_ML, SATURDAY_LUNCH, NO_SUNDAY_DINNER]);
+
+  it("une ligne par repas changé", () => {
+    expect(describeChange(changed, FAMILY)).toBe("Dîner de lundi : sans Marie-Laure");
+    expect(describeChange(added, FAMILY)).toBe("Midi de samedi : ajouté");
+    expect(describeChange(removed, FAMILY)).toBe("Pas de dîner dimanche");
+  });
+
+  it("avec, et sans et avec", () => {
+    const [plus] = weekChanges(HOME, [{ day: 0, meal_type: "midi", member_ids: [ML, OTIS] }]);
+    expect(describeChange(plus, FAMILY)).toBe("Midi de lundi : avec Otis");
+    const [both] = weekChanges(HOME, [{ day: 0, meal_type: "midi", member_ids: [OTIS] }]);
+    expect(describeChange(both, FAMILY)).toBe("Midi de lundi : sans Marie-Laure, avec Otis");
   });
 });

@@ -2,7 +2,7 @@
 
 import { extrasToAdd, restorableEaters, type ExtraTarget, type Unserved } from "@/lib/board";
 import { SAVE_ERROR } from "@/lib/data";
-import { MEAL_TYPES, type MealType } from "@/lib/meal-slots";
+import { MEAL_TYPES, type MealType, type SlotInput, type WeekChange } from "@/lib/meal-slots";
 import { nextIdea, proposeWeek } from "@/lib/planner";
 import { quickRecipe, type QuickRecipeInput } from "@/lib/quick-recipe";
 import { AISLES, courseOf, isExtra } from "@/lib/recipes";
@@ -292,6 +292,51 @@ export async function anotherIdeaAction(weekStart: string, cardId: string, tried
     if (error) return { error: SAVE_ERROR };
   }
   return { cards: changed };
+}
+
+// ─── Les repas d'une semaine ────────────────────────────────────────────────
+
+export type WeekMealsResult = { slots: SlotInput[]; changes: WeekChange[]; cards: WeekCard[] } | ActionError;
+
+async function weekMeals(weekStart: string): Promise<WeekMealsResult> {
+  const { slots, changes, cards } = await loadWeek(weekStart);
+  return { slots, changes, cards };
+}
+
+// « Qui est là ? » pour un repas, cette semaine seulement : les présents cochés (personne : pas de
+// repas ; ceux du foyer : comme d'habitude). Les plats du repas ne gardent que les présents.
+// Rend les repas de la semaine et ses cartes.
+export async function setWeekMealAction(
+  weekStart: string,
+  day: number,
+  mealType: MealType,
+  memberIds: string[],
+): Promise<WeekMealsResult> {
+  if (!isWeekStart(weekStart) || !Number.isInteger(day) || day < 0 || day > 6) return { error: SAVE_ERROR };
+  if (!MEAL_TYPES.some((meal) => meal.value === mealType) || !Array.isArray(memberIds)) return { error: SAVE_ERROR };
+  const { supabase, household, members } = await loadReadyHousehold();
+  const present = members.filter((member) => memberIds.includes(member.id)).map((member) => member.id);
+  const { error } = await supabase.rpc("set_week_meal", {
+    target_household_id: household.id,
+    target_week_start: weekStart,
+    target_day: day,
+    target_meal_type: mealType,
+    eater_ids: present,
+  });
+  if (error) return { error: SAVE_ERROR };
+  return weekMeals(weekStart);
+}
+
+// « Tout remettre comme d'habitude » : la semaine suit à nouveau le foyer.
+export async function resetWeekMealsAction(weekStart: string): Promise<WeekMealsResult> {
+  if (!isWeekStart(weekStart)) return { error: SAVE_ERROR };
+  const { supabase, household } = await loadReadyHousehold();
+  const { error } = await supabase.rpc("reset_week_meals", {
+    target_household_id: household.id,
+    target_week_start: weekStart,
+  });
+  if (error) return { error: SAVE_ERROR };
+  return weekMeals(weekStart);
 }
 
 // ─── Desserts, fruits, fromages ─────────────────────────────────────────────
