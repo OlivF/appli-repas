@@ -10,10 +10,18 @@ import { settleFinishedWeeks } from "@/lib/fridge-settlement";
 import { urgentStripText } from "@/lib/shopping-items";
 import { addDays, dayLabel, parseWeekParam, todayInParis, weekLabel, weekRelation } from "@/lib/week";
 import { knownIngredients } from "@/lib/recipes-data";
+import type { SlotInput } from "@/lib/meal-slots";
 import { loadWeek } from "@/lib/week-data";
 import { WeekBoard } from "./week-board";
 
 export const metadata: Metadata = { title: "La semaine" };
+
+// Les repas, en texte (« 0:soir:id,id;… »), dans un ordre fixe : la base ne garantit pas le sien.
+const mealsKey = (slots: readonly SlotInput[]) =>
+  slots
+    .map((slot) => `${slot.day}:${slot.meal_type}:${[...slot.member_ids].sort().join(",")}`)
+    .sort()
+    .join(";");
 
 export default function WeekPage({ searchParams }: PageProps<"/semaine">) {
   return (
@@ -49,8 +57,9 @@ async function Week({ searchParams }: Pick<PageProps<"/semaine">, "searchParams"
         </div>
       )}
       <WeekBoard
-        // Une autre semaine repart d'un état neuf.
-        key={weekStart}
+        // Une autre semaine repart d'un état neuf ; des repas changés ailleurs aussi (le foyer) :
+        // Next.js garde l'écran déjà visité, avec ses repas d'avant, et ne passe que les props.
+        key={`${weekStart}|${mealsKey(homeSlots)}|${mealsKey(slots)}`}
         weekStart={weekStart}
         label={weekLabel(weekStart)}
         relation={relation}

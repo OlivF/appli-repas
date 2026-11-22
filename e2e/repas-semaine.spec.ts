@@ -128,3 +128,21 @@ test("changer les repas d'une semaine, puis tout remettre comme d'habitude", asy
   await expect(meal(page, 0, "soir").getByText("Rien de prévu pour Léa.")).toBeVisible();
   await expect(page.getByText("Cette semaine ne suit pas tout à fait le foyer")).toBeHidden();
 });
+
+test("un repas ajouté dans le foyer apparaît dans la semaine, sans recharger", async ({ page }) => {
+  await newHousehold(page);
+  await page.waitForLoadState("networkidle");
+  await expect(meal(page, 5, "midi")).toHaveCount(0);
+
+  // Le foyer : un midi le samedi pour Paul, puis retour à la semaine par l'onglet.
+  await page.getByRole("link", { name: "Foyer" }).first().click();
+  await expect(page).toHaveURL(/\/foyer$/);
+  await page.getByRole("link", { name: "Modifier les repas" }).click();
+  await expect(page).toHaveURL(/\/bienvenue\/repas$/);
+  await page.getByRole("checkbox", { name: "Midi samedi : Paul" }).check();
+  await page.getByRole("button", { name: "Enregistrer" }).click();
+  await expect(page).toHaveURL(/\/foyer$/);
+  await page.getByRole("link", { name: "Semaine" }).first().click();
+  await expect(page).toHaveURL(/\/semaine$/);
+  await expect(meal(page, 5, "midi").getByRole("button", { name: "Choisir le midi de samedi" })).toBeVisible();
+});
