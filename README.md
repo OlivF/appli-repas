@@ -55,7 +55,7 @@ docker compose exec web node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON \
 docker exec -i supabase_db_appli-repas psql -U postgres -v ON_ERROR_STOP=1 < semaines/2026-11-16.sql
 ```
 
-En production, colle le fichier dans le SQL Editor de Supabase. Tout tient dans une transaction : au premier problème (recette introuvable, prénom inconnu, deux plats pour la même personne…), rien n'est enregistré. Seuls les repas du fichier sont remplacés ; on peut le rejouer. Le SQL contient l'email : `semaines/*.sql` n'est pas commité.
+En production, colle le fichier dans le SQL Editor de Supabase. Tout tient dans un seul bloc `do`, suivi d'un récapitulatif : le SQL Editor joue chaque instruction à part et n'en garde rien pour la suivante (pas de `begin`/`commit` ni de table temporaire hors du bloc). Au premier problème (recette introuvable, prénom inconnu, deux plats pour la même personne…), rien n'est enregistré. Seuls les repas du fichier sont remplacés ; on peut le rejouer. Le SQL contient l'email : `semaines/*.sql` n'est pas commité.
 
 Après un changement de schéma, régénère les types TypeScript :
 

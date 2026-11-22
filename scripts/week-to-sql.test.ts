@@ -21,18 +21,53 @@ const tuesday: WeekFile["repas"][number] = {
 // Les lignes de données du SQL : une par plat.
 function dataRows(sql: string) {
   return sql
-    .slice(sql.indexOf("insert into popote_week"), sql.indexOf("do $popote$"))
+    .slice(sql.indexOf("insert into popote_week"))
     .split("\n")
-    .filter((line) => line.startsWith("  ("));
+    .slice(1)
+    .map((line) => line.trim())
+    .filter((line, i, lines) => line.startsWith("(") && lines.slice(0, i).every((before) => before.startsWith("(")));
+}
+
+// Le SQL sans ses commentaires ni ses lignes vides.
+function code(sql: string) {
+  return sql
+    .split("\n")
+    .filter((line) => line.trim() !== "" && !line.trim().startsWith("--"))
+    .join("\n");
 }
 
 describe("weekSql", () => {
-  it("écrit une transaction : la semaine, le foyer par l'email, un bloc do qui vérifie puis remplace", () => {
+  it("tient en une instruction : le SQL Editor de Supabase ne garde rien d'une instruction à l'autre", () => {
+    // Le SQL Editor hébergé joue chaque instruction à part : une table temporaire créée par l'une
+    // n'existe plus pour la suivante (erreur 42P01). Tout vit donc dans le bloc do, atomique à lui
+    // seul ; après lui, seul le récapitulatif, qui ne dépend de rien.
     const sql = weekSql(week([tuesday]), { email: EMAIL });
-    const statements = sql.split("\n").filter((line) => /^(begin|commit);$/.test(line));
-    expect(statements).toEqual(["begin;", "commit;"]);
-    expect(sql.indexOf("do $popote$")).toBeGreaterThan(sql.indexOf("begin;"));
-    expect(sql.indexOf("commit;")).toBeGreaterThan(sql.indexOf("end;\n$popote$;"));
+    const body = code(sql);
+    expect(body.startsWith("do $popote$\n")).toBe(true);
+    const end = body.indexOf("\nend;\n$popote$;\n");
+    expect(end).toBeGreaterThan(0);
+    const after = body.slice(end + "\nend;\n$popote$;\n".length);
+    expect(after.startsWith("select ")).toBe(true);
+    expect(after.match(/;/g)).toEqual([";"]);
+    expect(body).not.toMatch(/^(begin|commit);$/m);
+
+    // La table et la fonction temporaires naissent et meurent dans le bloc.
+    const block = body.slice(0, end);
+    for (const fragment of [
+      "create or replace function pg_temp.popote_key(raw text)",
+      "create temp table popote_week (",
+      "insert into popote_week (meal, day, meal_type, label, n, recipe, eaters) values",
+      "drop table popote_week;",
+      "drop function pg_temp.popote_key(text);",
+    ]) {
+      expect(block).toContain(fragment);
+    }
+    expect(block.indexOf("create temp table popote_week (")).toBeLessThan(block.indexOf("for dish in select"));
+    expect(block.indexOf("drop table popote_week;")).toBeGreaterThan(block.indexOf("insert into public.planned_meals"));
+  });
+
+  it("le bloc retrouve la semaine et le foyer par l'email, vérifie puis remplace", () => {
+    const sql = weekSql(week([tuesday]), { email: EMAIL });
     expect(sql).toContain("target_email constant text := 'test@example.com';");
     expect(sql).toContain("target_week constant date := '2026-11-16';");
     expect(sql).toContain("on conflict (household_id, week_start) do nothing");
@@ -40,9 +75,9 @@ describe("weekSql", () => {
 
   it("une ligne par plat, dans l'ordre du fichier, avec le repas en clair pour les messages", () => {
     expect(dataRows(weekSql(week([tuesday]), { email: EMAIL }))).toEqual([
-      "  (1, 1, 'soir', 'mardi soir', 1, 'Salade verte', null /* tous */),",
-      "  (1, 1, 'soir', 'mardi soir', 2, 'Tartiflette', array['Olivier', 'Timothé', 'Anna-Lucia', 'Otis']),",
-      "  (1, 1, 'soir', 'mardi soir', 3, 'Tartiflette de chou-fleur', array['Marie-Laure']);",
+      "(1, 1, 'soir', 'mardi soir', 1, 'Salade verte', null /* tous */),",
+      "(1, 1, 'soir', 'mardi soir', 2, 'Tartiflette', array['Olivier', 'Timothé', 'Anna-Lucia', 'Otis']),",
+      "(1, 1, 'soir', 'mardi soir', 3, 'Tartiflette de chou-fleur', array['Marie-Laure']);",
     ]);
   });
 
@@ -55,7 +90,7 @@ describe("weekSql", () => {
         { email: EMAIL },
       ),
     );
-    expect(rows).toEqual(["  (1, 2, 'pique_nique', 'mercredi pique-nique', 1, 'Wraps houmous et crudités', null /* tous */);"]);
+    expect(rows).toEqual(["(1, 2, 'pique_nique', 'mercredi pique-nique', 1, 'Wraps houmous et crudités', null /* tous */);"]);
     expect(weekSql(week([tuesday]), { email: EMAIL })).toContain("and m.id = any (slot_members);");
   });
 
@@ -65,7 +100,7 @@ describe("weekSql", () => {
       { email: "o'neil@example.com" },
     );
     const [row] = dataRows(sql);
-    expect(row).toBe("  (1, 3, 'midi', 'jeudi midi', 1, 'Gratin d''endives', array['D''Artagnan']);");
+    expect(row).toBe("(1, 3, 'midi', 'jeudi midi', 1, 'Gratin d''endives', array['D''Artagnan']);");
     // Chaque littéral est bien fermé : il ne reste aucune apostrophe hors des chaînes.
     expect(row.replace(/'(?:[^']|'')*'/g, "")).not.toContain("'");
     expect(sql).toContain("target_email constant text := 'o''neil@example.com';");
