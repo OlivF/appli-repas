@@ -16,7 +16,9 @@
 //
 // Le script vérifie ce qui se lit dans le fichier. Le SQL vérifie le reste dans la base (foyer,
 // recettes, prénoms, créneaux, et « un seul plat par personne et par repas » : seule la base sait si
-// une recette est un plat ou une entrée), en une transaction : au premier problème, rien ne change.
+// une recette est un plat ou une entrée), en un seul bloc do : au premier problème, rien ne change.
+// Pas de begin/commit ni d'objet temporaire hors du bloc : le SQL Editor de Supabase joue chaque
+// instruction à part, et une table temporaire créée par l'une n'existe plus pour la suivante.
 // Il remplace toutes les cartes des repas du fichier, et elles seules ; les plats sont verrouillés,
 // les plats légers non (comme dans l'appli). Ni liste de courses ni frigo : le bandeau « Le menu a
 // changé » s'en charge.
@@ -113,7 +115,7 @@ function rows(doc: WeekFile): Row[] {
 
 function rowSql(row: Row) {
   const eaters = row.eaters === null ? "null /* tous */" : `array[${row.eaters.map(text).join(", ")}]`;
-  return `  (${row.meal}, ${row.day}, ${text(row.mealType)}, ${text(row.label)}, ${row.n}, ${text(row.recipe)}, ${eaters})`;
+  return `    (${row.meal}, ${row.day}, ${text(row.mealType)}, ${text(row.label)}, ${row.n}, ${text(row.recipe)}, ${eaters})`;
 }
 
 export function weekSql(
@@ -134,40 +136,9 @@ export function weekSql(
 -- En prod : coller tout le fichier dans le SQL Editor de Supabase. En local :
 --   docker exec -i supabase_db_appli-repas psql -U postgres -v ON_ERROR_STOP=1 < ${output}
 -- Remplace toutes les cartes des repas ci-dessous, et elles seules ; les plats sont verrouillés.
--- Au premier problème, rien n'est enregistré. Rejouable : les repas du fichier sont remplacés.
-
-begin;
-
--- Comparer sans accents ni majuscules, comme normalizeText (lib/recipes.ts).
-create or replace function pg_temp.popote_key(raw text)
-returns text
-language sql
-immutable
-as $key$
-  select btrim(regexp_replace(
-    translate(
-      lower(replace(replace(replace(replace(coalesce(raw, ''), 'Œ', 'oe'), 'œ', 'oe'), 'Æ', 'ae'), 'æ', 'ae')),
-      'àâäáãåçéèêëíìîïñóòôöõúùûüýÿÀÂÄÁÃÅÇÉÈÊËÍÌÎÏÑÓÒÔÖÕÚÙÛÜÝŸ’',
-      'aaaaaaceeeeiiiinooooouuuuyyaaaaaaceeeeiiiinooooouuuuyy'''),
-    '[[:space:]]+', ' ', 'g'));
-$key$;
-
--- Les plats du fichier, dans l'ordre ; eaters null : tous les membres du créneau.
-create temp table popote_week (
-  meal smallint not null,
-  day smallint not null,
-  meal_type public.meal_type not null,
-  label text not null,
-  n smallint not null,
-  recipe text not null,
-  eaters text[],
-  recipe_id uuid,
-  course public.course,
-  member_ids uuid[]
-) on commit drop;
-
-insert into popote_week (meal, day, meal_type, label, n, recipe, eaters) values
-${all.map(rowSql).join(",\n")};
+-- Tout tient dans un seul bloc do (le SQL Editor joue chaque instruction à part et n'en garde rien
+-- pour la suivante) : au premier problème, rien n'est enregistré. Rejouable : les repas du fichier
+-- sont remplacés.
 
 do $popote$
 declare
@@ -195,6 +166,37 @@ begin
   if household is null then
     raise exception 'Aucun foyer pour le compte « % » : vérifie l''email', target_email;
   end if;
+
+  -- Comparer sans accents ni majuscules, comme normalizeText (lib/recipes.ts).
+  create or replace function pg_temp.popote_key(raw text)
+  returns text
+  language sql
+  immutable
+  as $key$
+    select btrim(regexp_replace(
+      translate(
+        lower(replace(replace(replace(replace(coalesce(raw, ''), 'Œ', 'oe'), 'œ', 'oe'), 'Æ', 'ae'), 'æ', 'ae')),
+        'àâäáãåçéèêëíìîïñóòôöõúùûüýÿÀÂÄÁÃÅÇÉÈÊËÍÌÎÏÑÓÒÔÖÕÚÙÛÜÝŸ’',
+        'aaaaaaceeeeiiiinooooouuuuyyaaaaaaceeeeiiiinooooouuuuyy'''),
+      '[[:space:]]+', ' ', 'g'));
+  $key$;
+
+  -- Les plats du fichier, dans l'ordre ; eaters null : tous les membres du créneau.
+  create temp table popote_week (
+    meal smallint not null,
+    day smallint not null,
+    meal_type public.meal_type not null,
+    label text not null,
+    n smallint not null,
+    recipe text not null,
+    eaters text[],
+    recipe_id uuid,
+    course public.course,
+    member_ids uuid[]
+  ) on commit drop;
+
+  insert into popote_week (meal, day, meal_type, label, n, recipe, eaters) values
+${all.map(rowSql).join(",\n")};
 
   for dish in select * from popote_week w order by w.meal, w.n loop
     -- La recette du foyer d'abord, sinon celle du catalogue, ou sa copie dans le foyer (même
@@ -340,10 +342,11 @@ begin
     replaced, case when replaced > 1 then 's' else '' end,
     removed, case when removed > 1 then 's' else '' end, case when removed > 1 then 's' else '' end,
     added, case when added > 1 then 's' else '' end);
+
+  drop table popote_week;
+  drop function pg_temp.popote_key(text);
 end;
 $popote$;
-
-commit;
 
 -- La semaine du foyer, telle qu'elle est maintenant.
 select (array['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'])[p.day + 1] as jour,
