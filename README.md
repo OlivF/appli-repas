@@ -31,7 +31,7 @@ Le schéma vit dans `supabase/migrations/`.
 supabase db reset   # repart de zéro : rejoue les migrations, puis supabase/seed.sql
 ```
 
-Le catalogue commun de recettes vit dans les migrations `0003_recipe_catalog.sql` et `0007_basics_catalog.sql` (les basiques) : il part en production avec `supabase db push`. `supabase/seed.sql` ne contient que le compte et le foyer de test, à ne jamais pousser en production.
+Le catalogue commun de recettes vit dans les migrations `0003_recipe_catalog.sql`, `0007_basics_catalog.sql` (les basiques), `0016_light_catalog.sql` (desserts, fruits, fromages) et `0018_week_16_nov_catalog.sql` (menu du 16 novembre) : il part en production avec `supabase db push`. `supabase/seed.sql` ne contient que le compte et le foyer de test, à ne jamais pousser en production.
 
 ### Importer un lot de recettes
 
@@ -44,6 +44,18 @@ supabase db reset   # puis supabase test db
 ```
 
 Chaque recette reçoit un identifiant fixe, dérivé de son titre, et la migration ignore celles qui existent déjà : on peut la rejouer sans doublon. Une migration déjà poussée en production ne se modifie plus : pour corriger un lot, on en écrit une nouvelle.
+
+### Remplir une semaine depuis un fichier
+
+Un menu décrit dans `semaines/AAAA-MM-JJ.json` (le lundi de la semaine ; recettes par titre, mangeurs par prénom ou `"tous"`) devient un SQL qui pose ces repas, verrouillés, dans la semaine d'un foyer retrouvé par l'email d'un de ses comptes :
+
+```bash
+docker compose exec web node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON \
+  scripts/week-to-sql.ts semaines/2026-11-16.json semaines/2026-11-16.sql --email test@example.com
+docker exec -i supabase_db_appli-repas psql -U postgres -v ON_ERROR_STOP=1 < semaines/2026-11-16.sql
+```
+
+En production, colle le fichier dans le SQL Editor de Supabase. Tout tient dans une transaction : au premier problème (recette introuvable, prénom inconnu, deux plats pour la même personne…), rien n'est enregistré. Seuls les repas du fichier sont remplacés ; on peut le rejouer. Le SQL contient l'email : `semaines/*.sql` n'est pas commité.
 
 Après un changement de schéma, régénère les types TypeScript :
 

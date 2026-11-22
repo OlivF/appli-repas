@@ -52,8 +52,8 @@ test("proposer la semaine, verrouiller un plat, relancer", async ({ page }) => {
   await expect(day(page, 0).getByRole("button", { name: /^Choisir le dîner de lundi/ })).toBeVisible();
 
   await propose(page);
-  // Lundi soir : un duo de même base, le plat céto pour Léa.
-  await expect(day(page, 0).getByText(/^Même base : /)).toBeVisible();
+  // Lundi soir : un duo de même base, le plat céto pour Léa (le petit-déj peut avoir le sien).
+  await expect(day(page, 0).locator('[data-meal="soir"]').getByText(/^Même base : /)).toBeVisible();
   await expect(dinner(page, 0)).not.toContainText("Ne convient pas");
 
   const kept = await dinner(page, 0).getAttribute("aria-label");

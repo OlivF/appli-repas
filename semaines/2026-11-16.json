@@ -1,0 +1,26 @@
+{
+  "semaine": "2026-11-16",
+  "repas": [
+    { "jour": "lundi", "repas": "soir", "plats": [
+      { "recette": "Velouté de courgettes au fromage frais", "pour": "tous" },
+      { "recette": "Œufs coque et mouillettes", "pour": ["Olivier", "Timothé", "Anna-Lucia", "Otis"] },
+      { "recette": "Œufs coque et mouillettes de jambon", "pour": ["Marie-Laure"] }
+    ]},
+    { "jour": "mardi", "repas": "soir", "plats": [
+      { "recette": "Salade verte", "pour": "tous" },
+      { "recette": "Tartiflette", "pour": ["Olivier", "Timothé", "Anna-Lucia", "Otis"] },
+      { "recette": "Tartiflette de chou-fleur", "pour": ["Marie-Laure"] }
+    ]},
+    { "jour": "mercredi", "repas": "soir", "plats": [
+      { "recette": "Steak haché et haricots verts", "pour": "tous" }
+    ]},
+    { "jour": "jeudi", "repas": "soir", "plats": [
+      { "recette": "Pâtes à la bolognaise", "pour": ["Olivier", "Timothé", "Anna-Lucia", "Otis"] },
+      { "recette": "Courgettes à la bolognaise", "pour": ["Marie-Laure"] }
+    ]},
+    { "jour": "vendredi", "repas": "soir", "plats": [
+      { "recette": "Quiche lorraine et salade verte", "pour": ["Olivier", "Timothé", "Anna-Lucia", "Otis"] },
+      { "recette": "Quiche lorraine sans pâte", "pour": ["Marie-Laure"] }
+    ]}
+  ]
+}
