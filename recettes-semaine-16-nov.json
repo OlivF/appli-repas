@@ -1,0 +1,618 @@
+{
+ "format": {
+  "ingredients": "[nom, quantite, unite, rayon]  unite: g | kg | ml | l | piece | cas | cac  rayon: fruits_legumes | boucherie | poissonnerie | cremerie | epicerie | surgeles | boulangerie | boissons | autre",
+  "types": "petit_dej | midi | soir | pique_nique",
+  "regimes": "keto | vegetarien | sans_gluten | sans_lactose  (= keto, vegetarian, gluten_free, lactose_free dans la base)",
+  "temps": "minutes ; cuisson = durée totale, viande et accompagnement cuisent en même temps",
+  "base": "élément principal partagé : deux recettes de même base s'associent (une pour la famille, une keto) et se cuisinent ensemble",
+  "basique": "true = recette du panneau « Les basiques »",
+  "note": "Lot de la semaine du 16 nov. 2026 (menu papier). Chaque plat non keto a son double keto de même base, cuisiné en même temps. Noms d'ingrédients repris du référentiel commun ; seul « Reblochon » est nouveau.",
+  "plat": "sorte : absent = plat principal ; entree | dessert | fruit | fromage | laitage"
+ },
+ "recettes": [
+  {
+   "titre": "Velouté de courgettes au fromage frais",
+   "description": "Doux et onctueux, sans pommes de terre : toute la famille en mange, Keto compris.",
+   "plat": "entree",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 10,
+   "cuisson": 25,
+   "regimes": [
+    "keto",
+    "vegetarien"
+   ],
+   "batch": true,
+   "batch_notes": "Se garde 3 jours au frais ou 3 mois au congélateur. Double les quantités le dimanche.",
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Courgettes",
+     4,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Oignons",
+     1,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Fromage frais",
+     150,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Bouillon cube",
+     1,
+     "piece",
+     "epicerie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Sel",
+     null,
+     null,
+     "epicerie"
+    ],
+    [
+     "Poivre",
+     null,
+     null,
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Émince l'oignon et fais-le revenir 3 minutes dans l'huile d'olive.",
+    "Ajoute les courgettes coupées en rondelles (sans les éplucher), le cube de bouillon de légumes et de l'eau à hauteur.",
+    "Laisse cuire 20 minutes à petits bouillons.",
+    "Hors du feu, ajoute le fromage frais et mixe. Sale et poivre."
+   ],
+   "base": null
+  },
+  {
+   "titre": "Œufs coque et mouillettes",
+   "description": "Le dîner tout simple que les enfants adorent.",
+   "base": "Œufs coque",
+   "accompagnement": "Mouillettes",
+   "types": [
+    "soir",
+    "petit_dej"
+   ],
+   "portions": 4,
+   "prep": 5,
+   "cuisson": 4,
+   "regimes": [
+    "vegetarien"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Œufs",
+     8,
+     "piece",
+     "cremerie"
+    ],
+    [
+     "Baguettes",
+     1,
+     "piece",
+     "boulangerie"
+    ],
+    [
+     "Beurre",
+     40,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Sel",
+     null,
+     null,
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Sors les œufs du frigo un peu avant.",
+    "Porte une casserole d'eau à ébullition et plonge les œufs délicatement avec une cuillère.",
+    "Compte 3 minutes pour un jaune bien coulant, 4 minutes pour un blanc plus pris.",
+    "Pendant ce temps, coupe la baguette en mouillettes et beurre-les."
+   ]
+  },
+  {
+   "titre": "Œufs coque et mouillettes de jambon",
+   "description": "Les mêmes œufs, avec des bâtonnets de jambon beurrés à la place du pain.",
+   "base": "Œufs coque",
+   "accompagnement": "Mouillettes de jambon",
+   "types": [
+    "soir",
+    "petit_dej"
+   ],
+   "portions": 2,
+   "prep": 5,
+   "cuisson": 4,
+   "regimes": [
+    "keto",
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Œufs",
+     5,
+     "piece",
+     "cremerie"
+    ],
+    [
+     "Tranches de jambon blanc",
+     2,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Beurre",
+     20,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Sel",
+     null,
+     null,
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Cuis les œufs en même temps que ceux de la famille : 3 à 4 minutes dans l'eau bouillante.",
+    "Roule les tranches de jambon serrées, coupe-les en bâtonnets et pose une noisette de beurre dessus.",
+    "Trempe les bâtonnets dans le jaune comme des mouillettes."
+   ]
+  },
+  {
+   "titre": "Tartiflette",
+   "description": "Pommes de terre, lardons, oignons et reblochon fondant : le plat d'hiver de la famille.",
+   "base": "Reblochon",
+   "accompagnement": "Pommes de terre",
+   "types": [
+    "soir"
+   ],
+   "portions": 6,
+   "prep": 20,
+   "cuisson": 50,
+   "regimes": [
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Pommes de terre",
+     1500,
+     "g",
+     "fruits_legumes"
+    ],
+    [
+     "Reblochon",
+     1,
+     "piece",
+     "cremerie"
+    ],
+    [
+     "Lardons",
+     200,
+     "g",
+     "boucherie"
+    ],
+    [
+     "Oignons",
+     2,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Crème fraîche épaisse",
+     200,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Poivre",
+     null,
+     null,
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Fais cuire les pommes de terre avec la peau 20 minutes dans l'eau salée, puis épluche-les et coupe-les en rondelles.",
+    "Fais revenir les oignons émincés et les lardons 8 minutes à la poêle.",
+    "Dans un plat à gratin, alterne pommes de terre, lardons-oignons et crème. Poivre.",
+    "Coupe le reblochon en deux dans l'épaisseur et pose-le dessus, croûte vers le haut.",
+    "Enfourne 25 minutes à 200 °C, jusqu'à ce que ce soit bien doré."
+   ]
+  },
+  {
+   "titre": "Tartiflette de chou-fleur",
+   "description": "La tartiflette sans pommes de terre : chou-fleur, lardons et reblochon.",
+   "base": "Reblochon",
+   "accompagnement": "Chou-fleur",
+   "types": [
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 15,
+   "cuisson": 35,
+   "regimes": [
+    "keto",
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": false,
+   "basique": false,
+   "ingredients": [
+    [
+     "Choux-fleurs",
+     1,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Reblochon",
+     0.5,
+     "piece",
+     "cremerie"
+    ],
+    [
+     "Lardons",
+     150,
+     "g",
+     "boucherie"
+    ],
+    [
+     "Oignons",
+     0.5,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Crème fraîche épaisse",
+     100,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Poivre",
+     null,
+     null,
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Détaille le chou-fleur en bouquets et fais-le cuire 8 minutes à l'eau salée. Égoutte-le bien.",
+    "Prends une part des lardons-oignons revenus pour la tartiflette de la famille.",
+    "Dans un petit plat, mélange chou-fleur, lardons-oignons et crème. Poivre.",
+    "Couvre d'une part du reblochon et enfourne à côté de la grande tartiflette, 20 à 25 minutes à 200 °C."
+   ]
+  },
+  {
+   "titre": "Salade verte",
+   "description": "Une belle salade et sa vinaigrette moutarde, pour accompagner un plat riche.",
+   "plat": "entree",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 5,
+   "cuisson": 0,
+   "regimes": [
+    "keto",
+    "vegetarien",
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Salades vertes",
+     1,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Huile d'olive",
+     3,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Vinaigre de cidre",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Moutarde",
+     1,
+     "cac",
+     "epicerie"
+    ],
+    [
+     "Sel",
+     null,
+     null,
+     "epicerie"
+    ],
+    [
+     "Poivre",
+     null,
+     null,
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Lave et essore la salade.",
+    "Dans le saladier, mélange la moutarde, le vinaigre, le sel et le poivre, puis l'huile.",
+    "Ajoute la salade et remue au moment de servir."
+   ],
+   "base": null
+  },
+  {
+   "titre": "Pâtes à la bolognaise",
+   "description": "La sauce tomate à la viande qui mijote, sur des spaghettis.",
+   "base": "Sauce bolognaise",
+   "accompagnement": "Pâtes",
+   "types": [
+    "soir",
+    "midi"
+   ],
+   "portions": 6,
+   "prep": 15,
+   "cuisson": 45,
+   "regimes": [],
+   "batch": true,
+   "batch_notes": "La sauce se garde 3 jours au frais ou 3 mois au congélateur : fais-en le double le dimanche.",
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Pâtes",
+     500,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Bœuf haché",
+     600,
+     "g",
+     "boucherie"
+    ],
+    [
+     "Oignons",
+     1,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Carottes",
+     1,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Gousses d'ail",
+     2,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Tomates concassées",
+     800,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Huile d'olive",
+     2,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Herbes de Provence",
+     1,
+     "cac",
+     "epicerie"
+    ],
+    [
+     "Parmesan",
+     60,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Sel",
+     null,
+     null,
+     "epicerie"
+    ],
+    [
+     "Poivre",
+     null,
+     null,
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Hache l'oignon, la carotte et l'ail, et fais-les revenir 5 minutes dans l'huile.",
+    "Ajoute le bœuf haché et fais-le dorer en l'émiettant.",
+    "Verse les tomates concassées et les herbes, sale, poivre et laisse mijoter 30 minutes à couvert.",
+    "Fais cuire les pâtes, égoutte-les et sers avec la sauce et le parmesan."
+   ]
+  },
+  {
+   "titre": "Courgettes à la bolognaise",
+   "description": "La même sauce, sur des tagliatelles de courgette à la place des pâtes.",
+   "base": "Sauce bolognaise",
+   "accompagnement": "Tagliatelles de courgette",
+   "types": [
+    "soir",
+    "midi"
+   ],
+   "portions": 2,
+   "prep": 10,
+   "cuisson": 45,
+   "regimes": [
+    "keto",
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": false,
+   "basique": false,
+   "ingredients": [
+    [
+     "Courgettes",
+     2,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Bœuf haché",
+     200,
+     "g",
+     "boucherie"
+    ],
+    [
+     "Tomates concassées",
+     200,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Gousses d'ail",
+     1,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Parmesan",
+     30,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Sel",
+     null,
+     null,
+     "epicerie"
+    ],
+    [
+     "Poivre",
+     null,
+     null,
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Fais la sauce dans la même cocotte que celle des pâtes (les quantités sont prévues pour).",
+    "Taille les courgettes en tagliatelles avec un économe.",
+    "Poêle-les 3 minutes dans l'huile à feu vif, elles doivent rester croquantes. Sale.",
+    "Sers avec une louche de sauce et le parmesan."
+   ]
+  },
+  {
+   "titre": "Quiche lorraine sans pâte",
+   "description": "Lardons, œufs, crème et gruyère, cuits en plat sans pâte.",
+   "base": "Quiche lorraine",
+   "accompagnement": null,
+   "types": [
+    "soir",
+    "midi",
+    "pique_nique"
+   ],
+   "portions": 4,
+   "prep": 10,
+   "cuisson": 35,
+   "regimes": [
+    "keto",
+    "sans_gluten"
+   ],
+   "batch": true,
+   "batch_notes": "Se garde 3 jours au frais, bonne froide : les parts restantes font des midis à emporter.",
+   "kid_friendly": true,
+   "basique": false,
+   "ingredients": [
+    [
+     "Œufs",
+     5,
+     "piece",
+     "cremerie"
+    ],
+    [
+     "Crème fraîche épaisse",
+     200,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Lardons",
+     200,
+     "g",
+     "boucherie"
+    ],
+    [
+     "Gruyère râpé",
+     80,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Beurre",
+     10,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Poivre",
+     null,
+     null,
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Fais dorer les lardons 5 minutes à la poêle, sans matière grasse.",
+    "Bats les œufs avec la crème et poivre (pas de sel, les lardons le sont déjà).",
+    "Beurre un plat, répartis les lardons et le gruyère, verse l'appareil.",
+    "Enfourne 30 à 35 minutes à 180 °C, à côté de la quiche lorraine de la famille."
+   ]
+  }
+ ]
+}

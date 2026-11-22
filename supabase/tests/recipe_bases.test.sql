@@ -26,8 +26,8 @@ insert into public.recipes (id, household_id, title, meal_types, servings, base,
 select results_eq(
   $$select right(id::text, 2), base from public.recipes
     where id::text like 'ca7a0000-0000-4000-8000-%' and base is not null order by id$$,
-  $$values ('15', 'Poulet'), ('21', 'Poulet'), ('22', 'Saumon')$$,
-  'Seules les recettes évidentes du catalogue 0003 ont une base');
+  $$values ('15', 'Poulet'), ('16', 'Quiche lorraine'), ('21', 'Poulet'), ('22', 'Saumon')$$,
+  'Seules les recettes évidentes du catalogue 0003 ont une base (la quiche depuis 0017)');
 
 select is(
   (select count(*) from public.recipes where id::text like 'ca7a0000-0000-4000-8000-%' and basic),
