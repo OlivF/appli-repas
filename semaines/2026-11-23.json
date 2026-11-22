@@ -1,0 +1,167 @@
+{
+ "semaine": "2026-11-23",
+ "repas": [
+  {
+   "jour": "lundi",
+   "repas": "midi",
+   "plats": [
+    {
+     "recette": "Macédoine au thon",
+     "pour": "tous"
+    },
+    {
+     "recette": "Gratin de navets au saumon",
+     "pour": "tous"
+    }
+   ]
+  },
+  {
+   "jour": "lundi",
+   "repas": "soir",
+   "absents": [
+    "Marie-Laure"
+   ],
+   "plats": [
+    {
+     "recette": "Poisson pané, polenta à la tomate et petits pois",
+     "pour": [
+      "Olivier",
+      "Timothé",
+      "Anna-Lucia",
+      "Otis"
+     ]
+    }
+   ]
+  },
+  {
+   "jour": "mardi",
+   "repas": "midi",
+   "plats": [
+    {
+     "recette": "Omelette et fenouil braisé",
+     "pour": "tous"
+    }
+   ]
+  },
+  {
+   "jour": "mardi",
+   "repas": "soir",
+   "plats": [
+    {
+     "recette": "Velouté de courgettes au fromage frais",
+     "pour": [
+      "Olivier",
+      "Marie-Laure",
+      "Anna-Lucia",
+      "Otis"
+     ]
+    },
+    {
+     "recette": "Œufs coque et mouillettes",
+     "pour": [
+      "Olivier",
+      "Anna-Lucia",
+      "Otis"
+     ]
+    },
+    {
+     "recette": "Œufs coque et mouillettes de jambon",
+     "pour": [
+      "Marie-Laure"
+     ]
+    },
+    {
+     "recette": "Croque-monsieur et salade verte",
+     "pour": [
+      "Timothé"
+     ]
+    }
+   ]
+  },
+  {
+   "jour": "mercredi",
+   "repas": "soir",
+   "plats": [
+    {
+     "recette": "Poulet et gratin dauphinois",
+     "pour": [
+      "Olivier",
+      "Timothé",
+      "Anna-Lucia",
+      "Otis"
+     ]
+    },
+    {
+     "recette": "Poulet et courgettes poêlées",
+     "pour": [
+      "Marie-Laure"
+     ]
+    }
+   ]
+  },
+  {
+   "jour": "jeudi",
+   "repas": "midi",
+   "plats": [
+    {
+     "recette": "Steak haché et navets poêlés",
+     "pour": "tous"
+    }
+   ]
+  },
+  {
+   "jour": "jeudi",
+   "repas": "soir",
+   "plats": [
+    {
+     "recette": "Steak haché, haricots verts et polenta",
+     "pour": [
+      "Olivier",
+      "Timothé",
+      "Anna-Lucia",
+      "Otis"
+     ]
+    },
+    {
+     "recette": "Steak haché et haricots verts",
+     "pour": [
+      "Marie-Laure"
+     ]
+    }
+   ]
+  },
+  {
+   "jour": "vendredi",
+   "repas": "midi",
+   "plats": [
+    {
+     "recette": "Poulet et fenouil rôti",
+     "pour": "tous"
+    }
+   ]
+  },
+  {
+   "jour": "vendredi",
+   "repas": "soir",
+   "plats": [
+    {
+     "recette": "Carottes râpées",
+     "pour": [
+      "Olivier",
+      "Timothé",
+      "Anna-Lucia",
+      "Otis"
+     ]
+    },
+    {
+     "recette": "Tomates à la tapenade",
+     "pour": "tous"
+    },
+    {
+     "recette": "Omelette au fromage",
+     "pour": "tous"
+    }
+   ]
+  }
+ ]
+}

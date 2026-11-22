@@ -14,6 +14,9 @@
 // semaine : un lundi ; jour : lundi … dimanche ; repas : petit_dej | midi | soir | pique_nique ;
 // "tous" : les présents du repas cette semaine (le repas tel que changé pour la semaine dans
 // l'appli, « Qui est là ? », sinon le réglage du foyer).
+// "absents" (facultatif, sur un repas) : { "jour": "lundi", "repas": "soir", "absents": ["Marie-Laure"],
+// "plats": […] }. Le repas change pour la semaine, comme « Qui est là ? » dans l'appli : le réglage
+// du foyer moins les absents (set_week_meal), avant les plats ; ses "tous" ne les comptent plus.
 //
 // Le script vérifie ce qui se lit dans le fichier. Le SQL vérifie le reste dans la base (foyer,
 // recettes, prénoms, créneaux, et « un seul plat par personne et par repas » : seule la base sait si
@@ -27,7 +30,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
 export type WeekDish = { recette: string; pour: string | string[] };
-export type WeekMeal = { jour: string; repas: string; plats: WeekDish[] };
+export type WeekMeal = { jour: string; repas: string; absents?: string[]; plats: WeekDish[] };
 export type WeekFile = { semaine: string; repas: WeekMeal[] };
 
 const DAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
@@ -58,6 +61,8 @@ function text(value: string) {
 }
 
 type Row = { meal: number; day: number; mealType: string; label: string; n: number; recipe: string; eaters: string[] | null };
+// Un repas qui a des absents.
+type Absence = { meal: number; day: number; mealType: string; label: string; names: string[] };
 
 function isMonday(value: unknown): value is string {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -65,15 +70,17 @@ function isMonday(value: unknown): value is string {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value && date.getUTCDay() === 1;
 }
 
-// Vérifie le fichier et l'aplatit : une ligne par plat, dans l'ordre du fichier.
-function rows(doc: WeekFile): Row[] {
+// Vérifie le fichier et l'aplatit : une ligne par plat, dans l'ordre du fichier, et une par repas
+// qui a des absents.
+function parse(doc: WeekFile): { dishes: Row[]; absences: Absence[] } {
   if (!isMonday(doc?.semaine)) {
     throw new Error(`semaine : « ${doc?.semaine} » n'est pas un lundi (attendu : AAAA-MM-JJ, un lundi)`);
   }
   if (!Array.isArray(doc.repas) || doc.repas.length === 0) throw new Error("aucun repas dans le fichier");
 
   const seenMeals = new Set<string>();
-  return doc.repas.flatMap((meal, index) => {
+  const absences: Absence[] = [];
+  const dishes = doc.repas.flatMap((meal, index) => {
     const where = `repas n° ${index + 1}`;
     const day = DAYS.indexOf(normalize(String(meal?.jour ?? "")));
     if (day < 0) throw new Error(`${where} : jour inconnu : « ${meal?.jour} » (lundi … dimanche)`);
@@ -87,6 +94,19 @@ function rows(doc: WeekFile): Row[] {
     if (seenMeals.has(label)) fail("ce repas apparaît deux fois dans le fichier");
     seenMeals.add(label);
     if (!Array.isArray(meal.plats) || meal.plats.length === 0) fail("aucun plat");
+
+    let absents: string[] = [];
+    if (meal.absents !== undefined) {
+      if (!Array.isArray(meal.absents)) fail('"absents" attend une liste de prénoms');
+      absents = meal.absents.map((name) => (typeof name === "string" ? name.trim().replace(/\s+/g, " ") : ""));
+      const keys = absents.map(normalize);
+      if (keys.some((key) => key === "")) fail("un prénom des absents est vide");
+      if (keys.includes("tous")) fail("« tous » ne peut pas être absent : retire plutôt ce repas du fichier");
+      const twice = absents.find((_, i) => keys.indexOf(keys[i]) !== i);
+      if (twice) fail(`${twice} est absent deux fois`);
+      if (absents.length > 0) absences.push({ meal: index + 1, day, mealType: meal.repas, label, names: absents });
+    }
+    const absentKeys = new Set(absents.map(normalize));
 
     const seenRecipes = new Set<string>();
     return meal.plats.map((dish, position): Row => {
@@ -105,6 +125,8 @@ function rows(doc: WeekFile): Row[] {
         if (keys.includes("tous")) fail(`« ${recipe} » : « tous » s'écrit seul ("pour": "tous")`);
         const twice = eaters.find((_, i) => keys.indexOf(keys[i]) !== i);
         if (twice) fail(`« ${recipe} » : ${twice} est nommé deux fois`);
+        const away = eaters.find((_, i) => absentKeys.has(keys[i]));
+        if (away) fail(`${away} est absent, mais mange « ${recipe} »`);
       } else {
         return fail(`« ${recipe} » : "pour" attend "tous" ou une liste de prénoms`);
       }
@@ -112,6 +134,67 @@ function rows(doc: WeekFile): Row[] {
       return { meal: index + 1, day, mealType: meal.repas, label, n: position + 1, recipe, eaters };
     });
   });
+  return { dishes, absences };
+}
+
+function absenceSql(absence: Absence) {
+  return `      (${absence.meal}, ${absence.day}, ${text(absence.mealType)}, ${text(absence.label)}, array[${absence.names.map(text).join(", ")}])`;
+}
+
+// Les repas qui ont des absents changent pour la semaine, avant tout le reste : les présents de
+// chaque plat se lisent ensuite dans la semaine. Rien du tout sans absents.
+function absencesSql(absences: Absence[]) {
+  if (absences.length === 0) return "";
+  return `
+  -- Les absents (« absents » dans le fichier) : le repas change pour la semaine, comme « Qui est
+  -- là ? » dans l'appli. Le réglage du foyer moins les absents, et non les présents de la semaine :
+  -- le fichier décide seul, rejouer donne le même repas. set_week_meal crée la semaine au besoin et
+  -- retire les absents des plats déjà posés ; il veut un compte du foyer, et le SQL Editor n'a pas
+  -- d'utilisateur connecté : le bloc prend l'identité du compte de l'email le temps des appels.
+  previous_claims := current_setting('request.jwt.claims', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', account)::text, true);
+  for absence in
+    select a.meal, a.day::smallint as day, a.meal_type::public.meal_type as meal_type, a.label, a.names
+    from (values
+${absences.map(absenceSql).join(",\n")}
+    ) as a (meal, day, meal_type, label, names)
+    order by a.meal
+  loop
+    select s.member_ids into slot_members
+    from public.meal_slots s
+    where s.household_id = household
+      and s.day = absence.day
+      and s.meal_type = absence.meal_type;
+    if coalesce(cardinality(slot_members), 0) = 0 then
+      raise exception '% : ce repas n''a pas lieu dans le foyer : personne ne peut en être absent', absence.label;
+    end if;
+
+    eater_ids := slot_members;
+    foreach eater in array absence.names loop
+      select array_agg(m.id) into matches
+      from public.members m
+      where m.household_id = household
+        and pg_temp.popote_key(m.first_name) = pg_temp.popote_key(eater);
+      if matches is null then
+        raise exception '% : personne ne s''appelle « % » dans le foyer (absents)', absence.label, eater;
+      end if;
+      if cardinality(matches) > 1 then
+        raise exception '% : plusieurs membres s''appellent « % »', absence.label, eater;
+      end if;
+      if not (matches[1] = any (slot_members)) then
+        raise exception '% : % est dans les absents, mais ne vient pas à ce repas dans le foyer', absence.label, eater;
+      end if;
+      eater_ids := array_remove(eater_ids, matches[1]);
+    end loop;
+    if cardinality(eater_ids) = 0 then
+      raise exception '% : tout le monde est absent : retire ce repas du fichier', absence.label;
+    end if;
+
+    perform public.set_week_meal(household, target_week, absence.day, absence.meal_type, eater_ids);
+    raise notice '%', format('%s : sans %s cette semaine', absence.label, array_to_string(absence.names, ', '));
+  end loop;
+  perform set_config('request.jwt.claims', coalesce(previous_claims, ''), true);
+`;
 }
 
 function rowSql(row: Row) {
@@ -125,7 +208,7 @@ export function weekSql(
 ): string {
   const email = options.email?.trim() ?? "";
   if (!/^[^\s@]+@[^\s@]+$/.test(email)) throw new Error(`email invalide : « ${options.email ?? ""} »`);
-  const all = rows(doc);
+  const { dishes: all, absences } = parse(doc);
   const meals = new Set(all.map((row) => row.meal)).size;
   const [year, month, day] = doc.semaine.split("-");
   const source = options.source ?? "<semaine>.json";
@@ -156,11 +239,11 @@ declare
   found uuid;
   replaced integer;
   removed integer;
-  added integer;
+  added integer;${absences.length > 0 ? "\n  account uuid;\n  absence record;\n  previous_claims text;" : ""}
 begin
   -- Le foyer, par l'email d'un de ses comptes. Le SQL Editor passe outre la RLS : chaque requête
   -- ci-dessous filtre sur ce foyer.
-  select hu.household_id into household
+  select hu.household_id${absences.length > 0 ? ", u.id into household, account" : " into household"}
   from auth.users u
   join public.household_users hu on hu.user_id = u.id
   where lower(u.email) = lower(target_email);
@@ -181,7 +264,7 @@ begin
         'aaaaaaceeeeiiiinooooouuuuyyaaaaaaceeeeiiiinooooouuuuyy'''),
       '[[:space:]]+', ' ', 'g'));
   $key$;
-
+${absencesSql(absences)}
   -- La semaine, si elle existe déjà : elle peut avoir des repas changés (« Qui est là ? »).
   select wp.id into plan_id
   from public.week_plans wp

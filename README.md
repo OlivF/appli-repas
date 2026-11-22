@@ -57,6 +57,8 @@ docker exec -i supabase_db_appli-repas psql -U postgres -v ON_ERROR_STOP=1 < sem
 
 En production, colle le fichier dans le SQL Editor de Supabase. Tout tient dans un seul bloc `do`, suivi d'un récapitulatif : le SQL Editor joue chaque instruction à part et n'en garde rien pour la suivante (pas de `begin`/`commit` ni de table temporaire hors du bloc). Au premier problème (recette introuvable, prénom inconnu, deux plats pour la même personne…), rien n'est enregistré. Seuls les repas du fichier sont remplacés ; on peut le rejouer. Le SQL contient l'email : `semaines/*.sql` n'est pas commité.
 
+Un repas peut porter `"absents": ["Marie-Laure"]` : il change pour la semaine, comme « Qui est là ? » dans l'appli (le réglage du foyer moins les absents, par `set_week_meal`), avant que ses plats soient posés ; ses `"tous"` ne comptent plus les absents. `set_week_meal` veut un compte du foyer : le bloc prend l'identité du compte de l'email le temps de ces appels (le SQL Editor n'a pas d'utilisateur connecté). Dans l'appli, la semaine affiche alors « Cette semaine ne suit pas tout à fait le foyer » ; « Tout remettre comme d'habitude » ramènerait les absents.
+
 Après un changement de schéma, régénère les types TypeScript :
 
 ```bash
