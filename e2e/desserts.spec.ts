@@ -94,13 +94,28 @@ test("desserts et fruits à tous les dîners, une ligne pour Marie-Laure, et les
   await expect(monday.getByRole("button", { name: "Fromage : Comté, pour Marie-Laure" })).toBeVisible();
   await expect(page.locator('section[data-day="6"]').getByRole("button", { name: /^Fromage : Comté/ })).toBeVisible();
 
-  // Des clémentines au pique-nique du mercredi.
+  // Des clémentines au pique-nique du mercredi. La puce s'affiche tout de suite, puis reste la même
+  // quand le serveur répond : jamais deux puces à la fois (on compte à chaque changement de la page).
   panel = await openExtras(page, 2, "au pique-nique");
   await panel.getByText("Fruit", { exact: true }).click();
   await panel.getByText("Clémentines", { exact: true }).click();
+  await page.evaluate(() => {
+    const chips = () =>
+      [...document.querySelectorAll('section[data-day="2"] button[aria-label^="Fruit : Clémentines"]')].filter(
+        (chip) => chip.getClientRects().length > 0,
+      ).length;
+    const counter = window as typeof window & { mostChips?: number };
+    counter.mostChips = 0;
+    new MutationObserver(() => {
+      counter.mostChips = Math.max(counter.mostChips ?? 0, chips());
+    }).observe(document.body, { childList: true, subtree: true });
+  });
   await panel.getByRole("button", { name: "Ajouter 1" }).click();
   await expect(panel).toBeHidden();
   await expect(page.locator('section[data-day="2"]').getByRole("button", { name: /^Fruit : Clémentines/ })).toBeVisible();
+  // Le message arrive avec la réponse du serveur.
+  await expect(page.getByText("Ajouté au pique-nique de mercredi")).toBeVisible();
+  expect(await page.evaluate(() => (window as typeof window & { mostChips?: number }).mostChips)).toBe(1);
 
   // « Relancer » change les plats, pas les desserts.
   await page.getByRole("button", { name: "Relancer" }).first().click();
@@ -152,8 +167,12 @@ test("desserts et fruits à tous les dîners, une ligne pour Marie-Laure, et les
     await chip.click();
     await expect(sheet).toBeVisible({ timeout: 1_000 });
   }).toPass();
+  // La puce part tout de suite de l'écran ; on attend que le serveur ait retiré le fruit avant de
+  // recharger (recharger plus tôt interromprait l'enregistrement).
+  const removed = page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("/semaine"));
   await sheet.getByRole("button", { name: "Retirer" }).click();
   await expect(chip).toHaveCount(0);
+  await removed;
   await page.reload();
   await expect(monday.getByRole("button", { name: /^Laitage : Yaourt nature/ })).toBeVisible();
   await expect(monday.getByRole("button", { name: /^Fruit : Pomme/ })).toHaveCount(0);

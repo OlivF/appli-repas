@@ -141,6 +141,11 @@ const theMeal = (mealType: MealType, day: string) => `L${MEAL_NOUN[mealType].sli
 // sept jours : qui est là, les entrées, les plats (voir renderSlot ; « row-span-3 » dans les classes).
 const ROW_TRACKS = 3;
 
+// L'identité d'une puce ajoutée (dessert, fruit…), avant et après la réponse du serveur : la même,
+// pour que la puce reste en place au lieu de disparaître et de réapparaître.
+const extraVid = (card: { day: number; meal_type: MealType; recipe_id: string }) =>
+  `nouvelle-${card.day}-${card.meal_type}-${card.recipe_id}`;
+
 // Zone, au bord de l'écran, où un plat glissé fait venir le jour voisin (px).
 const EDGE = 44;
 
@@ -396,12 +401,13 @@ export function WeekBoard({
 
   // ─── Plusieurs plats par repas ────────────────────────────────────────────
   // Les cartes rendues par le serveur, en gardant l'identité visuelle de celles déjà là
-  // (`fresh` : l'identité à donner aux nouvelles).
-  function syncCards(result: WeekCard[], before: readonly Card[], fresh?: string) {
+  // (`fresh` : l'identité à donner aux nouvelles, ou comment la trouver).
+  function syncCards(result: WeekCard[], before: readonly Card[], fresh?: string | ((card: WeekCard) => string)) {
+    const freshVid = (card: WeekCard) => (typeof fresh === "function" ? fresh(card) : (fresh ?? card.id));
     setCards((current) =>
       result.map((card) => ({
         ...card,
-        vid: current.find((item) => item.id === card.id)?.vid ?? (before.some((item) => item.id === card.id) ? card.id : (fresh ?? card.id)),
+        vid: current.find((item) => item.id === card.id)?.vid ?? (before.some((item) => item.id === card.id) ? card.id : freshVid(card)),
       })),
     );
   }
@@ -484,7 +490,7 @@ export function WeekBoard({
         next = next.map((card) => (card.id === item.cardId ? { ...card, member_ids: item.member_ids } : card));
         continue;
       }
-      const tempId = `nouvelle-${item.day}-${item.meal_type}-${item.recipe_id}`;
+      const tempId = extraVid(item);
       const position = next
         .filter((card) => card.day === item.day && card.meal_type === item.meal_type)
         .reduce((max, card) => Math.max(max, card.position + 1), 0);
@@ -513,7 +519,7 @@ export function WeekBoard({
       setCards(before);
       return { error: result.error };
     }
-    syncCards(result.cards, before);
+    syncCards(result.cards, before, extraVid);
     if (result.meals > 0) {
       // Un dessert créé avec son titre seulement : on propose de le compléter.
       const incomplete = chosen.find((recipe) => recipe.ingredientNames.length === 0);
