@@ -1,6 +1,6 @@
 "use server";
 
-import { extrasToAdd, type ExtraTarget, type Unserved } from "@/lib/board";
+import { extrasToAdd, restorableEaters, type ExtraTarget, type Unserved } from "@/lib/board";
 import { SAVE_ERROR } from "@/lib/data";
 import { MEAL_TYPES, type MealType } from "@/lib/meal-slots";
 import { nextIdea, proposeWeek } from "@/lib/planner";
@@ -156,6 +156,50 @@ export async function removeCardAction(weekStart: string, cardId: string): Promi
   if (!cards.some((card) => card.id === cardId)) return { error: SAVE_ERROR };
   const { error } = await supabase.from("planned_meals").delete().eq("id", cardId);
   return error ? { error: SAVE_ERROR } : { ok: true };
+}
+
+const RESTORE_NONE = "Ce plat ne peut plus revenir : tout le monde a déjà un plat à ce repas.";
+
+// « Annuler » après la corbeille : la carte revient telle qu'elle était (jour, repas, position,
+// recette, verrou, « Pas cuisiné »), pour ses mangeurs encore présents qui n'ont pas pris un autre
+// plat entre-temps (un plat léger : tous ses présents). Un plat léger déjà remis au repas reçoit
+// ses mangeurs, sans doublon. La sorte vient de la recette, pas de l'écran.
+export async function restoreCardAction(weekStart: string, card: WeekCard): Promise<CardsResult> {
+  if (!isWeekStart(weekStart)) return { error: SAVE_ERROR };
+  if (!card || !Number.isInteger(card.day) || card.day < 0 || card.day > 6) return { error: SAVE_ERROR };
+  if (!MEAL_TYPES.some((meal) => meal.value === card.meal_type) || !Array.isArray(card.member_ids)) {
+    return { error: SAVE_ERROR };
+  }
+  const { supabase, household, slots, recipes, extraRecipes, plan, cards } = await loadWeek(weekStart);
+  const recipe = [...recipes, ...extraRecipes].find((item) => item.id === card.recipe_id);
+  if (!plan || !recipe) return { error: SAVE_ERROR };
+
+  const restored = { ...card, course: recipe.course };
+  const presentIds = slots.find((slot) => slot.day === card.day && slot.meal_type === card.meal_type)?.member_ids ?? [];
+  const eaters = restorableEaters({ card: restored, cards, presentIds });
+  if (eaters.length === 0) return { error: RESTORE_NONE };
+
+  const twin = isExtra(recipe.course)
+    ? cards.find((item) => item.day === card.day && item.meal_type === card.meal_type && item.recipe_id === recipe.id)
+    : undefined;
+  const { error } = twin
+    ? await supabase
+        .from("planned_meals")
+        .update({ member_ids: [...twin.member_ids, ...eaters.filter((id) => !twin.member_ids.includes(id))] })
+        .eq("id", twin.id)
+    : await supabase.from("planned_meals").insert({
+        household_id: household.id,
+        week_plan_id: plan.id,
+        day: card.day,
+        meal_type: card.meal_type,
+        position: Number.isInteger(card.position) && card.position >= 0 ? card.position : 0,
+        recipe_id: recipe.id,
+        member_ids: eaters,
+        locked: Boolean(card.locked),
+        skipped: Boolean(card.skipped),
+      });
+  if (error) return { error: SAVE_ERROR };
+  return { cards: await cardsOfWeek(supabase, household.id, weekStart) };
 }
 
 export type PlaceTarget = { cardId: string } | { day: number; meal_type: MealType; member_ids?: string[] };

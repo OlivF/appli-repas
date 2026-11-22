@@ -43,7 +43,7 @@ import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "@/components/use-media-query";
 import { WeekPicker } from "@/components/week-picker";
 import { baseKey } from "@/lib/bases";
-import { buildBoard, extrasToAdd, menuBase, moveEaters, type BoardSlot, type ExtraItem, type ExtraTarget } from "@/lib/board";
+import { buildBoard, canDropOn, extrasToAdd, menuBase, moveEaters, type BoardSlot, type ExtraItem, type ExtraTarget } from "@/lib/board";
 import type { FridgeHint } from "@/lib/fridge";
 import type { MealType, SlotInput } from "@/lib/meal-slots";
 import { canEat } from "@/lib/planner";
@@ -58,6 +58,7 @@ import {
   createQuickRecipeAction,
   placeRecipeAction,
   removeCardAction,
+  restoreCardAction,
   setEatersAction,
   setSkippedAction,
   proposeWeekAction,
@@ -66,11 +67,12 @@ import {
   type PlaceTarget,
 } from "./actions";
 import { addLeftoverAction } from "../frigo/actions";
-import { BoardCard, DraggableRecipe, DroppableSlot } from "./board-pieces";
+import { BoardCard, DraggableExtra, DraggableRecipe, DroppableSlot, TrashZone } from "./board-pieces";
 
 type Card = WeekCard & { vid: string };
 type Day = { short: string; long: string; date: string };
-type Drag = { kind: "card"; card: Card } | { kind: "recipe"; recipe: WeekRecipe };
+// Un plat de la grille, une puce (entrée, dessert…), ou une recette de la Bibliothèque.
+type Drag = { kind: "card"; card: Card } | { kind: "extra"; card: Card } | { kind: "recipe"; recipe: WeekRecipe };
 // Le panneau du bas : changer un plat, choisir pour un repas (ou ses présents sans plat),
 // ajouter un plat (« Pour qui ? », recette déjà choisie après un dépôt), dire qui mange un plat,
 // ajouter des desserts, fruits… (« extras »), ou en ouvrir un (« extra »).
@@ -100,6 +102,8 @@ function dayOffset(scroller: HTMLElement | null, day: number) {
 
 // « au dîner de mardi », « au pique-nique de mercredi ».
 const toMeal = (mealType: MealType) => MEAL_NOUN[mealType].replace(/^le /, "au ");
+// « retiré du dîner de mardi ».
+const fromMeal = (mealType: MealType) => MEAL_NOUN[mealType].replace(/^le /, "du ");
 
 // Zone, au bord de l'écran, où un plat glissé fait venir le jour voisin (px).
 const EDGE = 44;
@@ -159,6 +163,8 @@ export function WeekBoard({
   const [drawer, setDrawer] = useState(false);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  // Au-dessus de la corbeille, la page ne défile pas toute seule (voir autoScroll).
+  const overTrash = useRef(false);
   const [activeDay, setActiveDay] = useState(firstDay);
   const activeDayRef = useRef(firstDay);
   const edge = useRef<{ direction: number; timer: number } | null>(null);
@@ -488,6 +494,30 @@ export function WeekBoard({
     );
   }
 
+  // La corbeille : la carte part tout de suite, « Annuler » la fait revenir pendant 5 secondes.
+  function trash(card: Card) {
+    const title = recipeById.get(card.recipe_id)?.title ?? "Recette";
+    const before = cards;
+    removeCard(card.id);
+    navigator.vibrate?.(15);
+    toast(`${title} retiré ${fromMeal(card.meal_type)} de ${days[card.day].long}`, {
+      duration: 5000,
+      action: { label: "Annuler", onClick: () => void restore(card, before) },
+    });
+  }
+
+  async function restore(card: Card, before: readonly Card[]) {
+    const { vid, ...saved } = card;
+    setError(null);
+    setDelays({});
+    const result = await restoreCardAction(weekStart, saved).catch(() => ({ error: SAVE_ERROR }));
+    if ("error" in result) {
+      setError(result.error);
+      return;
+    }
+    syncCards(result.cards, before.filter((item) => item.id !== card.id), vid);
+  }
+
   // La base que partagent au moins deux plats du repas, telle qu'écrite sur la recette.
   function sharedBase(list: readonly Card[]) {
     const seen = new Map<string, string>();
@@ -504,23 +534,7 @@ export function WeekBoard({
   // ─── Glisser-déposer ──────────────────────────────────────────────────────
   const fits = (recipeId: string, mealType: MealType) => recipeById.get(recipeId)?.meal_types.includes(mealType) ?? false;
 
-  function canDrop(current: Drag, targetId: string) {
-    if (targetId.startsWith("card:")) {
-      const target = cards.find((card) => `card:${card.id}` === targetId);
-      if (!target || target.locked) return false;
-      if (current.kind === "recipe") return current.recipe.meal_types.includes(target.meal_type);
-      return (
-        current.card.id !== target.id &&
-        fits(current.card.recipe_id, target.meal_type) &&
-        fits(target.recipe_id, current.card.meal_type)
-      );
-    }
-    if (targetId.startsWith("slot:") || targetId.startsWith("add:")) {
-      const mealType = targetId.split(":")[2] as MealType;
-      return current.kind === "recipe" && current.recipe.meal_types.includes(mealType);
-    }
-    return false;
-  }
+  const canDrop = (current: Drag, targetId: string) => canDropOn(current, targetId, cards, fits);
 
   function dropState(targetId: string): CardDragState | undefined {
     if (!drag) return undefined;
@@ -534,6 +548,9 @@ export function WeekBoard({
     if (id.startsWith("card:")) {
       const card = cards.find((item) => `card:${item.id}` === id);
       if (card) setDrag({ kind: "card", card });
+    } else if (id.startsWith("extra:")) {
+      const card = cards.find((item) => `extra:${item.id}` === id);
+      if (card) setDrag({ kind: "extra", card });
     } else {
       const recipe = recipeById.get(id.slice("recipe:".length));
       if (recipe) setDrag({ kind: "recipe", recipe });
@@ -541,6 +558,7 @@ export function WeekBoard({
   }
 
   function onDragOver({ over }: DragOverEvent) {
+    overTrash.current = over?.id === "trash";
     setOverId(over ? String(over.id) : null);
   }
 
@@ -572,14 +590,20 @@ export function WeekBoard({
     stopEdge();
     setDrag(null);
     setOverId(null);
+    overTrash.current = false;
     if (!current || !over) return;
     const targetId = String(over.id);
     if (!canDrop(current, targetId)) return;
 
+    if (targetId === "trash" && current.kind !== "recipe") {
+      trash(current.card);
+      return;
+    }
+
     if (targetId.startsWith("card:")) {
       const target = cards.find((card) => `card:${card.id}` === targetId)!;
       if (current.kind === "card") swap(current.card, target);
-      else void place({ kind: "card", cardId: target.id }, current.recipe);
+      else if (current.kind === "recipe") void place({ kind: "card", cardId: target.id }, current.recipe);
       return;
     }
     if (current.kind === "recipe" && targetId.startsWith("add:")) {
@@ -914,14 +938,16 @@ export function WeekBoard({
                 exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
                 className="min-w-0 max-w-full"
               >
-                <ExtraChip
-                  course={card.course ?? "dessert"}
-                  title={recipe?.title ?? "Recette"}
-                  eaters={forAll && out.length === 0 ? undefined : eaters}
-                  outIds={out}
-                  skipped={Boolean(card.skipped)}
-                  onOpen={() => openExtra(card)}
-                />
+                <DraggableExtra id={card.id}>
+                  <ExtraChip
+                    course={card.course ?? "dessert"}
+                    title={recipe?.title ?? "Recette"}
+                    eaters={forAll && out.length === 0 ? undefined : eaters}
+                    outIds={out}
+                    skipped={Boolean(card.skipped)}
+                    onOpen={() => openExtra(card)}
+                  />
+                </DraggableExtra>
               </motion.li>
             );
           })}
@@ -1030,8 +1056,9 @@ export function WeekBoard({
     <DndContext
       sensors={sensors}
       collisionDetection={pointerWithin}
-      // Les jours ne défilent pas tout seuls (voir onDragMove) ; la page, si.
-      autoScroll={{ canScroll: (element) => element !== scroller.current }}
+      // Les jours ne défilent pas tout seuls (voir onDragMove) ; la page, si, sauf au-dessus de la
+      // corbeille (fixée en bas de l'écran, là où la page se mettrait à descendre).
+      autoScroll={{ canScroll: (element) => element !== scroller.current && !overTrash.current }}
       onDragStart={onDragStart}
       onDragMove={onDragMove}
       onDragOver={onDragOver}
@@ -1040,13 +1067,14 @@ export function WeekBoard({
         stopEdge();
         setDrag(null);
         setOverId(null);
+        overTrash.current = false;
       }}
     >
       <PageHeader
         title="La semaine"
         lead={
           hasCards
-            ? "Touche un plat pour le changer, fais-le glisser sur un autre pour les échanger, verrouille ce que tu gardes."
+            ? "Touche un plat pour le changer. Reste appuyé pour le déplacer sur un autre, ou le jeter dans la corbeille. Verrouille ce que tu gardes."
             : "Touche « Proposer la semaine » : tous les repas se remplissent d’un coup, selon les goûts de chacun."
         }
         action={
@@ -1177,13 +1205,25 @@ export function WeekBoard({
             }}
             eaters={eatersOf(drag.card.member_ids, recipeById.get(drag.card.recipe_id))}
             household={members}
-            locked={false}
+            locked={drag.card.locked}
             layout={wide ? "column" : "row"}
             dragState="lifted"
           />
         )}
+        {drag?.kind === "extra" && (
+          <ExtraChip
+            course={drag.card.course ?? "dessert"}
+            title={recipeById.get(drag.card.recipe_id)?.title ?? "Recette"}
+            skipped={Boolean(drag.card.skipped)}
+            onOpen={() => {}}
+            className="shadow-lift"
+          />
+        )}
         {drag?.kind === "recipe" && <LibraryItem recipe={drag.recipe} className="w-[24rem] shadow-lift" />}
       </DragOverlay>
+
+      {/* La corbeille, pendant qu'on fait glisser un plat ou une puce (pas une recette). */}
+      <AnimatePresence>{drag && drag.kind !== "recipe" && <TrashZone over={overId === "trash"} />}</AnimatePresence>
 
       <Sheet open={sheet !== null} onOpenChange={(open) => !open && setSheet(null)}>
         <SheetContent>{sheet && sheetMeal !== undefined && sheetDay !== undefined && sheetBody(sheet, sheetMeal, sheetDay)}</SheetContent>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBoard, extrasToAdd, menuBase, moveEaters } from "@/lib/board";
+import { buildBoard, canDropOn, extrasToAdd, menuBase, moveEaters, restorableEaters, type BoardDrag } from "@/lib/board";
 import type { SlotInput } from "@/lib/meal-slots";
 import type { PlannerMember } from "@/lib/planner";
 import type { Course } from "@/lib/recipes";
@@ -267,5 +267,84 @@ describe("extrasToAdd", () => {
   it("respecte les membres exclus d'une recette", () => {
     const { items } = add({ recipes: [{ ...comte, excludedIds: [TIMOTHE] }], target: { day: 0, meal_type: "soir" } });
     expect(items[0].member_ids).toEqual([OLIVIER, ML, ANNA, OTIS]);
+  });
+});
+
+// ─── La corbeille ───────────────────────────────────────────────────────────
+describe("canDropOn", () => {
+  const meals: Record<string, SlotInput["meal_type"][]> = { "r-a": ["soir"], "r-b": ["soir"], "r-c": ["midi", "soir"] };
+  const fits = (recipeId: string, mealType: SlotInput["meal_type"]) => meals[recipeId]?.includes(mealType) ?? false;
+  const free = card("a", 0, "soir", 0, [OLIVIER]);
+  const locked = { ...card("b", 1, "soir", 0, [OLIVIER]), locked: true };
+  const other = card("c", 2, "soir", 0, [OLIVIER]);
+  const cards = [free, locked, other];
+  const drop = (drag: BoardDrag, target: string) => canDropOn(drag, target, cards, fits);
+
+  it("la corbeille accepte un plat, même verrouillé, et une puce", () => {
+    expect(drop({ kind: "card", card: free }, "trash")).toBe(true);
+    expect(drop({ kind: "card", card: locked }, "trash")).toBe(true);
+    expect(drop({ kind: "extra", card: other }, "trash")).toBe(true);
+  });
+
+  it("une recette de la Bibliothèque ne va jamais à la corbeille", () => {
+    expect(drop({ kind: "recipe", recipe: { meal_types: ["soir"] } }, "trash")).toBe(false);
+  });
+
+  it("un plat verrouillé ne va qu'à la corbeille", () => {
+    expect(drop({ kind: "card", card: locked }, "card:c")).toBe(false);
+    expect(drop({ kind: "card", card: locked }, "slot:3:soir")).toBe(false);
+    expect(drop({ kind: "card", card: locked }, "add:3:soir")).toBe(false);
+  });
+
+  it("une puce ne va qu'à la corbeille", () => {
+    expect(drop({ kind: "extra", card: other }, "card:a")).toBe(false);
+    expect(drop({ kind: "extra", card: other }, "slot:3:soir")).toBe(false);
+    expect(drop({ kind: "extra", card: other }, "add:3:soir")).toBe(false);
+  });
+
+  it("garde les règles d'avant : échange si chaque recette va au repas de l'autre, jamais sur un verrouillé", () => {
+    expect(drop({ kind: "card", card: free }, "card:c")).toBe(true);
+    expect(drop({ kind: "card", card: free }, "card:a")).toBe(false);
+    expect(drop({ kind: "card", card: free }, "card:b")).toBe(false);
+    expect(drop({ kind: "card", card: { ...free, recipe_id: "r-x" } }, "card:c")).toBe(false);
+  });
+
+  it("garde les règles d'avant : une recette va sur un repas qui lui convient", () => {
+    expect(drop({ kind: "recipe", recipe: { meal_types: ["soir"] } }, "card:a")).toBe(true);
+    expect(drop({ kind: "recipe", recipe: { meal_types: ["soir"] } }, "card:b")).toBe(false);
+    expect(drop({ kind: "recipe", recipe: { meal_types: ["midi"] } }, "card:a")).toBe(false);
+    expect(drop({ kind: "recipe", recipe: { meal_types: ["midi"] } }, "slot:0:midi")).toBe(true);
+    expect(drop({ kind: "recipe", recipe: { meal_types: ["midi"] } }, "add:0:soir")).toBe(false);
+    expect(drop({ kind: "card", card: free }, "slot:0:soir")).toBe(false);
+  });
+});
+
+describe("restorableEaters", () => {
+  const roast = dish("roti", "main", 0, [OLIVIER, TIMOTHE]);
+
+  it("un plat : ceux qui ont déjà un autre plat au repas restent où ils sont", () => {
+    const now = [dish("pates", "main", 0, [TIMOTHE, ANNA, OTIS])];
+    expect(restorableEaters({ card: roast, cards: now, presentIds: ALL })).toEqual([OLIVIER]);
+  });
+
+  it("un plat : un absent du repas ne revient pas", () => {
+    expect(restorableEaters({ card: roast, cards: [], presentIds: [TIMOTHE, ML] })).toEqual([TIMOTHE]);
+  });
+
+  it("un plat : les desserts des autres ne comptent pas, ni les plats d'un autre repas", () => {
+    const now = [dish("yaourt", "dairy", 1, ALL), dish("pates", "main", 0, [OLIVIER], 1)];
+    expect(restorableEaters({ card: roast, cards: now, presentIds: ALL })).toEqual([OLIVIER, TIMOTHE]);
+  });
+
+  it("un dessert : tous ses présents reviennent, même s'ils ont un plat", () => {
+    const flan = dish("flan", "dessert", 1, ALL);
+    const now = [dish("pates", "main", 0, ALL)];
+    expect(restorableEaters({ card: flan, cards: now, presentIds: ALL })).toEqual(ALL);
+  });
+
+  it("personne : rien ne revient", () => {
+    const now = [dish("pates", "main", 0, ALL)];
+    expect(restorableEaters({ card: roast, cards: now, presentIds: ALL })).toEqual([]);
+    expect(restorableEaters({ card: roast, cards: [], presentIds: [] })).toEqual([]);
   });
 });

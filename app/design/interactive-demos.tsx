@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { DndContext } from "@dnd-kit/core";
 import { AnimatePresence } from "framer-motion";
 import { AlarmClock, CookingPot, Refrigerator, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
+import { TrashZone } from "@/app/(app)/semaine/board-pieces";
 import { BottomNav, TopNav } from "@/components/app-nav";
 import { Autocomplete } from "@/components/autocomplete";
 import { Logo } from "@/components/brand/logo";
@@ -429,6 +431,20 @@ export function GridCardsDemo({ family }: { family: CardMember[] }) {
 }
 
 // La Bibliothèque, filtrée sur le dîner, pour Marie-Laure et Olivier.
+// La corbeille du planning, au repos puis un plat au-dessus (hors grille : dans le flux).
+export function TrashDemo() {
+  return (
+    <div className="flex flex-wrap items-end gap-8">
+      <DndContext>
+        <TrashZone over={false} demo />
+      </DndContext>
+      <DndContext>
+        <TrashZone over demo />
+      </DndContext>
+    </div>
+  );
+}
+
 export function LibraryDemo({ eaters }: { eaters: CardMember[] }) {
   const [picked, setPicked] = useState<string | null>(null);
   return (

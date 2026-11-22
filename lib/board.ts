@@ -173,3 +173,67 @@ export function extrasToAdd({
   }
   return { items, unserved };
 }
+
+// ─── Glisser-déposer ────────────────────────────────────────────────────────
+
+// Ce qu'on fait glisser : un plat de la grille, une puce (entrée, dessert…), ou une recette de la
+// Bibliothèque. Cibles : « card:<id> », « slot:<jour>:<repas> », « add:<jour>:<repas> », « trash ».
+export type DragCard = { id: string; recipe_id: string; meal_type: MealType; locked: boolean };
+export type BoardDrag =
+  | { kind: "card"; card: DragCard }
+  | { kind: "extra"; card: DragCard }
+  | { kind: "recipe"; recipe: { meal_types: readonly MealType[] } };
+
+// La corbeille prend les plats (même verrouillés : le verrou protège de « Relancer » et des
+// échanges, pas d'un geste voulu) et les puces, jamais une recette de la Bibliothèque. Un plat
+// verrouillé et une puce ne vont nulle part ailleurs. Deux plats s'échangent si chaque recette va
+// au repas de l'autre ; une recette se pose sur un plat ou un repas qui lui conviennent.
+export function canDropOn(
+  drag: BoardDrag,
+  targetId: string,
+  cards: readonly DragCard[],
+  fits: (recipeId: string, mealType: MealType) => boolean,
+): boolean {
+  if (targetId === "trash") return drag.kind !== "recipe";
+  if (drag.kind === "extra" || (drag.kind === "card" && drag.card.locked)) return false;
+  if (targetId.startsWith("card:")) {
+    const target = cards.find((card) => `card:${card.id}` === targetId);
+    if (!target || target.locked) return false;
+    if (drag.kind === "recipe") return drag.recipe.meal_types.includes(target.meal_type);
+    return (
+      drag.card.id !== target.id &&
+      fits(drag.card.recipe_id, target.meal_type) &&
+      fits(target.recipe_id, drag.card.meal_type)
+    );
+  }
+  if (targetId.startsWith("slot:") || targetId.startsWith("add:")) {
+    const mealType = targetId.split(":")[2] as MealType;
+    return drag.kind === "recipe" && drag.recipe.meal_types.includes(mealType);
+  }
+  return false;
+}
+
+// « Annuler » après la corbeille : qui retrouve la carte. Les présents du repas seulement ; pour un
+// plat, pas ceux qui ont pris un autre plat entre-temps (un seul plat par personne et par repas).
+// Un plat léger revient pour tous ses présents.
+export function restorableEaters({
+  card,
+  cards,
+  presentIds,
+}: {
+  card: { id?: string; day: number; meal_type: MealType; member_ids: readonly string[]; course?: Course };
+  cards: readonly { id: string; day: number; meal_type: MealType; member_ids: readonly string[]; course?: Course }[];
+  presentIds: readonly string[];
+}): string[] {
+  const present = card.member_ids.filter((id) => presentIds.includes(id));
+  if (isExtra(card.course)) return present;
+  const served = new Set(
+    cards
+      .filter(
+        (other) =>
+          other.id !== card.id && other.day === card.day && other.meal_type === card.meal_type && !isExtra(other.course),
+      )
+      .flatMap((other) => other.member_ids),
+  );
+  return present.filter((id) => !served.has(id));
+}
