@@ -1,0 +1,666 @@
+{
+ "format": {
+  "ingredients": "[nom, quantite, unite, rayon]  unite: g | kg | ml | l | piece | cas | cac  rayon: fruits_legumes | boucherie | poissonnerie | cremerie | epicerie | surgeles | boulangerie | boissons | autre",
+  "types": "petit_dej | midi | soir | pique_nique",
+  "regimes": "keto | vegetarien | sans_gluten | sans_lactose  (= keto, vegetarian, gluten_free, lactose_free dans la base)",
+  "temps": "minutes ; cuisson = durée totale, viande et accompagnement cuisent en même temps",
+  "base": "élément principal partagé : deux recettes de même base s'associent (une pour la famille, une keto) et se cuisinent ensemble",
+  "basique": "true = recette du panneau « Les basiques »",
+  "note": "Lot de la semaine du 23 nov. 2026 (menu papier). Noms d'ingrédients du référentiel commun ; nouveaux : Navets, Fenouils, Macédoine de légumes, Tapenade.",
+  "plat": "sorte : absent = plat principal ; entree | dessert | fruit | fromage | laitage"
+ },
+ "recettes": [
+  {
+   "titre": "Macédoine au thon",
+   "description": "Macédoine de légumes, thon et mayonnaise : une entrée fraîche toute prête.",
+   "plat": "entree",
+   "types": [
+    "midi",
+    "soir",
+    "pique_nique"
+   ],
+   "portions": 2,
+   "prep": 5,
+   "cuisson": 0,
+   "regimes": [
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "kid_friendly": true,
+   "ingredients": [
+    [
+     "Macédoine de légumes",
+     200,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Thon au naturel",
+     100,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Mayonnaise",
+     2,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Poivre",
+     null,
+     null,
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Égoutte la macédoine et le thon.",
+    "Mélange-les avec la mayonnaise, poivre et garde au frais jusqu'au repas."
+   ],
+   "base": null,
+   "batch": false,
+   "batch_notes": null,
+   "basique": false
+  },
+  {
+   "titre": "Gratin de navets au saumon",
+   "description": "Navets fondants, saumon et crème sous une croûte de fromage.",
+   "base": "Saumon",
+   "accompagnement": "Navets",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 2,
+   "prep": 15,
+   "cuisson": 35,
+   "regimes": [
+    "keto",
+    "sans_gluten"
+   ],
+   "batch": true,
+   "batch_notes": "Se prépare la veille ou le dimanche : 2 jours au frais, se réchauffe 15 minutes au four.",
+   "kid_friendly": false,
+   "ingredients": [
+    [
+     "Navets",
+     3,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Pavés de saumon",
+     2,
+     "piece",
+     "poissonnerie"
+    ],
+    [
+     "Crème fraîche épaisse",
+     100,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Gruyère râpé",
+     40,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Sel",
+     null,
+     null,
+     "epicerie"
+    ],
+    [
+     "Poivre",
+     null,
+     null,
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Épluche les navets, coupe-les en fines rondelles et fais-les cuire 10 minutes à l'eau salée.",
+    "Retire la peau du saumon et coupe-le en gros dés.",
+    "Dans un plat, mélange navets, saumon et crème. Sale, poivre et couvre de gruyère.",
+    "Enfourne 25 minutes à 200 °C."
+   ],
+   "basique": false
+  },
+  {
+   "titre": "Poisson pané, polenta à la tomate et petits pois",
+   "description": "Le dîner que les enfants réclament : poisson croustillant, polenta rouge et petits pois.",
+   "base": "Poisson pané",
+   "accompagnement": "Polenta et petits pois",
+   "types": [
+    "soir",
+    "midi"
+   ],
+   "portions": 4,
+   "prep": 5,
+   "cuisson": 20,
+   "regimes": [],
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Poisson pané",
+     8,
+     "piece",
+     "surgeles"
+    ],
+    [
+     "Polenta précuite",
+     200,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Coulis de tomate",
+     200,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Petits pois surgelés",
+     400,
+     "g",
+     "surgeles"
+    ],
+    [
+     "Beurre",
+     20,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Parmesan",
+     30,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Sel",
+     null,
+     null,
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Enfourne les poissons panés à 220 °C pour 15 à 20 minutes, en les retournant à mi-cuisson.",
+    "Fais cuire les petits pois 8 minutes à l'eau bouillante salée, égoutte et ajoute une noisette de beurre.",
+    "Porte 800 ml d'eau salée et le coulis de tomate à ébullition, verse la polenta en pluie en fouettant et laisse cuire 5 minutes.",
+    "Hors du feu, ajoute le reste du beurre et le parmesan."
+   ],
+   "batch": false,
+   "batch_notes": null
+  },
+  {
+   "titre": "Omelette au fromage",
+   "description": "Bien baveuse et filante, pour toute la tablée.",
+   "base": "Omelette",
+   "accompagnement": null,
+   "types": [
+    "soir",
+    "midi"
+   ],
+   "portions": 4,
+   "prep": 5,
+   "cuisson": 8,
+   "regimes": [
+    "keto",
+    "vegetarien",
+    "sans_gluten"
+   ],
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Œufs",
+     9,
+     "piece",
+     "cremerie"
+    ],
+    [
+     "Gruyère râpé",
+     80,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Beurre",
+     20,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Sel",
+     null,
+     null,
+     "epicerie"
+    ],
+    [
+     "Poivre",
+     null,
+     null,
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Bats les œufs avec une pincée de sel et de poivre.",
+    "Fais mousser le beurre dans une grande poêle, verse les œufs et remue doucement les bords vers le centre.",
+    "Quand le dessus est encore baveux, parsème de gruyère, plie l'omelette en deux et sers aussitôt."
+   ],
+   "batch": false,
+   "batch_notes": null
+  },
+  {
+   "titre": "Omelette et fenouil braisé",
+   "description": "Une omelette au parmesan et du fenouil fondant, légèrement anisé.",
+   "base": "Omelette",
+   "accompagnement": "Fenouil",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 1,
+   "prep": 5,
+   "cuisson": 20,
+   "regimes": [
+    "keto",
+    "vegetarien",
+    "sans_gluten"
+   ],
+   "kid_friendly": false,
+   "ingredients": [
+    [
+     "Œufs",
+     3,
+     "piece",
+     "cremerie"
+    ],
+    [
+     "Fenouils",
+     1,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Parmesan",
+     15,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Sel",
+     null,
+     null,
+     "epicerie"
+    ],
+    [
+     "Poivre",
+     null,
+     null,
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Coupe le fenouil en fines lamelles et fais-le dorer 15 minutes dans l'huile, à couvert, avec un fond d'eau.",
+    "Bats les œufs avec le parmesan, sale et poivre.",
+    "Verse-les sur le fenouil et laisse prendre 3 à 4 minutes à feu doux."
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "basique": false
+  },
+  {
+   "titre": "Poulet et gratin dauphinois",
+   "description": "Le poulet doré et le gratin crémeux du dimanche, en semaine.",
+   "base": "Poulet",
+   "accompagnement": "Gratin dauphinois",
+   "types": [
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 20,
+   "cuisson": 60,
+   "regimes": [
+    "sans_gluten"
+   ],
+   "batch": true,
+   "batch_notes": "Le gratin se fait la veille : il est encore meilleur réchauffé 20 minutes au four.",
+   "kid_friendly": true,
+   "ingredients": [
+    [
+     "Blancs de poulet",
+     600,
+     "g",
+     "boucherie"
+    ],
+    [
+     "Pommes de terre",
+     1000,
+     "g",
+     "fruits_legumes"
+    ],
+    [
+     "Crème liquide",
+     300,
+     "ml",
+     "cremerie"
+    ],
+    [
+     "Lait",
+     200,
+     "ml",
+     "cremerie"
+    ],
+    [
+     "Gousses d'ail",
+     1,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Beurre",
+     20,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Sel",
+     null,
+     null,
+     "epicerie"
+    ],
+    [
+     "Poivre",
+     null,
+     null,
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Épluche les pommes de terre et coupe-les en rondelles fines, sans les laver.",
+    "Frotte un plat avec l'ail coupé en deux puis beurre-le. Range les pommes de terre, sale et poivre.",
+    "Verse le lait et la crème mélangés à hauteur, enfourne 1 heure à 170 °C.",
+    "Un quart d'heure avant la fin, fais dorer les blancs de poulet dans l'huile 5 à 6 minutes de chaque côté."
+   ],
+   "basique": false
+  },
+  {
+   "titre": "Steak haché et navets poêlés",
+   "description": "Des navets dorés au beurre, presque sucrés, avec un steak haché.",
+   "base": "Steak haché",
+   "accompagnement": "Navets",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 1,
+   "prep": 5,
+   "cuisson": 15,
+   "regimes": [
+    "keto",
+    "sans_gluten"
+   ],
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Steaks hachés pur bœuf",
+     1,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Navets",
+     2,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Beurre",
+     15,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Persil",
+     1,
+     "cas",
+     "fruits_legumes"
+    ],
+    [
+     "Sel",
+     null,
+     null,
+     "epicerie"
+    ],
+    [
+     "Poivre",
+     null,
+     null,
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Épluche les navets et coupe-les en petits cubes.",
+    "Fais-les dorer 12 minutes au beurre à feu moyen, en remuant. Sale et ajoute le persil.",
+    "Cuis le steak haché 2 à 3 minutes de chaque côté dans la même poêle."
+   ],
+   "batch": false,
+   "batch_notes": null
+  },
+  {
+   "titre": "Poulet et fenouil rôti",
+   "description": "Fenouil rôti au citron et blanc de poulet, chaud ou froid à emporter.",
+   "base": "Poulet",
+   "accompagnement": "Fenouil",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 1,
+   "prep": 5,
+   "cuisson": 25,
+   "regimes": [
+    "keto",
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "kid_friendly": false,
+   "ingredients": [
+    [
+     "Blancs de poulet",
+     150,
+     "g",
+     "boucherie"
+    ],
+    [
+     "Fenouils",
+     1,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Huile d'olive",
+     2,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Citrons",
+     0.5,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Herbes de Provence",
+     1,
+     "cac",
+     "epicerie"
+    ],
+    [
+     "Sel",
+     null,
+     null,
+     "epicerie"
+    ],
+    [
+     "Poivre",
+     null,
+     null,
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Coupe le fenouil en quartiers, arrose d'huile et de jus de citron, sale et enfourne 25 minutes à 200 °C.",
+    "À mi-cuisson, pose le blanc de poulet assaisonné d'herbes à côté et laisse cuire 12 à 15 minutes."
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "basique": false
+  },
+  {
+   "titre": "Tomates à la tapenade",
+   "description": "Tomates en rondelles et une cuillère de tapenade aux olives.",
+   "plat": "entree",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 5,
+   "cuisson": 0,
+   "regimes": [
+    "keto",
+    "vegetarien",
+    "sans_gluten",
+    "sans_lactose"
+   ],
+   "kid_friendly": false,
+   "ingredients": [
+    [
+     "Tomates",
+     4,
+     "piece",
+     "fruits_legumes"
+    ],
+    [
+     "Tapenade",
+     60,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Poivre",
+     null,
+     null,
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Coupe les tomates en rondelles et dispose-les sur un plat.",
+    "Ajoute la tapenade par petites touches, un filet d'huile et poivre."
+   ],
+   "base": null,
+   "batch": false,
+   "batch_notes": null,
+   "basique": false
+  },
+  {
+   "titre": "Steak haché, haricots verts et polenta",
+   "description": "Le steak haché avec les deux : haricots verts et polenta crémeuse.",
+   "base": "Steak haché",
+   "accompagnement": "Haricots verts et polenta",
+   "types": [
+    "midi",
+    "soir"
+   ],
+   "portions": 4,
+   "prep": 5,
+   "cuisson": 15,
+   "regimes": [
+    "sans_gluten"
+   ],
+   "batch": false,
+   "batch_notes": null,
+   "kid_friendly": true,
+   "basique": true,
+   "ingredients": [
+    [
+     "Steaks hachés pur bœuf",
+     4,
+     "piece",
+     "boucherie"
+    ],
+    [
+     "Haricots verts",
+     400,
+     "g",
+     "surgeles"
+    ],
+    [
+     "Polenta précuite",
+     150,
+     "g",
+     "epicerie"
+    ],
+    [
+     "Beurre",
+     30,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Parmesan",
+     30,
+     "g",
+     "cremerie"
+    ],
+    [
+     "Huile d'olive",
+     1,
+     "cas",
+     "epicerie"
+    ],
+    [
+     "Sel",
+     null,
+     null,
+     "epicerie"
+    ],
+    [
+     "Poivre",
+     null,
+     null,
+     "epicerie"
+    ]
+   ],
+   "etapes": [
+    "Fais cuire les haricots verts 10 minutes à l'eau bouillante salée, égoutte et ajoute une noisette de beurre.",
+    "Porte 600 ml d'eau salée à ébullition, verse la polenta en pluie en fouettant et laisse cuire 5 minutes. Hors du feu, ajoute le reste du beurre et le parmesan.",
+    "Cuis les steaks hachés 2 à 3 minutes de chaque côté dans l'huile bien chaude. Sale et poivre."
+   ]
+  }
+ ]
+}
