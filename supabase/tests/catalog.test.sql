@@ -1,4 +1,4 @@
--- Catalogue commun (migrations 0003, 0007, 0016 et 0018) : le compte demandé, des recettes complètes,
+-- Catalogue commun (migrations 0003, 0007, 0016, 0018 et 0021) : le compte demandé, des recettes complètes,
 -- des basiques qui s'associent, des plats légers d'un ingrédient, et des régimes qui tiennent
 -- leurs promesses.
 -- Lancer : supabase test db
@@ -6,7 +6,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(27);
+select plan(29);
 
 create temp view catalog as
 select * from public.recipes where household_id is null;
@@ -18,20 +18,20 @@ join public.recipes r on r.id = ri.recipe_id
 where r.household_id is null;
 
 -- ── Le compte ───────────────────────────────────────────────────────────────
-select is((select count(*) from catalog), 112::bigint, 'Le catalogue compte 112 recettes');
+select is((select count(*) from catalog), 122::bigint, 'Le catalogue compte 122 recettes');
 
 select is(
   (select count(*) from catalog where id::text like 'ca7a0000-0000-4000-8000-%'),
   40::bigint,
   'Les 40 recettes de 0003 ont des identifiants fixes');
 
--- ── Les basiques (0007, 0018) ─────────────────────────────────────────────────────
-select is((select count(*) from catalog where basic), 37::bigint, 'Le catalogue compte 37 basiques');
+-- ── Les basiques (0007, 0018, 0021) ───────────────────────────────────────────────
+select is((select count(*) from catalog where basic), 41::bigint, 'Le catalogue compte 41 basiques');
 
 select is(
   (select count(*) from catalog where basic and 'keto' = any (diets)),
-  17::bigint,
-  'Dont 17 basiques cétogènes');
+  19::bigint,
+  'Dont 19 basiques cétogènes');
 
 select is(
   (select count(*) from catalog where basic and base is null),
@@ -96,8 +96,8 @@ select is(
 select is(
   (select array_agg(course::text || ':' || n order by course) from (
     select course, count(*) as n from catalog where course <> 'main' group by course) as t),
-  array['starter:5', 'dessert:5', 'fruit:10', 'cheese:4', 'dairy:6'],
-  '5 entrées, 5 desserts, 10 fruits, 4 fromages, 6 laitages');
+  array['starter:7', 'dessert:5', 'fruit:10', 'cheese:4', 'dairy:6'],
+  '7 entrées, 5 desserts, 10 fruits, 4 fromages, 6 laitages');
 
 select is(
   (select count(*) from catalog c
@@ -150,6 +150,23 @@ select results_eq(
     order by base$$,
   $$values ('Œufs coque'), ('Quiche lorraine'), ('Reblochon'), ('Sauce bolognaise')$$,
   'Œufs coque, tartiflette, bolognaise et quiche ont chacune leur double céto');
+
+-- ── Menu de la semaine du 23 novembre (0020, 0021) ──────────────────────────
+select results_eq(
+  $$select name, count(*) from public.ingredients
+    where name_key in (private.ingredient_key('Navets'), private.ingredient_key('Fenouils'),
+                       private.ingredient_key('Macédoine de légumes'), private.ingredient_key('Tapenade'))
+    group by name
+    order by name$$,
+  $$values ('Fenouils', 1::bigint), ('Macédoine de légumes', 1::bigint), ('Navets', 1::bigint),
+           ('Tapenade', 1::bigint)$$,
+  'Navets, fenouils, macédoine et tapenade existent une seule fois au référentiel');
+
+select is(
+  (select piece_grams from public.ingredients
+    where household_id is null and name_key = private.ingredient_key('Petits pois surgelés')),
+  1000::numeric,
+  'Les petits pois surgelés s''achètent en sachet d''1 kg');
 
 -- ── Des régimes tenus ───────────────────────────────────────────────────────
 select is(

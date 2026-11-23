@@ -187,6 +187,109 @@ describe("weekSql", () => {
     expect(() => weekSql(week([tuesday]), { email: "" })).toThrow("email invalide");
   });
 
+  describe("absents", () => {
+    const mondayWithout: WeekFile["repas"][number] = {
+      jour: "lundi",
+      repas: "soir",
+      absents: ["Marie-Laure"],
+      plats: [
+        { recette: "Salade verte", pour: "tous" },
+        { recette: "Poisson pané, polenta à la tomate et petits pois", pour: ["Olivier", "Timothé", "Anna-Lucia", "Otis"] },
+      ],
+    };
+
+    // Les lignes des repas changés : une par repas qui a des absents.
+    function absenceRows(sql: string) {
+      const start = sql.indexOf("for absence in");
+      if (start < 0) return [];
+      return sql
+        .slice(start, sql.indexOf(") as a (meal, day, meal_type, label, names)", start))
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.startsWith("("));
+    }
+
+    it("le repas change pour la semaine (réglage du foyer moins les absents), avant les plats", () => {
+      const sql = weekSql(week([tuesday, mondayWithout]), { email: EMAIL });
+      expect(absenceRows(sql)).toEqual(["(2, 0, 'soir', 'lundi soir', array['Marie-Laure'])"]);
+
+      const section = sql.slice(sql.indexOf("for absence in"), sql.indexOf("coalesce(previous_claims, '')"));
+      // Le réglage du foyer, pas les présents de la semaine : le fichier décide seul, et rejouer
+      // donne le même repas.
+      expect(section).toContain("from public.meal_slots s");
+      expect(section).not.toContain("week_slot_members");
+      expect(section).toContain("eater_ids := array_remove(eater_ids, matches[1]);");
+      expect(section).toContain("perform public.set_week_meal(household, target_week, absence.day, absence.meal_type, eater_ids);");
+
+      // Avant de chercher la semaine et de lire les présents de chaque plat : les « tous » de ce
+      // repas n'ont plus les absents.
+      const change = sql.indexOf("perform public.set_week_meal(");
+      expect(change).toBeLessThan(sql.indexOf("into plan_id"));
+      expect(change).toBeLessThan(sql.indexOf("for dish in select"));
+      expect(sql).toContain("private.week_slot_members(plan_id, dish.day, dish.meal_type)");
+      // Dans le bloc : au premier problème, le repas changé est annulé avec le reste.
+      expect(change).toBeGreaterThan(sql.indexOf("do $popote$"));
+      expect(change).toBeLessThan(sql.indexOf("\nend;\n$popote$;"));
+    });
+
+    it("set_week_meal veut un compte du foyer : le bloc prend celui de l'email, puis le rend", () => {
+      // Le SQL Editor et psql n'ont pas d'utilisateur connecté : auth.uid() serait vide.
+      const sql = weekSql(week([mondayWithout]), { email: EMAIL });
+      expect(sql).toContain("select hu.household_id, u.id into household, account");
+      const take = sql.indexOf("perform set_config('request.jwt.claims', json_build_object('sub', account)::text, true);");
+      const give = sql.indexOf("perform set_config('request.jwt.claims', coalesce(previous_claims, ''), true);");
+      expect(sql.indexOf("previous_claims := current_setting('request.jwt.claims', true);")).toBeLessThan(take);
+      expect(take).toBeLessThan(sql.indexOf("perform public.set_week_meal("));
+      expect(give).toBeGreaterThan(sql.indexOf("perform public.set_week_meal("));
+      expect(give).toBeLessThan(sql.indexOf("for dish in select"));
+    });
+
+    it("la base vérifie ce que le fichier ne sait pas : le prénom, sa présence au repas, quelqu'un qui reste", () => {
+      const sql = weekSql(week([mondayWithout]), { email: EMAIL });
+      expect(sql).toContain("personne ne s''appelle « % » dans le foyer (absents)");
+      expect(sql).toContain("% est dans les absents, mais ne vient pas à ce repas dans le foyer");
+      expect(sql).toContain("ce repas n''a pas lieu dans le foyer : personne ne peut en être absent");
+      expect(sql).toContain("tout le monde est absent : retire ce repas du fichier");
+      expect(sql).toContain("'%s : sans %s cette semaine'");
+    });
+
+    it("sans absents (ou une liste vide), le SQL ne change pas", () => {
+      for (const meal of [tuesday, { ...tuesday, absents: [] }]) {
+        const sql = weekSql(week([meal]), { email: EMAIL });
+        expect(sql).not.toContain("set_week_meal");
+        expect(sql).not.toContain("request.jwt.claims");
+        expect(sql).toContain("select hu.household_id into household\n");
+      }
+    });
+
+    it("refuse des absents mal écrits, ou un absent qui mange au même repas", () => {
+      const monday = (absents: unknown, plats = mondayWithout.plats) =>
+        week([{ ...mondayWithout, absents: absents as string[], plats }]);
+      expect(() => weekSql(monday("Marie-Laure"), { email: EMAIL })).toThrow(
+        'lundi soir : "absents" attend une liste de prénoms',
+      );
+      expect(() => weekSql(monday([" "]), { email: EMAIL })).toThrow("lundi soir : un prénom des absents est vide");
+      expect(() => weekSql(monday(["Tous"]), { email: EMAIL })).toThrow(
+        "lundi soir : « tous » ne peut pas être absent : retire plutôt ce repas du fichier",
+      );
+      expect(() => weekSql(monday(["Otis", "otis"]), { email: EMAIL })).toThrow("lundi soir : otis est absent deux fois");
+      expect(() =>
+        weekSql(monday(["Marie-Laure"], [{ recette: "Salade verte", pour: ["Olivier", "marie-laure"] }]), { email: EMAIL }),
+      ).toThrow("lundi soir : marie-laure est absent, mais mange « Salade verte »");
+    });
+  });
+
+  it("lit le fichier de la semaine du 23 novembre : Marie-Laure ne dîne pas le lundi", () => {
+    const doc = JSON.parse(readFileSync("semaines/2026-11-23.json", "utf8")) as WeekFile;
+    const sql = weekSql(doc, { email: EMAIL, source: "semaines/2026-11-23.json", output: "semaines/2026-11-23.sql" });
+    expect(sql.split("\n")[0]).toBe(
+      "-- Semaine du lundi 23/11/2026 : 9 repas de semaines/2026-11-23.json, pour le foyer du compte test@example.com.",
+    );
+    expect(dataRows(sql)).toHaveLength(17);
+    expect(sql).toContain("(2, 0, 'soir', 'lundi soir', array['Marie-Laure'])");
+    expect(sql.match(/perform public\.set_week_meal\(/g)).toHaveLength(1);
+  });
+
   it("lit le fichier de la semaine du 16 novembre", () => {
     const doc = JSON.parse(readFileSync("semaines/2026-11-16.json", "utf8")) as WeekFile;
     const sql = weekSql(doc, { email: EMAIL, source: "semaines/2026-11-16.json", output: "semaines/2026-11-16.sql" });

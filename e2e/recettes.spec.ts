@@ -41,8 +41,8 @@ test("chercher, filtrer, ouvrir une recette du catalogue puis la copier", async 
   await page.getByRole("link", { name: "Recettes" }).click();
   await expect(page).toHaveURL(/\/recettes$/);
   // 40 recettes du quotidien, 35 basiques, 28 desserts, fruits, fromages, laitages et entrées,
-  // 9 du menu de la semaine du 16 novembre
-  await expect(page.getByRole("status")).toHaveText("112 recettes");
+  // 9 du menu de la semaine du 16 novembre, 10 de celle du 23 novembre
+  await expect(page.getByRole("status")).toHaveText("122 recettes");
 
   // Recherche par ingrédient, sans accent ni majuscule
   await page.getByRole("searchbox", { name: "Chercher une recette" }).fill("COURGETTE");
@@ -52,8 +52,8 @@ test("chercher, filtrer, ouvrir une recette du catalogue puis la copier", async 
 
   // Filtre en puce, gardé dans l'adresse
   await chip(page, "Cétogène").click();
-  // 37 plats et 12 desserts, fruits, fromages ou entrées
-  await expect(page.getByRole("status")).toHaveText("49 recettes");
+  // 42 plats et 13 desserts, fruits, fromages ou entrées
+  await expect(page.getByRole("status")).toHaveText("55 recettes");
   await expect(page).toHaveURL(/regime=keto/);
 
   // Fiche : quantités pour les 2 membres, puis pour 3 au curseur
@@ -113,7 +113,7 @@ test("chercher, filtrer, ouvrir une recette du catalogue puis la copier", async 
 
   // La copie remplace l'originale dans la liste
   await page.goto("/recettes?regime=keto");
-  await expect(page.getByRole("status")).toHaveText("49 recettes");
+  await expect(page.getByRole("status")).toHaveText("55 recettes");
   await expect(page.getByRole("link", { name: /Saumon de Léa/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /Saumon au four/ })).toHaveCount(0);
 });
