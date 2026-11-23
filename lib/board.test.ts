@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBoard, canDropOn, clearableCards, extrasToAdd, leavingNote, menuBase, moveEaters, restorableEaters, trimCards, type BoardDrag } from "@/lib/board";
+import { buildBoard, canDropOn, clearableCards, clearedMessage, extrasToAdd, leavingNote, menuBase, moveEaters, restorableEaters, trimCards, type BoardDrag } from "@/lib/board";
 import { weekSlots, type SlotInput } from "@/lib/meal-slots";
 import type { PlannerMember } from "@/lib/planner";
 import type { Course } from "@/lib/recipes";
@@ -440,5 +440,16 @@ describe("clearableCards", () => {
 
   it("ne retire rien d'une semaine vide", () => {
     expect(clearableCards([])).toEqual([]);
+  });
+});
+
+describe("clearedMessage", () => {
+  it("dit combien de plats sont partis, au singulier pour un seul", () => {
+    expect(clearedMessage(27)).toBe("27 plats retirés");
+    expect(clearedMessage(1)).toBe("1 plat retiré");
+  });
+
+  it("dit quand il n'y avait plus rien à retirer", () => {
+    expect(clearedMessage(0)).toBe("Il n’y avait plus rien à retirer");
   });
 });

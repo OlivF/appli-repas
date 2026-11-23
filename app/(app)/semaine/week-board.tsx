@@ -48,6 +48,7 @@ import {
   buildBoard,
   canDropOn,
   clearableCards,
+  clearedMessage,
   extrasToAdd,
   leavingNote,
   menuBase,
@@ -666,7 +667,7 @@ export function WeekBoard({
       return;
     }
     syncCards(result.cards, before);
-    toast(gone.length > 1 ? `${gone.length} plats retirés` : "1 plat retiré");
+    toast(clearedMessage(result.removed));
   }
 
   // La base que partagent au moins deux plats du repas, telle qu'écrite sur la recette.
@@ -813,7 +814,7 @@ export function WeekBoard({
         })
       : null;
 
-  // Les panneaux de la semaine : qui est là, un repas en plus, tout remettre.
+  // Les panneaux de la semaine : qui est là, un repas en plus, tout remettre, vider la semaine.
   function weekSheetBody(target: WeekSheet) {
     if (target.kind === "clear") {
       return (
@@ -821,11 +822,12 @@ export function WeekBoard({
           <SheetHeader>
             <SheetTitle>Vider la semaine ?</SheetTitle>
             <SheetDescription>
-              {clearable.length > 1 ? `${clearable.length} plats partent.` : "1 plat part."} Les plats verrouillés, les
+              {clearable.length === 1 ? "1 plat part." : `${clearable.length} plats partent.`} Les plats verrouillés, les
               entrées, desserts, fruits, fromages et laitages restent.
             </SheetDescription>
           </SheetHeader>
-          <Button block size="lg" className="mt-1" onClick={() => void clearWeek()}>
+          <Button variant="destructive" block size="lg" className="mt-1" onClick={() => void clearWeek()}>
+            <Trash2 aria-hidden="true" />
             Vider
           </Button>
           <Button variant="ghost" block className="mt-2 text-muted-foreground" onClick={() => setSheet(null)}>
