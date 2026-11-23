@@ -256,6 +256,12 @@ export function trimCards<C extends { day: number; meal_type: MealType; member_i
   });
 }
 
+// « Vider la semaine » : les plats non verrouillés. Les à-côtés (entrées, desserts, fruits…) n'ont
+// pas de cadenas et restent, comme avec « Relancer ».
+export function clearableCards<C extends { locked: boolean; course?: Course }>(cards: readonly C[]): C[] {
+  return cards.filter((card) => !card.locked && !isExtra(card.course));
+}
+
 const VOWEL = /^[aeiouyàâäéèêëîïôöùûüœæ]/i;
 const list = (names: string[]) => new Intl.ListFormat("fr", { type: "conjunction" }).format(names);
 
