@@ -1,6 +1,6 @@
 "use server";
 
-import { extrasToAdd, restorableEaters, type ExtraTarget, type Unserved } from "@/lib/board";
+import { clearableCards, extrasToAdd, restorableEaters, type ExtraTarget, type Unserved } from "@/lib/board";
 import { SAVE_ERROR } from "@/lib/data";
 import { MEAL_TYPES, type MealType, type SlotInput, type WeekChange } from "@/lib/meal-slots";
 import { nextIdea, proposeWeek } from "@/lib/planner";
@@ -200,6 +200,19 @@ export async function restoreCardAction(weekStart: string, card: WeekCard): Prom
       });
   if (error) return { error: SAVE_ERROR };
   return { cards: await cardsOfWeek(supabase, household.id, weekStart) };
+}
+
+// « Vider la semaine » : les plats non verrouillés partent ; les plats verrouillés et les à-côtés
+// (entrées, desserts, fruits…) restent. Rend les cartes de la semaine.
+export async function clearWeekAction(weekStart: string): Promise<CardsResult> {
+  if (!isWeekStart(weekStart)) return { error: SAVE_ERROR };
+  const { supabase, plan, cards } = await loadWeek(weekStart);
+  if (!plan) return { cards: [] };
+  const ids = clearableCards(cards).map((card) => card.id);
+  if (ids.length === 0) return { cards };
+  const { error } = await supabase.from("planned_meals").delete().in("id", ids);
+  if (error) return { error: SAVE_ERROR };
+  return { cards: await weekCards(supabase, plan.id) };
 }
 
 export type PlaceTarget = { cardId: string } | { day: number; meal_type: MealType; member_ids?: string[] };
