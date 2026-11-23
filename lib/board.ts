@@ -256,6 +256,18 @@ export function trimCards<C extends { day: number; meal_type: MealType; member_i
   });
 }
 
+// « Vider la semaine » : les plats non verrouillés. Les à-côtés (entrées, desserts, fruits…) n'ont
+// pas de cadenas et restent, comme avec « Relancer ».
+export function clearableCards<C extends { locked: boolean; course?: Course }>(cards: readonly C[]): C[] {
+  return cards.filter((card) => !card.locked && !isExtra(card.course));
+}
+
+// Le toast après « Vider la semaine », avec le nombre de plats que le serveur a vraiment retirés.
+export function clearedMessage(removed: number): string {
+  if (removed === 0) return "Il n’y avait plus rien à retirer";
+  return removed === 1 ? "1 plat retiré" : `${removed} plats retirés`;
+}
+
 const VOWEL = /^[aeiouyàâäéèêëîïôöùûüœæ]/i;
 const list = (names: string[]) => new Intl.ListFormat("fr", { type: "conjunction" }).format(names);
 

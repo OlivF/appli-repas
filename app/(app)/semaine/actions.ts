@@ -1,6 +1,6 @@
 "use server";
 
-import { extrasToAdd, restorableEaters, type ExtraTarget, type Unserved } from "@/lib/board";
+import { clearableCards, extrasToAdd, restorableEaters, type ExtraTarget, type Unserved } from "@/lib/board";
 import { SAVE_ERROR } from "@/lib/data";
 import { MEAL_TYPES, type MealType, type SlotInput, type WeekChange } from "@/lib/meal-slots";
 import { nextIdea, proposeWeek } from "@/lib/planner";
@@ -200,6 +200,28 @@ export async function restoreCardAction(weekStart: string, card: WeekCard): Prom
       });
   if (error) return { error: SAVE_ERROR };
   return { cards: await cardsOfWeek(supabase, household.id, weekStart) };
+}
+
+export type ClearResult = { cards: WeekCard[]; removed: number } | ActionError;
+
+// « Vider la semaine » : les plats non verrouillés partent ; les plats verrouillés et les à-côtés
+// (entrées, desserts, fruits…) restent. Un plat qu'un autre compte verrouille juste avant la
+// suppression reste aussi (« locked = false » dans la suppression même). Rend les cartes de la
+// semaine et le nombre de plats vraiment retirés.
+export async function clearWeekAction(weekStart: string): Promise<ClearResult> {
+  if (!isWeekStart(weekStart)) return { error: SAVE_ERROR };
+  const { supabase, plan, cards } = await loadWeek(weekStart);
+  if (!plan) return { cards: [], removed: 0 };
+  const ids = clearableCards(cards).map((card) => card.id);
+  if (ids.length === 0) return { cards, removed: 0 };
+  const { data, error } = await supabase
+    .from("planned_meals")
+    .delete()
+    .in("id", ids)
+    .eq("locked", false)
+    .select("id");
+  if (error) return { error: SAVE_ERROR };
+  return { cards: await weekCards(supabase, plan.id), removed: data.length };
 }
 
 export type PlaceTarget = { cardId: string } | { day: number; meal_type: MealType; member_ids?: string[] };

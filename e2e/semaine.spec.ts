@@ -77,6 +77,50 @@ test("proposer la semaine, verrouiller un plat, relancer", async ({ page }) => {
   await expect(page.getByText("Semaine prochaine")).toHaveCount(0);
 });
 
+test("vider la semaine garde les plats verrouillés et les desserts", async ({ page }) => {
+  await newHousehold(page);
+  await propose(page);
+
+  // Lundi soir : un plat verrouillé et un Comté pour tous les deux.
+  const kept = await dinner(page, 0).getAttribute("aria-label");
+  await dinner(page, 0).getByRole("button", { name: "Verrouiller" }).click();
+  await expect(dinner(page, 0).getByRole("button", { name: "Déverrouiller" })).toBeVisible();
+
+  const extras = day(page, 0).getByRole("button", { name: "Ajouter un dessert, un fruit… au dîner de lundi" });
+  const panel = page.getByRole("dialog", { name: /^Pour finir/ });
+  await expect(async () => {
+    await extras.click();
+    await expect(panel).toBeVisible({ timeout: 1_000 });
+  }).toPass();
+  await panel.getByText("Fromage", { exact: true }).click();
+  await panel.getByText("Comté", { exact: true }).click();
+  await panel.getByRole("button", { name: "Ajouter 1" }).click();
+  await expect(panel).toBeHidden();
+  const cheese = day(page, 0).getByRole("button", { name: /^Fromage : Comté/ });
+  await expect(cheese).toBeVisible();
+
+  // On vide : seuls le plat verrouillé et le Comté restent.
+  await page.getByRole("button", { name: "Vider la semaine" }).click();
+  const confirm = page.getByRole("dialog", { name: "Vider la semaine ?" });
+  await expect(confirm).toContainText(/plats? partent?\./);
+  await confirm.getByRole("button", { name: "Vider", exact: true }).click();
+  await expect(page.getByText(/plats? retirés?/)).toBeVisible();
+
+  const keptCard = day(page, 0).getByRole("group", { name: kept!, exact: true });
+  const remaining = async () => {
+    await expect(day(page, 0).getByRole("group")).toHaveCount(1);
+    await expect(keptCard.getByRole("button", { name: "Déverrouiller" })).toBeVisible();
+    await expect(cheese).toBeVisible();
+    await expect(day(page, 1).getByRole("group")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Vider la semaine" })).toHaveCount(0);
+  };
+  await remaining();
+
+  // Tout est enregistré.
+  await page.reload();
+  await remaining();
+});
+
 test("« Autre idée » change le plat", async ({ page }) => {
   await newHousehold(page);
   await propose(page);

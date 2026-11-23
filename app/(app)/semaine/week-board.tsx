@@ -47,6 +47,8 @@ import { baseKey } from "@/lib/bases";
 import {
   buildBoard,
   canDropOn,
+  clearableCards,
+  clearedMessage,
   extrasToAdd,
   leavingNote,
   menuBase,
@@ -76,6 +78,7 @@ import {
   addDishAction,
   addExtrasAction,
   anotherIdeaAction,
+  clearWeekAction,
   createQuickRecipeAction,
   placeRecipeAction,
   removeCardAction,
@@ -100,7 +103,7 @@ type Drag = { kind: "card"; card: Card } | { kind: "extra"; card: Card } | { kin
 // ajouter un plat (« Pour qui ? », recette déjà choisie après un dépôt), dire qui mange un plat,
 // ajouter des desserts, fruits… (« extras »), ou en ouvrir un (« extra »). Pour la semaine
 // seulement : qui est là à un repas (« meal »), un repas en plus (« newMeal »), tout remettre
-// comme dans le foyer (« reset »).
+// comme dans le foyer (« reset »), vider la semaine (« clear »).
 type SheetTarget =
   | { kind: "card"; cardId: string }
   | { kind: "slot"; day: number; meal_type: MealType; member_ids: string[] }
@@ -110,9 +113,10 @@ type SheetTarget =
   | { kind: "extra"; cardId: string }
   | { kind: "meal"; day: number; meal_type: MealType }
   | { kind: "newMeal"; day: number }
-  | { kind: "reset" };
+  | { kind: "reset" }
+  | { kind: "clear" };
 type PlaceSheet = Extract<SheetTarget, { kind: "card" | "slot" }>;
-type WeekSheet = Extract<SheetTarget, { kind: "meal" | "newMeal" | "reset" }>;
+type WeekSheet = Extract<SheetTarget, { kind: "meal" | "newMeal" | "reset" | "clear" }>;
 type MealSheet = Exclude<SheetTarget, WeekSheet>;
 
 // « le dîner de mardi », « le pique-nique de mercredi ».
@@ -647,6 +651,25 @@ export function WeekBoard({
     toast("Les repas suivent à nouveau le foyer");
   }
 
+  // « Vider la semaine » : les plats non verrouillés partent tout de suite de l'écran ; en cas
+  // d'échec, ils reviennent.
+  async function clearWeek() {
+    const before = cards;
+    const gone = clearableCards(cards).map((card) => card.id);
+    setSheet(null);
+    setError(null);
+    setDelays({});
+    setCards((current) => current.filter((card) => !gone.includes(card.id)));
+    const result = await clearWeekAction(weekStart).catch(() => ({ error: SAVE_ERROR }));
+    if ("error" in result) {
+      setCards(before);
+      setError(result.error);
+      return;
+    }
+    syncCards(result.cards, before);
+    toast(clearedMessage(result.removed));
+  }
+
   // La base que partagent au moins deux plats du repas, telle qu'écrite sur la recette.
   function sharedBase(list: readonly Card[]) {
     const seen = new Map<string, string>();
@@ -791,8 +814,29 @@ export function WeekBoard({
         })
       : null;
 
-  // Les panneaux de la semaine : qui est là, un repas en plus, tout remettre.
+  // Les panneaux de la semaine : qui est là, un repas en plus, tout remettre, vider la semaine.
   function weekSheetBody(target: WeekSheet) {
+    if (target.kind === "clear") {
+      return (
+        <>
+          <SheetHeader>
+            <SheetTitle>Vider la semaine ?</SheetTitle>
+            <SheetDescription>
+              {clearable.length === 1 ? "1 plat part." : `${clearable.length} plats partent.`} Les plats verrouillés, les
+              entrées, desserts, fruits, fromages et laitages restent.
+            </SheetDescription>
+          </SheetHeader>
+          <Button variant="destructive" block size="lg" className="mt-1" onClick={() => void clearWeek()}>
+            <Trash2 aria-hidden="true" />
+            Vider
+          </Button>
+          <Button variant="ghost" block className="mt-2 text-muted-foreground" onClick={() => setSheet(null)}>
+            Annuler
+          </Button>
+        </>
+      );
+    }
+
     if (target.kind === "reset") {
       return (
         <>
@@ -1100,6 +1144,19 @@ export function WeekBoard({
 
   // « Relancer » quand il y a des plats ; un yaourt seul ne compte pas.
   const hasCards = cards.some((card) => !isExtra(card.course));
+  // « Vider la semaine » : seulement s'il reste un plat à retirer.
+  const clearable = clearableCards(cards);
+  const clearButton = (className?: string) => (
+    <Button
+      variant="ghost"
+      className={cn("text-muted-foreground", className)}
+      aria-haspopup="dialog"
+      onClick={() => setSheet({ kind: "clear" })}
+    >
+      <Trash2 aria-hidden="true" />
+      Vider la semaine
+    </Button>
+  );
   const proposeButton = (block: boolean) => (
     <Button size="lg" block={block} onClick={propose} disabled={proposing}>
       <Sparkles aria-hidden="true" />
@@ -1311,6 +1368,7 @@ export function WeekBoard({
           <WeekPicker label={label} relation={relation} prevHref={prevHref} nextHref={nextHref} />
         </div>
         {cards.length > 0 && <ShoppingLink className="hidden sm:inline-flex" weekStart={weekStart} />}
+        {clearable.length > 0 && clearButton("hidden sm:inline-flex")}
       </div>
       {changes.length > 0 && (
         <p className="mt-3 text-[0.9375rem] text-muted-foreground">
@@ -1328,6 +1386,7 @@ export function WeekBoard({
       <div className="mt-5 flex flex-col gap-3 sm:hidden">
         {proposeButton(true)}
         {cards.length > 0 && <ShoppingLink block weekStart={weekStart} />}
+        {clearable.length > 0 && clearButton("self-center")}
       </div>
 
       <div className="mt-4 min-h-6" aria-live="polite">
@@ -1484,7 +1543,7 @@ export function WeekBoard({
 
       <Sheet open={sheet !== null} onOpenChange={(open) => !open && setSheet(null)}>
         <SheetContent>
-          {sheet?.kind === "meal" || sheet?.kind === "newMeal" || sheet?.kind === "reset"
+          {sheet?.kind === "meal" || sheet?.kind === "newMeal" || sheet?.kind === "reset" || sheet?.kind === "clear"
             ? weekSheetBody(sheet)
             : sheet && sheetMeal !== undefined && sheetDay !== undefined && sheetBody(sheet, sheetMeal, sheetDay)}
         </SheetContent>

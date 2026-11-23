@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBoard, canDropOn, extrasToAdd, leavingNote, menuBase, moveEaters, restorableEaters, trimCards, type BoardDrag } from "@/lib/board";
+import { buildBoard, canDropOn, clearableCards, clearedMessage, extrasToAdd, leavingNote, menuBase, moveEaters, restorableEaters, trimCards, type BoardDrag } from "@/lib/board";
 import { weekSlots, type SlotInput } from "@/lib/meal-slots";
 import type { PlannerMember } from "@/lib/planner";
 import type { Course } from "@/lib/recipes";
@@ -420,5 +420,36 @@ describe("leavingNote", () => {
     );
     expect(note([dish("yaourt", "dairy", 2, ALL)], [OLIVIER])).toBeNull();
     expect(note(duo, ALL)).toBeNull();
+  });
+});
+
+describe("clearableCards", () => {
+  it("retire les plats non verrouillés, garde les plats verrouillés et les à-côtés", () => {
+    const cards = [
+      { id: "a", locked: false, course: "main" as Course },
+      { id: "b", locked: true, course: "main" as Course },
+      { id: "c", locked: false, course: "dessert" as Course },
+      { id: "d", locked: false },
+      { id: "e", locked: false, course: "starter" as Course },
+      { id: "f", locked: false, course: "fruit" as Course },
+      { id: "g", locked: false, course: "cheese" as Course },
+      { id: "h", locked: false, course: "dairy" as Course },
+    ];
+    expect(clearableCards(cards).map((card) => card.id)).toEqual(["a", "d"]);
+  });
+
+  it("ne retire rien d'une semaine vide", () => {
+    expect(clearableCards([])).toEqual([]);
+  });
+});
+
+describe("clearedMessage", () => {
+  it("dit combien de plats sont partis, au singulier pour un seul", () => {
+    expect(clearedMessage(27)).toBe("27 plats retirés");
+    expect(clearedMessage(1)).toBe("1 plat retiré");
+  });
+
+  it("dit quand il n'y avait plus rien à retirer", () => {
+    expect(clearedMessage(0)).toBe("Il n’y avait plus rien à retirer");
   });
 });
